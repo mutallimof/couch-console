@@ -6,7 +6,7 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> 🚧 Work in progress. Milestone 1 (1 phone) is done and tagged `v0.1`. Milestone 2 has started: 2 phones can now connect at the same time. Two-player game modes come next. See `PLAN.md` for the roadmap.
+> 🚧 Work in progress. Milestone 1 (1 phone) is done and tagged `v0.1`. Milestone 2 is in progress: 2 phones can connect, and Balloon Pop has Versus and Co-op modes. Paddle Duel and Bowling come next. See `PLAN.md` for the roadmap.
 
 ---
 
@@ -69,6 +69,10 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 - While you're in the menu, a small QR code in the bottom-right corner lets the second phone join.
 - **P1 controls the menu.** P2's cursor shows, but only P1 can open and close things.
 - In **Draw**, both players paint at the same time, each with their own color and brush.
+- **Balloon Pop** asks for a mode when 2 phones are connected:
+  - **Solo:** only P1 plays.
+  - **Versus:** same sky, each pop scores for whoever popped it. The score for P1 is on the left and P2 on the right, and the winner screen is in the winner's color.
+  - **Co-op:** one shared score. Reach 40 points in 60 seconds. If you both pop within half a second of each other, you get a **COMBO +2**.
 - If a phone disconnects during a game, the game pauses. Scan the QR code again within 30 seconds to get the same player number back, or press **B** to quit.
 - No second phone? Open the `…/remote.html` link in another browser window on the laptop and type the room code. It shows a touchpad you can drag with your mouse.
 

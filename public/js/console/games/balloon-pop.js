@@ -1,7 +1,13 @@
-// Balloon Pop (solo): aim with the pointer, press A to pop balloons. 60-second rounds.
-//   normal +1 · golden (rare, fast) +3 · spiky bomb −2 and a rumble
+// Balloon Pop: aim with the pointer, press A to pop balloons. 60-second rounds.
+//   normal +1 · golden (rare, fast) +3 · spiky bomb −2 and a rumble (only to the popper)
+// Modes: solo · versus (same sky, each player scores for themselves)
+//        · co-op (shared score, reach 40 in time; popping within 0.5 s of each other = combo)
+import { colorFor } from '../../shared/protocol.js';
 
 const ROUND_SECONDS = 60;
+const COOP_TARGET = 40;
+const COMBO_WINDOW_MS = 500;
+const COMBO_BONUS = 2;
 const BEST_KEY = 'couch.balloonPop.best';
 const COLORS = ['#FF6B6B', '#4DABF7', '#51CF66', '#FFA94D', '#CC5DE8', '#22B8CF', '#F783AC'];
 
@@ -15,6 +21,9 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 let api, canvas, ctx, frame, resizeObserver;
 let W = 0, H = 0, scale = 1;
 let state, balloons, particles, floaters, clouds, score, timeLeft, spawnIn, lastT, shake, lastTick, overAt;
+let scores = new Map();   // versus: playerId -> score
+let lastPop = new Map();  // co-op: playerId -> { at, used } for combos
+const mode = () => api.mode;
 let paused = false; // set by the console when a phone disconnects
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -33,6 +42,37 @@ function reset(newState) {
   state = newState;
   balloons = []; particles = []; floaters = [];
   score = 0; timeLeft = ROUND_SECONDS; spawnIn = 0.3; shake = 0; lastTick = null;
+  scores = new Map(api.players.map((p) => [p.playerId, 0]));
+  lastPop = new Map();
+}
+
+function endRound() {
+  state = 'over';
+  overAt = performance.now();
+  api.sound.play('end');
+  if (mode() === 'solo' && score > getBest()) setBest(score);
+}
+
+function addPoints(playerId, pts) {
+  if (mode() === 'versus') scores.set(playerId, (scores.get(playerId) || 0) + pts);
+  else score += pts;
+}
+
+// Co-op: a pop counts as a combo if the OTHER player popped within the last 0.5 s.
+function checkCombo(playerId, x, y) {
+  const now = performance.now();
+  lastPop.set(playerId, { at: now, used: false });
+  for (const [id, p] of lastPop) {
+    if (id === playerId || p.used || now - p.at > COMBO_WINDOW_MS) continue;
+    p.used = true;
+    lastPop.get(playerId).used = true;
+    score += COMBO_BONUS;
+    // keep the wide "COMBO" text on screen near the edges
+    const cx = Math.min(Math.max(x, 170 * scale), W - 170 * scale);
+    floaters.push({ x: cx, y: y - 50 * scale, text: `COMBO +${COMBO_BONUS}`, color: '#9B51E0', life: 1.3, size: 48 });
+    api.sound.play('golden');
+    return;
+  }
 }
 
 function spawn() {
@@ -64,8 +104,9 @@ function tryPop(playerId) {
     const dx = (p.x - b.x) / (b.r * 1.15), dy = (p.y - b.y) / (b.r * 1.3);
     if (dx * dx + dy * dy > 1) continue;
     balloons.splice(i, 1);
+    const solo = mode() === 'solo';
     if (b.type === 'bomb') {
-      score -= 2;
+      addPoints(playerId, -2);
       burst(b.x, b.y, '#333', 30); burst(b.x, b.y, '#FF922B', 20);
       floaters.push({ x: b.x, y: b.y, text: '−2', color: '#E03131', life: 1 });
       api.sound.play('bomb');
@@ -73,11 +114,15 @@ function tryPop(playerId) {
       shake = 0.3;
     } else {
       const pts = b.type === 'golden' ? 3 : 1;
-      score += pts;
+      addPoints(playerId, pts);
       burst(b.x, b.y, b.type === 'golden' ? '#FFD43B' : b.color, b.type === 'golden' ? 34 : 18);
-      floaters.push({ x: b.x, y: b.y, text: `+${pts}`, color: b.type === 'golden' ? '#E8A400' : '#2b3445', life: 1 });
+      // With 2 players the "+1" is in the popper's color.
+      const color = !solo ? colorFor(playerId) : b.type === 'golden' ? '#E8A400' : '#2b3445';
+      floaters.push({ x: b.x, y: b.y, text: `+${pts}`, color, life: 1 });
       api.sound.play(b.type === 'golden' ? 'golden' : 'pop');
+      if (mode() === 'coop') checkCombo(playerId, b.x, b.y);
     }
+    if (mode() === 'coop' && score >= COOP_TARGET) endRound();
     return;
   }
 }
@@ -90,13 +135,15 @@ function update(dt) {
     if (sec <= 5 && sec > 0 && sec !== lastTick) { lastTick = sec; api.sound.play('tick'); }
     if (timeLeft <= 0) {
       timeLeft = 0;
-      state = 'over';
-      overAt = performance.now();
-      api.sound.play('end');
-      if (score > getBest()) setBest(score);
+      endRound();
     }
     spawnIn -= dt;
-    if (spawnIn <= 0) { spawn(); spawnIn = rand(0.35, 0.75) * (1 - 0.35 * (1 - timeLeft / ROUND_SECONDS)); }
+    if (spawnIn <= 0) {
+      spawn();
+      // More balloons when two people are popping.
+      const crowd = mode() === 'solo' ? 1 : 0.7;
+      spawnIn = rand(0.35, 0.75) * (1 - 0.35 * (1 - timeLeft / ROUND_SECONDS)) * crowd;
+    }
   }
   for (const b of balloons) { b.y -= b.vy * dt; b.phase += dt * 2; }
   balloons = balloons.filter((b) => b.y > -b.r * 3);
@@ -153,8 +200,8 @@ function text(str, x, y, size, color, align = 'center') {
   ctx.fillStyle = color; ctx.fillText(str, x, y);
 }
 
-function panel(lines) {
-  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+function panel(lines, bg = 'rgba(255,255,255,0.88)') {
+  ctx.fillStyle = bg;
   const w = 560 * scale, h = 340 * scale;
   ctx.beginPath(); ctx.roundRect(W / 2 - w / 2, H / 2 - h / 2, w, h, 24 * scale); ctx.fill();
   lines.forEach(([str, size, color], i) => text(str, W / 2, H / 2 - h / 2 + 70 * scale + i * 62 * scale, size, color));
@@ -180,23 +227,67 @@ function draw() {
     ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, 7); ctx.fill();
   }
   ctx.globalAlpha = 1;
-  for (const f of floaters) { ctx.globalAlpha = Math.min(1, f.life * 1.5); text(f.text, f.x, f.y, 40, f.color); }
+  for (const f of floaters) { ctx.globalAlpha = Math.min(1, f.life * 1.5); text(f.text, f.x, f.y, f.size || 40, f.color); }
   ctx.globalAlpha = 1;
   ctx.restore();
 
-  // HUD
-  if (state !== 'ready') {
-    text(`Score ${score}`, 32 * scale, 44 * scale, 40, '#2b3445', 'left');
-    text(`${Math.ceil(timeLeft)}`, W - 32 * scale, 44 * scale, 48, timeLeft <= 10 ? '#E03131' : '#2b3445', 'right');
+  if (state !== 'ready') drawHud();
+  if (state === 'ready') drawReady();
+  else if (state === 'over') drawOver();
+}
+
+function drawHud() {
+  const timeColor = timeLeft <= 10 ? '#E03131' : '#2b3445';
+  const top = 44 * scale, edge = 32 * scale;
+  if (mode() === 'versus') {
+    // Split scoreboard: P1 on the left, P2 on the right, timer in the middle.
+    const [a, b] = [...scores.keys()];
+    if (a) text(`P${a}  ${scores.get(a)}`, edge, top, 44, colorFor(a), 'left');
+    if (b) text(`${scores.get(b)}  P${b}`, W - edge, top, 44, colorFor(b), 'right');
+    text(`${Math.ceil(timeLeft)}`, W / 2, top, 48, timeColor);
+  } else if (mode() === 'coop') {
+    text(`Team ${score} / ${COOP_TARGET}`, edge, top, 40, '#2b3445', 'left');
+    // progress bar toward the target
+    const bw = 260 * scale, bx = edge, by = top + 32 * scale;
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.roundRect(bx, by, bw, 14 * scale, 7 * scale); ctx.fill();
+    ctx.fillStyle = '#9B51E0'; ctx.beginPath();
+    ctx.roundRect(bx, by, bw * Math.max(0, Math.min(1, score / COOP_TARGET)), 14 * scale, 7 * scale); ctx.fill();
+    text(`${Math.ceil(timeLeft)}`, W - edge, top, 48, timeColor, 'right');
+  } else {
+    text(`Score ${score}`, edge, top, 40, '#2b3445', 'left');
+    text(`${Math.ceil(timeLeft)}`, W - edge, top, 48, timeColor, 'right');
   }
-  if (state === 'ready') {
-    panel([['Balloon Pop', 52, '#2b3445'], ['Point and press A to pop!', 26, '#5c677a'],
-      ['Golden +3 · Spiky −2', 24, '#8a94a6'], ['A = start   ·   B = menu', 28, '#2F80ED']]);
-  } else if (state === 'over') {
+}
+
+function drawReady() {
+  const goal = {
+    solo: 'Point and press A to pop!',
+    versus: 'Versus: pop more than your rival!',
+    coop: `Co-op: pop ${COOP_TARGET} together in ${ROUND_SECONDS} s!`,
+  }[mode()];
+  const tip = mode() === 'coop' ? 'Pop at the same time for a combo' : 'Golden +3 · Spiky −2';
+  panel([['Balloon Pop', 52, '#2b3445'], [goal, 26, '#5c677a'], [tip, 24, '#8a94a6'], ['A = start   ·   B = menu', 28, '#2F80ED']]);
+}
+
+function drawOver() {
+  const again = ['A = play again   ·   B = menu', 28];
+  if (mode() === 'versus') {
+    const [a, b] = [...scores.keys()];
+    const sa = scores.get(a) ?? 0, sb = scores.get(b) ?? 0;
+    const winner = sa === sb ? null : sa > sb ? a : b;
+    const title = winner ? `P${winner} wins!` : 'It\'s a tie!';
+    // The winner screen is in the winner's color.
+    panel([[title, 56, '#fff'], [`P${a} ${sa}   ·   P${b ?? '?'} ${sb}`, 36, '#fff'], ['', 10, '#fff'], [...again, '#fff']],
+      winner ? colorFor(winner) : '#8A94A6');
+  } else if (mode() === 'coop') {
+    const won = score >= COOP_TARGET;
+    panel([[won ? 'You did it!' : 'So close!', 52, '#2b3445'],
+      [`Team score: ${score} / ${COOP_TARGET}`, 36, '#2b3445'],
+      [won ? `with ${Math.ceil(timeLeft)} s to spare` : 'Try again together', 26, '#9B51E0'], [...again, '#2F80ED']]);
+  } else {
     const best = getBest();
     panel([['Time\'s up!', 52, '#2b3445'], [`Score: ${score}`, 40, '#2b3445'],
-      [`Best: ${best}${score >= best && score > 0 ? '  ★ New best!' : ''}`, 28, '#E8A400'],
-      ['A = play again   ·   B = menu', 28, '#2F80ED']]);
+      [`Best: ${best}${score >= best && score > 0 ? '  ★ New best!' : ''}`, 28, '#E8A400'], [...again, '#2F80ED']]);
   }
 }
 
@@ -217,8 +308,8 @@ function onButton({ playerId, button, state: s }) {
     if (state === 'over' && performance.now() - overAt < 1500) return;
     reset('playing');
     api.sound.play('start');
-  } else if (button === 'B') {
-    api.exit();
+  } else if (button === 'B' && playerId === api.players[0]?.playerId) {
+    api.exit(); // only P1 takes everyone back to the menu
   }
 }
 
@@ -228,7 +319,8 @@ export default {
   color: '#FF6B6B',
   icon: ICON,
   minPlayers: 1,
-  maxPlayers: 1,
+  maxPlayers: 2,
+  modes: ['solo', 'versus', 'coop'],
   mount(container, gameApi) {
     api = gameApi;
     canvas = document.createElement('canvas');
