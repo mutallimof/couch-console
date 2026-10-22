@@ -1,6 +1,8 @@
-// Turbo Karts tracks: four themed circuits with hills, jump crests, a bridge and a tunnel.
+// Turbo Karts tracks: five themed circuits with hills, jump crests, a bridge and tunnels.
 // buildTrack() turns a track definition into 3D meshes plus helpers to find where a kart is.
 import { makeScenery, makeItemBox, makeCoin } from './karts-models.js';
+import { CAR, cloneOf, fit } from './karts-assets.js';
+import { decorate } from './karts-decor.js';
 
 export const ROAD_HALF = 8;          // half the road width (meters)
 export const WALL = ROAD_HALF + 4.5; // barriers this far from the center line
@@ -42,9 +44,18 @@ export const TRACKS = [
       [-95, 0, 55], [-120, 0, 20], [-95, 0, -20], [-50, 0, -30]],
     pads: [0.15, 0.55], boxes: [0.08, 0.36, 0.72], coins: [0.24, 0.46, 0.86], tunnel: null,
   },
+  {
+    id: 'pirate', name: 'Pirate Cove', theme: 'pirate', blurb: 'A wooden boardwalk around a palm island. Watch out for the sea monster!',
+    sky: ['#3FA9F5', '#C6ECFF'], fog: [180, 600], ground: '#EBD9A8', road: '#9C7650', curb: ['#6B3F22', '#F1E3C2'], wall: ['#7C4A2D', '#D9B88F'],
+    water: '#1C8FC9', grip: 0.95, scale: 1.4,
+    points: [[0, 0, 0], [60, 0, -5], [110, 2, 15], [130, 6, 55], [110, 3, 95], [70, 0, 108], [38, 7, 82], [0, 0, 95],
+      [-45, 0, 122], [-95, 4, 102], [-122, 0, 58], [-102, 0, 12], [-55, 0, -8]],
+    pads: [0.2, 0.6], boxes: [0.1, 0.4, 0.74], coins: [0.28, 0.52, 0.9], tunnel: [0.8, 0.87],
+  },
 ];
 
-export function buildTrack(THREE, def) {
+// assets (optional): loaded models (Map path -> glTF) for item boxes, coins and trackside decor
+export function buildTrack(THREE, def, assets = null) {
   const P = def.points.map(([x, y, z]) => new THREE.Vector3(x * def.scale, y, z * def.scale));
   const curve = new THREE.CatmullRomCurve3(P, true, 'centripetal');
   const length = curve.getLength();
@@ -98,9 +109,17 @@ export function buildTrack(THREE, def) {
     group.add(new THREE.Points(stars, new THREE.PointsMaterial({ color: '#ffffff', size: 2.2, fog: false })));
   }
 
-  // Ground
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(800, 64), new THREE.MeshStandardMaterial({ color: def.ground, roughness: 1 }));
-  ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; ground.receiveShadow = true;
+  // Ground. Water tracks get a round sandy island in the middle of the sea.
+  let island = null;
+  if (def.water) {
+    const cx = pts.reduce((a, p) => a + p.x, 0) / SAMPLES, cz = pts.reduce((a, p) => a + p.z, 0) / SAMPLES;
+    island = { x: cx, z: cz, r: Math.max(...pts.map((p) => Math.hypot(p.x - cx, p.z - cz))) + 45 };
+    const sea = new THREE.Mesh(new THREE.CircleGeometry(900, 64), new THREE.MeshStandardMaterial({ color: def.water, roughness: 0.15, metalness: 0.2 }));
+    sea.rotation.x = -Math.PI / 2; sea.position.y = -0.6; sea.receiveShadow = true;
+    group.add(sea);
+  }
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(island ? island.r : 800, 64), new THREE.MeshStandardMaterial({ color: def.ground, roughness: 1 }));
+  ground.rotation.x = -Math.PI / 2; ground.position.set(island?.x ?? 0, -0.05, island?.z ?? 0); ground.receiveShadow = true;
   group.add(ground);
 
   // Road, center dashes, curbs, side slab (thickness) and barriers
@@ -151,7 +170,7 @@ export function buildTrack(THREE, def) {
   // Tunnel: a row of arches over part of the track
   if (def.tunnel) {
     const [a, b] = def.tunnel.map((t) => Math.round(t * SAMPLES));
-    const tMat = new THREE.MeshStandardMaterial({ color: def.theme === 'snow' ? '#DEE2E6' : '#A0522D', roughness: 0.9, side: THREE.DoubleSide });
+    const tMat = new THREE.MeshStandardMaterial({ color: { snow: '#DEE2E6', pirate: '#8D7B68' }[def.theme] || '#A0522D', roughness: 0.9, side: THREE.DoubleSide });
     const lights = new THREE.MeshBasicMaterial({ color: '#FFE066' });
     for (let i = a; i <= b; i += 3) {
       const k = at(i);
@@ -184,14 +203,23 @@ export function buildTrack(THREE, def) {
     return { i, side };
   }));
 
-  // Item boxes: a row of 4 across the road; coins: lines of 6 along the road
+  // Item boxes: a row of 4 across the road; coins: lines of 6 along the road.
+  // Uses the Toy Car Kit models when they're loaded.
+  const model = (path, size, fallback) => {
+    const c = cloneOf(assets?.get(path));
+    if (!c) return fallback();
+    const g = fit(THREE, c.object, size);
+    const box = new THREE.Box3().setFromObject(g);
+    g.children[0].position.y -= (box.min.y + box.max.y) / 2; // spin around the middle
+    return g;
+  };
   const boxes = def.boxes.flatMap((t) => [-6, -2, 2, 6].map((side) => {
-    const i = at(t * SAMPLES), mesh = makeItemBox(), p = edge(i, side, 1.4);
+    const i = at(t * SAMPLES), mesh = model(CAR('item-box'), 1.6, makeItemBox), p = edge(i, side, 1.4);
     mesh.position.copy(p); group.add(mesh);
     return { i, side, mesh, p, respawn: 0 };
   }));
   const coins = def.coins.flatMap((t, n) => Array.from({ length: 6 }, (_, j) => {
-    const i = at(t * SAMPLES + j * 5), side = (n % 2 ? -3 : 3), mesh = makeCoin(), p = edge(i, side, 1.1);
+    const i = at(t * SAMPLES + j * 5), side = (n % 2 ? -3 : 3), mesh = model(CAR('item-coin-gold'), 1.1, makeCoin), p = edge(i, side, 1.1);
     mesh.position.copy(p); group.add(mesh);
     return { i, side, mesh, p, respawn: 0 };
   }));
@@ -202,9 +230,18 @@ export function buildTrack(THREE, def) {
     const x = (Math.random() - 0.5) * 600, z = (Math.random() - 0.5) * 520 + 50;
     let minD = Infinity;
     for (let i = 0; i < SAMPLES; i += 4) minD = Math.min(minD, (pts[i].x - x) ** 2 + (pts[i].z - z) ** 2);
-    if (minD > (WALL + (def.theme === 'city' ? 12 : 6)) ** 2) spots.push([x, z, 0.7 + Math.random() * 0.8]);
+    const onIsland = !island || Math.hypot(x - island.x, z - island.z) < island.r - 8;
+    if (onIsland && minD > (WALL + (def.theme === 'city' ? 12 : 6)) ** 2) spots.push([x, z, 0.7 + Math.random() * 0.8]);
   }
-  group.add(makeScenery(def.theme, spots));
+  // Real models (grandstands, trees, palms...) when loaded; simple shapes otherwise.
+  // The city keeps its glowing code-built towers either way.
+  let mixers = [];
+  if (assets) {
+    const decor = decorate(THREE, { pts, tan, nor, SAMPLES, def, island }, assets, spots);
+    group.add(decor.group);
+    mixers = decor.mixers;
+  }
+  if (!assets || def.theme === 'city') group.add(makeScenery(def.theme === 'pirate' ? 'park' : def.theme, spots));
 
   // ---- Queries ----
 
@@ -227,5 +264,5 @@ export function buildTrack(THREE, def) {
     return { i: best, lateral, height };
   }
 
-  return { group, pts, tan, nor, SAMPLES, length, pads, boxes, coins, locate, at, def };
+  return { group, pts, tan, nor, SAMPLES, length, pads, boxes, coins, locate, at, def, mixers };
 }

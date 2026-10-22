@@ -363,7 +363,7 @@ html, body {
 .kart-card table { width: 100%; border-collapse: collapse; font-size: 22px; font-weight: 700; }
 .kart-card td { padding: min(8px, 1vh) 24px; border-bottom: 1px solid #EEF2F7; text-align: left; }
 .kart-card .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; background: var(--c); }
-.kart-card p { margin: 14px 0 18px; color: #2F80ED; font-weight: 900; font-size: 22px; }
+.kart-card p { margin: 14px 0 18px; padding: 0 20px; color: #2F80ED; font-weight: 900; font-size: 20px; }
 
 /* ---------- Shared 3D games ---------- */
 .stage3d { position: absolute; inset: 0; overflow: hidden; background: #BFE3FF; }
@@ -551,20 +551,22 @@ html, body {
 .ks-big { width: clamp(64px, 14vh, 140px); height: clamp(64px, 14vh, 140px); border-radius: 50%; background: rgba(255, 255, 255, 0.9); }
 .ks-name { font-size: 32px; }
 .ks-kart-name { opacity: 0.75; font-weight: 700; }
-.ks-chars { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; opacity: 0.55; }
+.ks-chars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; opacity: 0.55; }
 .ks-chars img { width: 100%; aspect-ratio: 1; border-radius: 12px; background: rgba(255, 255, 255, 0.85); border: 3px solid transparent; box-sizing: border-box; }
 .ks-chars img.focused { border-color: var(--c); transform: scale(1.06); }
 .ks-karts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; opacity: 0.55; }
 .ks-chars.active, .ks-karts.active { opacity: 1; }
-.ks-kart { padding: 8px 10px; border-radius: 14px; background: rgba(255, 255, 255, 0.1); border: 3px solid transparent; min-width: 0;
-  display: grid; grid-template-columns: auto auto; justify-content: start; gap: 2px 6px; align-items: center; font-size: 12px; font-weight: 700; }
-.ks-kart b { grid-column: 1 / -1; font-size: 18px; }
-.ks-kart em { display: flex; gap: 2px; }
-.ks-kart i { width: 7px; height: 9px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); }
-.ks-kart i.on { background: #FFE066; }
+.ks-kart { padding: 6px 4px; text-align: center; border-radius: 12px; background: rgba(255, 255, 255, 0.1); border: 3px solid transparent; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ks-kart b { font-size: 14px; }
 .ks-kart.focused { border-color: var(--c); background: rgba(255, 255, 255, 0.2); }
+/* the focused kart's stats */
+.ks-stats { display: grid; grid-template-columns: auto auto auto auto; justify-content: start; gap: 4px 10px; align-items: center; font-size: 14px; font-weight: 700; }
+.ks-stats em { display: flex; gap: 3px; }
+.ks-stats i { width: 12px; height: 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); }
+.ks-stats i.on { background: #FFE066; }
 .ks-hint { margin: 0; font-weight: 900; opacity: 0.85; text-align: center; }
-.ks-tracks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; width: min(1100px, 100%); }
+.ks-tracks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; width: min(1100px, 100%); }
 .ks-track { min-height: 20vh; border-radius: 22px; padding: 20px 24px; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px;
   background: linear-gradient(180deg, var(--a) 0%, var(--a) 55%, var(--b) 56%); border: 5px solid transparent; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); }
 .ks-track b { font-size: 32px; }
@@ -577,3 +579,6 @@ html, body {
   background: rgba(15, 20, 35, 0.88); gap: 6px; }
 .video-box h1 { margin: 0 0 8px; font-size: 44px; font-weight: 900; }
 .video-box p { margin: 4px; font-size: 24px; line-height: 1.5; }
+.kart-loading { z-index: 6; background: #9FD3FF; text-align: center; }
+.kart-progress { width: min(420px, 70vw); height: 18px; margin-top: 14px; border-radius: 9px; background: rgba(43, 52, 69, 0.2); overflow: hidden; }
+.kart-progress i { display: block; width: 0; height: 100%; background: #2F80ED; transition: width 0.2s; }

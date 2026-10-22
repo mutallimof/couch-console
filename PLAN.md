@@ -284,6 +284,9 @@ Still original: no Nintendo characters, tracks, items or names.
 
 ### Phase 20: Real 3D models
 - Free CC0 model packs (downloaded by the user) replace the code-built karts, characters and props where available, with code-built fallbacks.
+- Packs in `public/assets/`: Kenney Toy Car Kit (8 cars, item box, coin, trees), Kenney Racing Kit (grandstands, banners, light posts, tents, flags), Quaternius Pirate Kit (6 animated pirates, palms, rocks, houses, ships, a sea monster).
+- 14 characters (6 pirates + 8 code-built animals), 8 cars, and a 5th track: **Pirate Cove** (an island in the sea).
+- Pirates are animated: idle while driving, a hit reaction when spun out, waving at the finish.
 
 ---
 

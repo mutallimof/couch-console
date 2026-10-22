@@ -8,6 +8,8 @@ import { buildTrack, TRACKS, ROAD_HALF, WALL } from './kart-track.js';
 import { CHARACTERS, KARTS, ITEM_ICONS, kartPhysics, rollItem } from './karts-data.js';
 import { setThree, makeRacer, makeItemMesh, makePortraits } from './karts-models.js';
 import { createSelect } from './karts-select.js';
+import { CAR, PIRATE, loadAll } from './karts-assets.js';
+import { THEME_MODELS } from './karts-decor.js';
 
 const LAPS = 3;
 const RACERS = 8;
@@ -24,6 +26,7 @@ let THREE = null;
 let api, root, renderer, scene, sun, track, frame, lastT, resizeObserver, minimap, mctx, mapBox;
 let karts = [], humans = [], orbs = [], slicks = [], state, timer, raceTime, overAt, paused = false, alive = 0;
 let portraits, select, selection, lastCount;
+const assets = new Map(); // loaded 3D models: path -> glTF (missing = use the code-built ones)
 const input = new Map(); // playerId -> { steer, gas, brake, left, right }
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -58,7 +61,23 @@ function clearRace() {
   karts = []; humans = []; orbs = []; slicks = [];
 }
 
-function startRace() {
+// Load models with a progress bar. Resolves false if the game was closed meanwhile.
+async function loadModels(paths) {
+  const token = alive, todo = paths.filter((p) => !assets.has(p));
+  if (!todo.length) return true;
+  const el = document.createElement('div');
+  el.className = 'kart-loading';
+  el.innerHTML = '<div><div>Loading…</div><div class="kart-progress"><i></i></div></div>';
+  root.append(el);
+  const bar = el.querySelector('i');
+  const models = await loadAll(todo, (f) => { bar.style.width = `${Math.round(f * 100)}%`; });
+  if (token !== alive) return false;
+  todo.forEach((p, i) => { if (models[i]) assets.set(p, models[i]); });
+  el.remove();
+  return true;
+}
+
+async function startRace() {
   clearRace();
   // Build the chosen track (reuse it if it's the same one)
   const def = TRACKS[selection.track];
@@ -66,8 +85,11 @@ function startRace() {
     if (track) {
       scene.remove(track.group);
       track.group.traverse((o) => { o.geometry?.dispose(); [].concat(o.material || []).forEach((m) => { m.map?.dispose(); m.dispose(); }); });
+      track = null;
     }
-    track = buildTrack(THREE, def);
+    state = 'loading';
+    if (!(await loadModels([...THEME_MODELS.common, ...(THEME_MODELS[def.theme] || [])]))) return;
+    track = buildTrack(THREE, def, assets);
     scene.add(track.group);
     scene.fog = new THREE.Fog(def.sky[1], def.fog[0], def.fog[1]);
     sun.intensity = def.night ? 0.6 : 2.2;
@@ -88,7 +110,8 @@ function startRace() {
     const side = n % 2 ? -3.5 : 3.5;
     const p = track.pts[i], nr = track.nor[i], t = track.tan[i];
     const color = k.color || k.char.color;
-    const mesh = makeRacer(k.char, k.kart, k.playerId ? color : k.char.accent === '#FFFFFF' ? k.char.color : k.char.accent);
+    const mesh = makeRacer(k.char, k.kart, k.playerId ? color : k.char.accent === '#FFFFFF' ? k.char.color : k.char.accent, assets);
+    mesh.marker.visible = !!k.playerId; // a colored arrow over each player's kart
     scene.add(mesh.root, mesh.shadow);
     return {
       ...k, name: k.playerId ? `P${k.playerId}` : k.char.name, color, mesh, phys: kartPhysics(k.kart),
@@ -241,6 +264,7 @@ function lapCheck(k, prev) {
     k.lap++; k.half = false;
     if (k.lap > LAPS && k.finished == null) {
       k.finished = raceTime;
+      k.mesh.anim?.play(place(k) <= 3 ? 'Wave' : 'Yes', true);
       if (k.playerId) { api.sound.play(place(k) === 1 ? 'strike' : 'end'); api.rumble(k.playerId, 250); }
     } else if (k.playerId && k.lap === LAPS) { k.finalLapAt = raceTime; api.sound.play('start'); }
   } else if (prev < N * 0.2 && k.idx > N * 0.8) {             // went back over the line
@@ -275,6 +299,7 @@ function spinOut(k) {
   if (k.shield > 0) { k.shield = 0; api.sound.play('pop'); return; }
   k.spin = 1.1; k.v *= 0.35; k.drifting = false;
   k.coins = Math.max(0, k.coins - 3);
+  k.mesh.anim?.play('HitReact');
   if (k.playerId) { api.rumble(k.playerId, 300); api.sound.play('bomb'); }
 }
 
@@ -383,9 +408,11 @@ function update(dt) {
 
 // ---------- Rendering ----------
 
-function syncMeshes(t) {
+function syncMeshes(t, dt) {
+  if (!paused) track.mixers.forEach((mx) => mx.update(dt));
   for (const k of karts) {
     const m = k.mesh;
+    if (!paused) m.anim?.mixer.update(dt);
     m.root.position.set(k.x, k.y, k.z);
     m.root.rotation.set(0, k.heading + (k.drifting ? k.driftDir * -0.35 : 0), 0);
     // tilt with the road slope, lean into turns, bob a little in the air
@@ -393,7 +420,9 @@ function syncMeshes(t) {
     const slope = Math.atan2(ahead.y - behind.y, Math.hypot(ahead.x - behind.x, ahead.z - behind.z));
     m.body.rotation.x = k.air ? -k.vy * 0.02 : -slope;
     m.body.rotation.z = k.roll;
-    m.wheels.forEach((w) => { w.rotation.x += k.v * 0.016; });
+    // (model cars are turned around, so their wheels spin the other way)
+    m.wheels.forEach((w) => { w.rotation.x += (m.flipWheels ? -1 : 1) * k.v * 0.016; });
+    m.marker.position.y = 3.1 + Math.sin(t * 0.005) * 0.15;
     m.driver.rotation.y = -((input.get(k.playerId)?.steer) || 0) * 0.3;
     const sparks = k.drifting && k.charge > 0.3;
     m.sparks.forEach((s) => { s.visible = sparks; s.scale.setScalar(0.5 + Math.random() * 0.9); s.rotation.set(Math.random() * 6, Math.random() * 6, 0); });
@@ -540,7 +569,7 @@ function loop(t) {
   lastT = t;
   if (!paused) update(dt);
   if (karts.length) {
-    syncMeshes(t);
+    syncMeshes(t, dt);
     humans.forEach((h) => moveCamera(h, dt));
   }
   render();
@@ -582,6 +611,11 @@ async function init(token) {
   }
   if (token !== alive) return; // closed while loading
   setThree(THREE);
+  // The cars, pirates, item boxes and coins (the track scenery loads when a track is picked)
+  root.querySelector('.kart-loading').remove();
+  const ok = await loadModels([...KARTS.map((k) => CAR(k.model)), ...CHARACTERS.filter((c) => c.model).map((c) => PIRATE(c.model)),
+    CAR('item-box'), CAR('item-coin-gold')]);
+  if (!ok) return;
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setScissorTest(true);
@@ -600,8 +634,7 @@ async function init(token) {
   Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 160 });
   sun.shadow.bias = -0.0005;
   scene.add(sun, sun.target);
-  portraits = makePortraits(renderer, CHARACTERS);
-  root.querySelector('.kart-loading').remove();
+  portraits = makePortraits(renderer, CHARACTERS, assets);
   resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(root);
   resize();

@@ -36,9 +36,9 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
         <div class="ks-chars ${s.step === 'char' ? 'active' : ''}">${CHARACTERS.map((ch, i) =>
           `<img class="${i === s.char ? 'focused' : ''}" src="${portraits[ch.id]}" alt="">`).join('')}</div>
         <div class="ks-karts ${s.step === 'kart' ? 'active' : ''}">${KARTS.map((kk, i) => `
-          <div class="ks-kart ${i === s.kart ? 'focused' : ''}"><b>${kk.name}</b>
-            <span>Spd</span><em>${bars(kk.speed)}</em><span>Acc</span><em>${bars(kk.accel)}</em>
-            <span>Hnd</span><em>${bars(kk.handling)}</em><span>Wgt</span><em>${bars(kk.weight)}</em></div>`).join('')}</div>
+          <div class="ks-kart ${i === s.kart ? 'focused' : ''}"><b>${kk.name}</b></div>`).join('')}</div>
+        <div class="ks-stats"><span>Speed</span><em>${bars(k.speed)}</em><span>Accel</span><em>${bars(k.accel)}</em>
+          <span>Handling</span><em>${bars(k.handling)}</em><span>Weight</span><em>${bars(k.weight)}</em></div>
         <p class="ks-hint">${{ char: 'D-pad: character · A = next', kart: '◀ ▶ kart · A = ready · B = back', ready: 'Ready! (B = change)' }[s.step]}</p>
       </div>`;
     }).join('')}</div>`;
@@ -57,7 +57,7 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
     const s = seats.find((x) => x.playerId === playerId);
     if (!s) return;
     if (s.step === 'char') {
-      const cols = 8, n = CHARACTERS.length; // one row of characters
+      const cols = 7, n = CHARACTERS.length; // two rows of 7 characters
       const d = { LEFT: -1, RIGHT: 1, UP: -cols, DOWN: cols }[button];
       if (d) { s.char = (s.char + d + n) % n; sound.play('hover'); }
       else if (button === 'A') { s.step = 'kart'; sound.play('select'); }

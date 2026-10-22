@@ -76,7 +76,7 @@
   <pre id="debug" class="debug" hidden></pre>
 
   <!-- 3D games import "three"; our server serves it from node_modules -->
-  <script type="importmap">{ "imports": { "three": "/vendor/three.module.js" } }</script>
+  <script type="importmap">{ "imports": { "three": "/vendor/three.module.js", "three/addons/": "/vendor/three-addons/" } }</script>
   <!-- socket.io client is served by the Node server -->
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="/js/console/main.js"></script>

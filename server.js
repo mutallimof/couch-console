@@ -39,6 +39,8 @@ app.use(express.static(fileURLToPath(new URL('./public', import.meta.url))));
 // Three.js (3D games) is served from node_modules, so it works without internet.
 app.get('/vendor/three.module.js', (req, res) =>
   res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));
+// Three.js add-ons (model loader etc.), imported as "three/addons/..."
+app.use('/vendor/three-addons', express.static(file('./node_modules/three/examples/jsm')));
 
 // ---------- Channels (Phase 17) ----------
 // Photos: any pictures you put in the photos/ folder.

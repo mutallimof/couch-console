@@ -1,8 +1,13 @@
-// Turbo Karts models, built from code (no model files needed).
-// When real 3D model packs are added later, these are the fallbacks.
+// Turbo Karts models: real models from the packs (cars, pirates) when they're loaded,
+// plus code-built characters, karts and track objects (also the fallbacks).
+
+import { CAR, PIRATE, cloneOf } from './karts-assets.js';
 
 let THREE;
 export function setThree(t) { THREE = t; }
+
+const CAR_SCALE = 3.2;      // Toy Car Kit cars are tiny; this makes them kart-sized (~2.8 m long)
+const PIRATE_HEIGHT = 1.45;  // pirates are scaled to this height (m) to fit the cars
 
 const std = (color, rough = 0.55, metal = 0, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
 const mesh = (geo, mat, x = 0, y = 0, z = 0, cast = true) => {
@@ -130,12 +135,53 @@ export function makeKart(kart, color) {
   return { group: g, wheels, seatZ: -0.35, seatY: 0.62 };
 }
 
-// Kart + driver + effects, ready to drive
-export function makeRacer(character, kart, color) {
-  const k = makeKart(kart, color);
-  const driver = makeCharacter(character);
+// A Toy Car Kit car (turned to face +z), with its four wheels found by name so they can spin
+function assetKart(gltf, kart) {
+  const { object } = cloneOf(gltf);
+  object.scale.setScalar(CAR_SCALE);
+  object.rotation.y = Math.PI; // the models face -z; our karts face +z
+  const g = new THREE.Group();
+  g.add(object);
+  const wheels = [];
+  object.traverse((o) => { if (/^wheel-/.test(o.name)) wheels.push(o); });
+  return { group: g, wheels, seatY: kart.seat[0], seatZ: kart.seat[1], flipWheels: true };
+}
+
+// A pirate driver (animated), or null if the model isn't loaded
+function assetDriver(gltf) {
+  const c = cloneOf(gltf);
+  if (!c) return null;
+  const obj = c.object;
+  obj.scale.setScalar(PIRATE_HEIGHT / 1.55); // pirates are about 1.55 m tall in the pack
+  const mixer = new THREE.AnimationMixer(obj);
+  const actions = Object.fromEntries(c.animations.map((a) => [a.name, mixer.clipAction(a)]));
+  let current = actions.Idle;
+  current?.play();
+  mixer.update(Math.random() * 2); // don't all bob in sync
+  // Switch to another animation (smoothly). One-shot animations go back to Idle when done.
+  const play = (name, loop = false) => {
+    const next = actions[name];
+    if (!next || next === current) return;
+    next.reset();
+    next.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+    next.clampWhenFinished = !loop;
+    current?.fadeOut(0.15);
+    next.fadeIn(0.15).play();
+    current = next;
+  };
+  mixer.addEventListener('finished', (e) => { if (e.action === current) play('Idle', true); });
+  return { object: obj, mixer, actions, play };
+}
+
+// Kart + driver + effects, ready to drive. `assets` = loaded models (Map path -> glTF), optional.
+export function makeRacer(character, kart, color, assets) {
+  const carModel = kart.model && assets?.get(CAR(kart.model));
+  const k = carModel ? assetKart(carModel, kart) : makeKart(kart, color);
+  const pirate = character.model && assets?.get(PIRATE(character.model));
+  const anim = pirate ? assetDriver(pirate) : null;
+  const driver = anim ? anim.object : makeCharacter(character);
   driver.position.set(0, k.seatY, k.seatZ);
-  driver.scale.setScalar(0.95);
+  if (!anim) driver.scale.setScalar(carModel ? 0.85 : 0.95);
   k.group.add(driver);
   // drift sparks, boost flame, shield bubble, blob shadow
   const sparkMat = new THREE.MeshBasicMaterial({ color: '#56CCF2' });
@@ -148,7 +194,11 @@ export function makeRacer(character, kart, color) {
   shadow.rotation.x = -Math.PI / 2; shadow.scale.set(0.8, 1.2, 1);
   const root = new THREE.Group();
   root.add(k.group);
-  return { root, body: k.group, wheels: k.wheels, driver, sparks, sparkMat, flame, shield, shadow };
+  // A floating marker in the player's color (set visible for human players)
+  const marker = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.6, 4), new THREE.MeshBasicMaterial({ color }));
+  marker.rotation.x = Math.PI; marker.position.y = 3.1; marker.visible = false;
+  k.group.add(marker);
+  return { root, body: k.group, wheels: k.wheels, flipWheels: !!k.flipWheels, driver, anim, marker, sparks, sparkMat, flame, shield, shadow };
 }
 
 // ---------- Track objects ----------
@@ -240,7 +290,8 @@ export function makeScenery(theme, spots) {
 
 // ---------- Portraits: render a character's head to a small image for menus/HUD ----------
 
-export function makePortraits(renderer, characters) {
+// assets (optional): loaded models, so the pirates are drawn from their real models
+export function makePortraits(renderer, characters, assets) {
   const size = 160;
   const target = new THREE.WebGLRenderTarget(size, size);
   target.texture.colorSpace = THREE.SRGBColorSpace; // so colors match the screen
@@ -248,13 +299,23 @@ export function makePortraits(renderer, characters) {
   scene.add(new THREE.HemisphereLight('#ffffff', '#666666', 2.2));
   const sun = new THREE.DirectionalLight('#ffffff', 2); sun.position.set(2, 3, 4); scene.add(sun);
   const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-  cam.position.set(0.6, 1.25, 2.6); cam.lookAt(0, 0.95, 0);
   const pixels = new Uint8Array(size * size * 4);
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d');
   const out = {};
   for (const c of characters) {
-    const ch = makeCharacter(c);
+    const pirate = c.model && assets?.get(PIRATE(c.model));
+    const anim = pirate ? assetDriver(pirate) : null;
+    const ch = anim ? anim.object : makeCharacter(c);
+    if (anim) {
+      // frame the pirate's head: find its top in the idle pose
+      anim.mixer.setTime(0.5);
+      ch.updateMatrixWorld(true);
+      const top = new THREE.Box3().setFromObject(ch, true).max.y;
+      cam.position.set(0.55, top - 0.1, 2.2); cam.lookAt(0, top - 0.3, 0);
+    } else {
+      cam.position.set(0.6, 1.25, 2.6); cam.lookAt(0, 0.95, 0);
+    }
     scene.add(ch);
     renderer.setRenderTarget(target);
     renderer.setClearColor(0x000000, 0);

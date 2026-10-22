@@ -1,7 +1,14 @@
 // Turbo Karts data: the original characters, karts and items.
 // Stats go from 1 (low) to 5 (high).
 
+// model: a pirate from the Pirate Kit (animated). No model = drawn in code (the animals).
 export const CHARACTERS = [
+  { id: 'anne', name: 'Anne', model: 'Characters_Anne', color: '#C08457', accent: '#F4D35E' },
+  { id: 'barbarossa', name: 'Barbarossa', model: 'Characters_Captain_Barbarossa', color: '#C92A2A', accent: '#FFD43B' },
+  { id: 'henry', name: 'Henry', model: 'Characters_Henry', color: '#8D6E63', accent: '#E03131' },
+  { id: 'mako', name: 'Mako', model: 'Characters_Mako', color: '#868E96', accent: '#4DABF7' },
+  { id: 'sharky', name: 'Sharky', model: 'Characters_Sharky', color: '#4C6EF5', accent: '#A5D8FF' },
+  { id: 'skelly', name: 'Skelly', model: 'Characters_Skeleton', color: '#CED4DA', accent: '#F59F00' },
   { id: 'pip', name: 'Pip', kind: 'bird', color: '#F2C94C', accent: '#F2994A' },
   { id: 'mochi', name: 'Mochi', kind: 'cat', color: '#F4F1EC', accent: '#F7A8B8' },
   { id: 'bruno', name: 'Bruno', kind: 'bear', color: '#9C6B3C', accent: '#E5C49F' },
@@ -12,12 +19,19 @@ export const CHARACTERS = [
   { id: 'nova', name: 'Nova', kind: 'alien', color: '#56CCF2', accent: '#BB6BD9' },
 ];
 
+// Toy Car Kit vehicles. open = the driver sits in a cockpit; closed cars have the driver
+// pop out of the roof (toy style). seat = [height, forward] of the driver's feet (meters).
+// shape = the code-built kart used if the model can't be loaded.
 // speed = top speed · accel = acceleration · handling = turning · weight = bumping power
 export const KARTS = [
-  { id: 'zippy', name: 'Zippy', shape: 'light', speed: 2, accel: 5, handling: 4, weight: 1 },
-  { id: 'classic', name: 'Classic', shape: 'classic', speed: 3, accel: 3, handling: 3, weight: 3 },
-  { id: 'brute', name: 'Brute', shape: 'heavy', speed: 5, accel: 2, handling: 2, weight: 5 },
-  { id: 'swift', name: 'Swift', shape: 'sport', speed: 3, accel: 4, handling: 5, weight: 2 },
+  { id: 'speedster', name: 'Speedster', model: 'vehicle-speedster', open: true, seat: [0.4, -0.3], shape: 'sport', speed: 4, accel: 4, handling: 3, weight: 2 },
+  { id: 'roadster', name: 'Roadster', model: 'vehicle-vintage-racer', open: true, seat: [0.3, -0.25], shape: 'light', speed: 2, accel: 5, handling: 5, weight: 2 },
+  { id: 'dragster', name: 'Dragster', model: 'vehicle-drag-racer', open: true, seat: [0.5, -0.85], shape: 'sport', speed: 5, accel: 2, handling: 2, weight: 3 },
+  { id: 'racer', name: 'Racer', model: 'vehicle-racer', open: false, seat: [0.95, -0.1], shape: 'classic', speed: 3, accel: 3, handling: 3, weight: 3 },
+  { id: 'coupe', name: 'Coupe', model: 'vehicle-racer-low', open: false, seat: [0.85, -0.1], shape: 'classic', speed: 4, accel: 3, handling: 4, weight: 2 },
+  { id: 'monster', name: 'Monster', model: 'vehicle-monster-truck', open: false, seat: [1.75, -0.15], shape: 'heavy', speed: 3, accel: 2, handling: 2, weight: 5 },
+  { id: 'trekker', name: 'Trekker', model: 'vehicle-suv', open: false, seat: [1.05, -0.15], shape: 'heavy', speed: 3, accel: 3, handling: 2, weight: 4 },
+  { id: 'hauler', name: 'Hauler', model: 'vehicle-truck', open: false, seat: [0.85, 0.55], shape: 'heavy', speed: 2, accel: 3, handling: 3, weight: 5 },
 ];
 
 // Items from item boxes. Further back in the race = better items.
