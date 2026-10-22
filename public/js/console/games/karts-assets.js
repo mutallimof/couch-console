@@ -1,21 +1,27 @@
 // Turbo Karts: real 3D models from the free CC0 packs in public/assets/
 // (Kenney Toy Car Kit + Racing Kit, Quaternius Pirate Kit). Each model is loaded once and
 // cloned. Anything that fails to load just falls back to the code-built models.
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
+// The loader is imported only when a model is first needed, so a problem with it can never
+// stop the console from starting (the menu imports this file).
 
 const BASE = '/assets/';
 export const CAR = (n) => `car-kit/Models/GLB format/${n}.glb`;
 export const RACE = (n) => `racing-kit/Models/GLTF format/${n}.glb`;
 export const PIRATE = (n) => `pirate-kit/glTF/${n}.gltf`;
 
-const loader = new GLTFLoader();
+let addons = null, cloneSkinned = null;
 const cache = new Map(); // path -> Promise<gltf | null>
+
+function getLoader() {
+  addons ??= Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/utils/SkeletonUtils.js')])
+    .then(([gltf, skel]) => { cloneSkinned = skel.clone; return new gltf.GLTFLoader(); });
+  return addons;
+}
 
 // Load a model (once). Resolves to the glTF, or null if it couldn't be loaded.
 export function load(path) {
   if (!cache.has(path)) {
-    cache.set(path, loader.loadAsync(BASE + path).then((g) => {
+    cache.set(path, getLoader().then((loader) => loader.loadAsync(BASE + path)).then((g) => {
       g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
       return g;
     }).catch((err) => { console.warn('Model not loaded:', path, err.message); return null; }));
@@ -39,7 +45,7 @@ export async function instance(path) {
 
 // Copy synchronously from an already-loaded glTF
 export function cloneOf(g) {
-  return g ? { object: cloneSkinned(g.scene), animations: g.animations } : null;
+  return g && cloneSkinned ? { object: cloneSkinned(g.scene), animations: g.animations } : null;
 }
 
 // Scale an object so its largest size is `size` meters and it sits on y = 0 (centered)
