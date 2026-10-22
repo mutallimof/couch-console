@@ -22,11 +22,20 @@ const file = (path) => fileURLToPath(new URL(path, import.meta.url));
 const CERT = file('./certs/cert.pem'), KEY = file('./certs/key.pem'), ROOT_CA = file('./certs/rootCA.crt');
 const httpsReady = existsSync(CERT) && existsSync(KEY);
 
-// This laptop's address on the Wi-Fi (e.g. 192.168.1.23)
+// This laptop's address on the Wi-Fi (e.g. 192.168.1.23).
+// Skips virtual adapters (WSL, Hyper-V, VirtualBox, VMware, Docker), which phones can't reach.
+// Set LAN_IP=192.168.x.y to choose the address yourself.
+const VIRTUAL = /vEthernet|WSL|Hyper-V|VirtualBox|VMware|VMnet|Docker|Loopback|Bluetooth|Tailscale|ZeroTier|vboxnet|docker|br-|veth/i;
+function lanAddresses() {
+  return Object.entries(networkInterfaces()).flatMap(([name, list]) =>
+    (list || []).filter((a) => a.family === 'IPv4' && !a.internal).map((a) => ({ name, address: a.address })));
+}
 function lanIp() {
-  const all = Object.values(networkInterfaces()).flat().filter((a) => a && a.family === 'IPv4' && !a.internal);
-  const home = all.find((a) => /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address));
-  return (home || all[0])?.address;
+  if (process.env.LAN_IP) return process.env.LAN_IP;
+  const all = lanAddresses(), real = all.filter((a) => !VIRTUAL.test(a.name));
+  const isPrivate = (a) => /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address);
+  const wifi = real.find((a) => /Wi-?Fi|Wireless|WLAN|wlan/i.test(a.name) && isPrivate(a));
+  return (wifi || real.find(isPrivate) || real[0] || all[0])?.address;
 }
 
 const app = express();
@@ -264,5 +273,7 @@ httpsServer?.listen(HTTPS_PORT, () => {
   const ip = lanIp();
   console.log(`Local HTTPS is on. Open this on the laptop:  https://${ip || 'localhost'}:${HTTPS_PORT}`);
   console.log(`Phones on the same Wi-Fi just scan the QR code (no tunnel needed).`);
+  // Show every network address, so a wrong pick is easy to spot (fix it with LAN_IP=...)
+  for (const a of lanAddresses()) console.log(`  network "${a.name}": ${a.address}${a.address === ip ? '   <- used for the QR code' : ''}`);
   console.log(`First time on a phone? Trust the certificate: http://${ip}:${PORT}/rootCA.crt  (see README)`);
 });

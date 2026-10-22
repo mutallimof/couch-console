@@ -154,6 +154,11 @@ Instead of the cloudflared tunnel, phones on the **same Wi-Fi** as your laptop c
 
 After that, just scan the QR code as usual. It points straight to your laptop.
 If your laptop's Wi-Fi address changes (another network), run `npm run certs` again.
+
+**Phone can't open the QR link?** Look at the link printed under the QR code:
+- It starts with `http://localhost`: the local setup isn't on (no `certs` folder). Do the steps above, or use the cloudflared tunnel.
+- It has an address like `https://172.x.x.x:3443` that isn't your Wi-Fi: `npm start` lists every network address and marks the one it used. Pick your Wi-Fi one and start with it, e.g. in PowerShell: `$env:LAN_IP="192.168.1.23"; npm start`
+- The address looks right but nothing loads: make sure the phone is on the **same Wi-Fi** (not mobile data or a guest network), the Wi-Fi is set to **Private** in Windows, and Node.js is allowed in Windows Firewall.
 The `certs` folder holds a private key: it is **never** uploaded to GitHub (it's in `.gitignore`).
 
 ---
