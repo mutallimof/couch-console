@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f9fc">
+  <title>Couch Console Remote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/remote.css">
+</head>
+<body>
+  <header class="top">
+    <div id="badge" class="badge">–</div>
+    <div class="conn"><span id="dot" class="dot"></span><span id="conn-text">Connecting…</span></div>
+  </header>
+
+  <main class="center">
+    <!-- Shown while joining / when connected -->
+    <section id="joined" class="panel" hidden>
+      <p class="big">You're <span id="player-name">P1</span></p>
+      <p class="muted">Look at the laptop screen.</p>
+    </section>
+
+    <!-- Shown when there's no room in the link, or the room is gone -->
+    <form id="join-form" class="panel" hidden>
+      <p id="message" class="message"></p>
+      <label for="room-input" class="muted">Enter the room code from the laptop</label>
+      <input id="room-input" class="room-input" maxlength="4" autocomplete="off"
+             autocapitalize="characters" spellcheck="false" inputmode="text" placeholder="ABCD">
+      <button class="join-btn" type="submit">Join</button>
+    </form>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/remote/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+:root {
+  --bg: #f7f9fc;
+  --card: #ffffff;
+  --text: #2b3445;
+  --muted: #8a94a6;
+  --player: #b8c0cc;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* No scrolling, zooming or rubber-banding on the phone. */
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: 'Nunito', system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+}
+
+.badge {
+  min-width: 64px; height: 64px;
+  padding: 0 12px;
+  border-radius: 32px;
+  display: grid; place-items: center;
+  font-size: 28px; font-weight: 900;
+  color: #fff;
+  background: var(--player);
+}
+
+.conn { display: flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 700; }
+.dot { width: 14px; height: 14px; border-radius: 50%; background: #c0392b; }
+.dot.on { background: #27ae60; }
+
+.center { flex: 1; display: grid; place-items: center; }
+
+.panel {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.panel[hidden] { display: none; }
+
+.big { margin: 0; font-size: 36px; font-weight: 900; }
+.big span { color: var(--player); }
+.muted { margin: 0; color: var(--muted); }
+.message { margin: 0; min-height: 1.4em; color: #c0392b; font-weight: 700; }
+
+/* Inputs need normal touch behavior so they can be focused. */
+.room-input, .join-btn { touch-action: manipulation; font-family: inherit; }
+
+.room-input {
+  width: 100%;
+  font-size: 40px;           /* >= 16px also stops iOS auto-zoom */
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  text-align: center;
+  text-transform: uppercase;
+  padding: 12px;
+  border: 3px solid #dbe2ec;
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--text);
+}
+
+.join-btn {
+  width: 100%;
+  padding: 16px;
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+  background: #2F80ED;
+  border: none;
+  border-radius: 16px;
+}

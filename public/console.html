@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Couch Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/console.css">
+</head>
+<body>
+  <main id="pairing" class="pairing">
+    <h1 class="title">Couch Console</h1>
+
+    <div class="pair-card">
+      <div class="qr-box">
+        <img id="qr" alt="QR code to join with your phone" hidden>
+        <div id="qr-loading" class="qr-loading">Loading…</div>
+      </div>
+      <div class="pair-info">
+        <p class="hint">Scan with your phone</p>
+        <p class="room-label">Room code</p>
+        <p id="room-code" class="room-code">····</p>
+        <p id="join-url" class="join-url"></p>
+      </div>
+    </div>
+
+    <div id="slots" class="slots"></div>
+    <p id="status" class="status"></p>
+  </main>
+
+  <!-- socket.io client is served by the Node server -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/console/main.js"></script>
+</body>
+</html>

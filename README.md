@@ -6,7 +6,7 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> 🚧 Work in progress. Phase 0 (project setup) is done. The server and games come in later phases. See `PLAN.md` for the roadmap.
+> 🚧 Work in progress. Done so far: Phase 1, pairing a phone with the laptop by QR code. Buttons, motion and games come in later phases. See `PLAN.md` for the roadmap.
 
 ---
 
@@ -40,8 +40,6 @@ A console you run in your web browser and control with your phone.
 
 ## How to run it
 
-> This works from Phase 1 onwards (the server file doesn't exist yet in Phase 0).
-
 You need **two terminal windows**, both opened in the `couch-console` folder.
 
 **Terminal 1: start the server**
@@ -59,7 +57,14 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 **Then:**
 1. Open that `https://…trycloudflare.com` link **on your laptop**.
 2. Scan the QR code on the laptop screen with your phone's camera.
-3. On the phone, tap **"Tap to start"** and **Allow** motion access.
+3. The phone shows a big **P1** badge, and the laptop shows **P1 Connected**.
+
+No camera handy? Open `https://…trycloudflare.com/remote.html` on the phone and type the 4-letter room code shown on the laptop.
+
+**Good to know**
+- Refreshing the phone page keeps you as P1.
+- If you close the phone page, the laptop shows P1 as "Waiting…". For 30 seconds that slot is saved for the same phone, so another phone can't take it until then.
+- Refreshing the laptop page makes a new room and QR code. Scan the new one with your phone.
 
 To stop everything, press `Ctrl + C` in each terminal.
 
@@ -72,7 +77,10 @@ server.js          the Node server (static files + real-time relay)
 public/            everything the browser loads
   console.html     the laptop page
   remote.html      the phone page
-  js/              JavaScript for both pages
+  css/             styles for both pages
+  js/shared/       constants both sides use (event names, player colors)
+  js/console/      laptop code
+  js/remote/       phone code
 PLAN.md            the full spec and phase list
 CLAUDE.md          working rules for the AI assistant
 ```
