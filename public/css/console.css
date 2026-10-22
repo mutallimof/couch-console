@@ -363,3 +363,20 @@ html, body {
 .kart-card td { padding: 8px 24px; border-bottom: 1px solid #EEF2F7; text-align: left; }
 .kart-card .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; background: var(--c); }
 .kart-card p { margin: 14px 0 18px; color: #2F80ED; font-weight: 900; font-size: 22px; }
+
+/* ---------- Shared 3D games ---------- */
+.stage3d { position: absolute; inset: 0; overflow: hidden; background: #BFE3FF; }
+.stage3d-loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: 32px; font-weight: 900; color: #2B3445; }
+.hud3d { position: absolute; inset: 0; pointer-events: none; color: #2B3445; }
+.hud3d .score { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 28px; align-items: center;
+  padding: 8px 26px; border-radius: 18px; background: rgba(255, 255, 255, 0.9); box-shadow: var(--shadow); font-size: 40px; font-weight: 900; }
+.hud3d .score span { color: var(--c); }
+.hud3d .score small { font-size: 18px; color: var(--muted); }
+.hud3d .msg { position: absolute; left: 0; right: 0; top: 38%; text-align: center; font-size: clamp(40px, 8vh, 80px); font-weight: 900;
+  color: #fff; text-shadow: 0 4px 0 rgba(0, 0, 0, 0.25), 0 0 18px rgba(0, 0, 0, 0.3); }
+.hud3d .hint { position: absolute; left: 0; right: 0; bottom: 22px; text-align: center; font-size: 24px; font-weight: 900; color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3); }
+.hud3d .panel { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 460px; padding: 28px 40px;
+  border-radius: 24px; background: var(--c, #5B6577); color: #fff; text-align: center; box-shadow: var(--shadow); }
+.hud3d .panel h1 { margin: 0 0 10px; font-size: 52px; font-weight: 900; }
+.hud3d .panel p { margin: 8px 0; font-size: 26px; font-weight: 700; }

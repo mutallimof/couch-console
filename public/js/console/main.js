@@ -10,6 +10,7 @@ import draw from './games/draw.js';
 import paddleDuel from './games/paddle-duel.js';
 import bowling from './games/bowling.js';
 import turboKarts from './games/turbo-karts.js';
+import tableTennis from './games/table-tennis.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
@@ -44,7 +45,7 @@ const prefs = {
 
 // ---------- Menu ----------
 
-const apps = [turboKarts, balloonPop, draw, paddleDuel, bowling, createSettings(prefs)];
+const apps = [turboKarts, tableTennis, balloonPop, draw, paddleDuel, bowling, createSettings(prefs)];
 const menu = createMenu({
   grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
   onFocusChange: () => sound.play('hover'),
