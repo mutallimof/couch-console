@@ -9,6 +9,7 @@ import balloonPop from './games/balloon-pop.js';
 import draw from './games/draw.js';
 import paddleDuel from './games/paddle-duel.js';
 import bowling from './games/bowling.js';
+import turboKarts from './games/turbo-karts.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
@@ -43,7 +44,7 @@ const prefs = {
 
 // ---------- Menu ----------
 
-const apps = [balloonPop, draw, paddleDuel, bowling, createSettings(prefs)];
+const apps = [turboKarts, balloonPop, draw, paddleDuel, bowling, createSettings(prefs)];
 const menu = createMenu({
   grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
   onFocusChange: () => sound.play('hover'),
@@ -78,6 +79,7 @@ socket.on('disconnect', () => {
 socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
   players.join(playerId, color);
   sendSettings(); // so the new phone uses the current pointer speed
+  socket.emit(EV.FEEDBACK_MODE, { mode: controllerMode }); // and the right controller layout
   playerReturned(playerId);
   // A new phone joining a running multi-player game (not solo) gets let in, if there's room.
   if (current?.mounted && current.mode !== 'solo' && current.app.maxPlayers > current.allowed.size) {
@@ -125,6 +127,11 @@ players.onChange(() => { renderSlots(); setPairing(); });
 // current = { app, handlers, allowed: Set<playerId>, missing: Set<playerId>, mounted }
 
 let current = null;
+let controllerMode = 'pointer'; // phones show the normal remote, or the wheel in driving games
+function setController(mode) {
+  controllerMode = mode;
+  socket.emit(EV.FEEDBACK_MODE, { mode });
+}
 let busy = false;    // true during the zoom animation
 let picker = null;   // { modes, index } while the mode picker is showing
 
@@ -139,7 +146,7 @@ function openApp(app) {
   busy = true;
   sound.play('select');
   const stage = $('stage');
-  current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
+  current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
   stage.style.setProperty('--tile', app.color);
   stage.hidden = false;
   const anim = stage.animate(
@@ -174,6 +181,7 @@ function closeApp() {
   busy = true;
   sound.play('back');
   if (current.mounted) current.app.unmount();
+  if (controllerMode !== 'pointer') setController('pointer');
   hidePicker();
   hidePause();
   $('stage-content').innerHTML = '';
@@ -196,6 +204,8 @@ function makeApi(cur, mode) {
     onButton: (fn) => handlers.button.add(fn),
     onPointer: (fn) => handlers.pointer.add(fn),
     onSwing: (fn) => handlers.swing.add(fn),
+    onWheel: (fn) => handlers.wheel.add(fn),          // { playerId, steer: -1..1 }
+    setController,                                    // 'wheel' for driving games
     // Smoothed cursor position in screen pixels (the stage fills the screen).
     pointer: (playerId) => pointers.position(playerId),
     rumble: (playerId, ms) => socket.emit(EV.FEEDBACK_RUMBLE, { playerId, ms }),
@@ -277,6 +287,12 @@ socket.on(EV.INPUT_POINTER, (e) => {
 socket.on(EV.INPUT_SWING, (e) => {
   count(e.playerId);
   if (gameGets(e.playerId)) current.handlers.swing.forEach((fn) => fn(e));
+});
+
+socket.on(EV.INPUT_WHEEL, (e) => {
+  count(e.playerId);
+  if (!Number.isFinite(e.steer)) return;
+  if (gameGets(e.playerId)) current.handlers.wheel.forEach((fn) => fn(e));
 });
 
 socket.on(EV.INPUT_RECENTER, (e) => count(e.playerId));

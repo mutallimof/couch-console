@@ -206,3 +206,36 @@ body {
   font: 12px/1.35 ui-monospace, monospace;
   pointer-events: none;
 }
+
+/* ---------- Steering-wheel layout ----------
+   Held sideways with the top of the phone to the LEFT: the top half is under your
+   left thumb (brake), the bottom half under your right thumb (gas).
+   If the page rotates to landscape by itself, the halves sit left/right instead. */
+.wheel-pad {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+.wheel-btn {
+  flex: 1;
+  width: 100%;
+  border-radius: 24px;
+  color: #fff;
+  font-size: 34px;
+}
+.wheel-btn span { display: inline-block; transform: rotate(90deg); text-align: center; line-height: 1.1; }
+.wheel-btn small { font-size: 16px; font-weight: 700; opacity: 0.85; }
+.wheel-btn.gas { background: #27AE60; }
+.wheel-btn.brake { background: #5B6577; }
+.wheel-btn.pressed { filter: brightness(0.85); }
+.wheel-mid { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wheel-hint { color: var(--muted); font-weight: 700; font-size: 14px; }
+
+@media (orientation: landscape) {
+  .wheel-pad { flex-direction: row; }
+  .wheel-btn span { transform: none; }
+  .wheel-mid { flex-direction: column; justify-content: center; }
+}

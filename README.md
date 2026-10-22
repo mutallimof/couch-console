@@ -6,7 +6,9 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> Milestone 1 (1 phone) and Milestone 2 (2 phones: Balloon Pop Versus/Co-op, Paddle Duel, Bowling) are built. See `PLAN.md` for the roadmap and ideas for later.
+> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started with **Turbo Karts**. See `PLAN.md` for the roadmap.
+>
+> **After pulling new code, run `npm install` again.** Turbo Karts uses the `three` 3D library, which needs to be downloaded once.
 
 ---
 
@@ -84,6 +86,7 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 | **B** | go back |
 | **HOME** | return to the menu from anywhere |
 
+- **Turbo Karts:** a 3D kart race (3 laps, 6 karts). Your phone turns into a **steering wheel**: hold it sideways with the screen facing you and turn it like a wheel. **GAS** is under your right thumb, and **BRAKE** is under your left. Hold BRAKE while turning at speed to **drift**, then let go for a **mini-turbo** (blue sparks = small boost, orange = big boost). Orange arrows on the road are boost pads. Press **Recenter** to set "straight ahead". With 2 phones choose **Versus** (split screen), **Co-op** (your team's points vs the 2 best computer karts) or **Solo**. No motion sensors? Steer with ◀ ▶ (switch back with HOME).
 - **Balloon Pop:** press A to start, then point at balloons and press A to pop them. Normal balloons are +1, golden ones +3, and spiky ones −2 (your phone buzzes on Android). A round lasts 60 seconds, and your best score is saved.
 - **Draw:** hold A to paint. The D-pad changes the color, + and − change the brush size, and B clears the picture.
 - **Paddle Duel:** a bat-and-ball game. Your paddle follows how high you point. Press A to serve; the ball gets 5% faster on every hit, and the first to 7 points wins. With 2 phones choose **Versus** (P1 left, P2 right) or **Solo** against the computer.

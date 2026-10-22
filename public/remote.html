@@ -45,6 +45,18 @@
     <button class="btn round b" data-button="B">B</button>
   </main>
 
+  <!-- Steering-wheel layout (kart racer). Hold the phone sideways and turn it like a wheel. -->
+  <main id="wheel-pad" class="wheel-pad" hidden>
+    <button class="btn wheel-btn brake" data-button="B"><span>BRAKE<br><small>hold to drift</small></span></button>
+    <div class="wheel-mid">
+      <span class="wheel-hint">Hold sideways · turn to steer</span>
+      <button class="btn small home" data-button="HOME" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 11 12 3l9 8v10h-6v-6H9v6H3z" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <button class="btn wheel-btn gas" data-button="A"><span>GAS</span></button>
+  </main>
+
   <!-- Shown when there's no room in the link, or the room is gone -->
   <form id="join-form" class="panel" hidden>
     <p id="message" class="message"></p>

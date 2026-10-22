@@ -2,6 +2,7 @@
 import { EV, ROOM_LETTERS, ROOM_CODE_LENGTH } from '../shared/protocol.js';
 import { createMotion } from './motion.js';
 import { createSwing } from './swing.js';
+import { createWheel } from './wheel.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
@@ -45,6 +46,7 @@ function showJoinForm(message = '') {
   joined = false;
   setPlayer(null, '');
   $('controller').hidden = true;
+  $('wheel-pad').hidden = true;
   $('start').hidden = true;
   $('join-form').hidden = false;
   $('message').textContent = message;
@@ -64,7 +66,7 @@ function join() {
     setPlayer(res.playerId, res.color);
     setConnected(true, `Room ${room}`);
     $('join-form').hidden = true;
-    $('controller').hidden = false;
+    applyMode();
     if (!started) $('start').hidden = false;
     // Keep the room (and debug flag) in the URL so a refresh rejoins the same room.
     history.replaceState(null, '', `?room=${room}${DEBUG ? '&debug=1' : ''}`);
@@ -129,7 +131,7 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 const motion = createMotion({
   onPointer: (x, y) => {
-    if (!joined) return;
+    if (!joined || mode === 'wheel') return; // no cursor while driving
     sentCount++;
     socket.volatile.emit(EV.INPUT_POINTER, { x, y });
   },
@@ -140,6 +142,32 @@ let started = false;
 const swing = createSwing({
   onSwing: ({ power, tilt }) => emit(EV.INPUT_SWING, { power, tilt }),
   getGamma: () => motion.stats.gamma,
+});
+
+// ---------- Steering wheel (kart racer) ----------
+// The console switches us between the normal remote ('pointer') and the wheel layout.
+
+let mode = 'pointer';
+const wheel = createWheel({
+  onSteer: (steer) => {
+    if (!joined) return;
+    sentCount++;
+    socket.volatile.emit(EV.INPUT_WHEEL, { steer });
+  },
+});
+
+function applyMode() {
+  if (!joined) return;
+  const isWheel = mode === 'wheel';
+  $('controller').hidden = isWheel;
+  $('wheel-pad').hidden = !isWheel;
+  if (isWheel && started) wheel.start();
+  else wheel.stop();
+}
+
+socket.on(EV.FEEDBACK_MODE, ({ mode: m } = {}) => {
+  mode = m === 'wheel' ? 'wheel' : 'pointer';
+  applyMode();
 });
 
 function showTouchpad(message) {
@@ -158,6 +186,7 @@ $('start-btn').addEventListener('click', async () => {
   started = true;
   $('start').hidden = true;
   if (result.ok) swing.start();
+  applyMode(); // a wheel game may already be running
   requestWakeLock();
   if (result.reason === 'denied') {
     showTouchpad('Motion access was denied. To fix it: Settings → Apps → Safari → '
@@ -171,6 +200,7 @@ $('start-btn').addEventListener('click', async () => {
 
 $('recenter').addEventListener('click', () => {
   motion.recenter();
+  wheel.recenter();
   emit(EV.INPUT_RECENTER);
 });
 
@@ -214,6 +244,7 @@ if (DEBUG) {
     const w = swing.stats;
     box.textContent = `alpha ${fmt(s.alpha)}  beta ${fmt(s.beta)}  gamma ${fmt(s.gamma)}\n`
       + `mag ${fmt(w.mag ?? s.mag)}  msgs/s ${rate}  ping ${pingMs} ms\n`
-      + `swings ${w.swings}  last power ${w.lastPower == null ? '–' : w.lastPower.toFixed(2)}`;
+      + `swings ${w.swings}  last power ${w.lastPower == null ? '–' : w.lastPower.toFixed(2)}\n`
+      + `mode ${mode}  steer ${wheel.stats.steer.toFixed(2)}`;
   }, 100);
 }

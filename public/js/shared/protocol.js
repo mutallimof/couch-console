@@ -30,7 +30,9 @@ export const EV = {
   INPUT_RECENTER: 'input:recenter',
   FEEDBACK_RUMBLE: 'feedback:rumble',
   FEEDBACK_SETTINGS: 'feedback:settings',
+  FEEDBACK_MODE: 'feedback:mode',   // { mode: 'pointer' | 'wheel' }
+  INPUT_WHEEL: 'input:wheel',       // { steer: -1..1 }
 };
 
 // The remote -> console input events the server relays (with playerId added).
-export const INPUT_EVENTS = [EV.INPUT_POINTER, EV.INPUT_BUTTON, EV.INPUT_SWING, EV.INPUT_RECENTER];
+export const INPUT_EVENTS = [EV.INPUT_POINTER, EV.INPUT_BUTTON, EV.INPUT_SWING, EV.INPUT_RECENTER, EV.INPUT_WHEEL];

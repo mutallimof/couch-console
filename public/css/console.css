@@ -337,3 +337,29 @@ html, body {
 .pause-card img { width: 220px; height: 220px; image-rendering: pixelated; }
 .pause-card p { margin: 0; font-size: 26px; font-weight: 900; max-width: 520px; }
 .pause-card .pause-hint { font-size: 18px; color: var(--muted); font-weight: 700; }
+
+/* ---------- Turbo Karts ---------- */
+.kart { position: absolute; inset: 0; background: #9FD3FF; overflow: hidden; }
+.kart-loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: 32px; font-weight: 900; color: #2B3445; }
+.kart-hud {
+  position: absolute;
+  left: 0; right: 0;
+  pointer-events: none;
+  color: #fff;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25), 0 0 12px rgba(0, 0, 0, 0.25);
+  border-bottom: 3px solid rgba(255, 255, 255, 0.7);
+}
+.kart-hud:last-of-type { border-bottom: none; }
+.kart-place { position: absolute; right: 28px; bottom: 16px; font-size: clamp(48px, 9vh, 96px); font-weight: 900; color: var(--player); -webkit-text-stroke: 3px #fff; }
+.kart-lap { position: absolute; left: 24px; top: 16px; font-size: 32px; font-weight: 900; }
+.kart-tag { position: absolute; left: 24px; bottom: 18px; padding: 2px 12px; border-radius: 12px; background: var(--player); font-weight: 900; font-size: 22px; text-shadow: none; }
+.kart-drift { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); font-size: 26px; font-weight: 900; color: #FFE066; }
+.kart-msg { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(56px, 12vh, 120px); font-weight: 900; }
+.kart-minimap { position: absolute; right: 14px; top: 14px; width: 150px; height: 150px; border-radius: 16px; background: rgba(30, 50, 80, 0.35); }
+.kart-results { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(20, 30, 50, 0.45); }
+.kart-card { background: #fff; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); min-width: 460px; text-align: center; }
+.kart-card h1 { margin: 0; padding: 22px 32px; color: #fff; font-size: 40px; font-weight: 900; }
+.kart-card table { width: 100%; border-collapse: collapse; font-size: 22px; font-weight: 700; }
+.kart-card td { padding: 8px 24px; border-bottom: 1px solid #EEF2F7; text-align: left; }
+.kart-card .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; background: var(--c); }
+.kart-card p { margin: 14px 0 18px; color: #2F80ED; font-weight: 900; font-size: 22px; }

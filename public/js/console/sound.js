@@ -87,6 +87,29 @@ export const sound = {
     if (muted || !ctx || ctx.state !== 'running') return;
     SOUNDS[name]?.();
   },
+  // A continuous tone, e.g. an engine hum. Returns { set(freq, volume), stop() }.
+  loop(type = 'sawtooth') {
+    if (!ctx || ctx.state !== 'running') return { set() {}, stop() {} };
+    const osc = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    osc.type = type;
+    filter.type = 'lowpass';
+    filter.frequency.value = 900;
+    gain.gain.value = 0;
+    osc.connect(filter).connect(gain).connect(ctx.destination);
+    osc.start();
+    return {
+      set(freq, volume) {
+        osc.frequency.setTargetAtTime(freq, ctx.currentTime, 0.05);
+        gain.gain.setTargetAtTime(muted ? 0 : volume, ctx.currentTime, 0.05);
+      },
+      stop() {
+        gain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+        osc.stop(ctx.currentTime + 0.3);
+      },
+    };
+  },
   // Call from a real click/key press on the laptop.
   unlock() {
     audio().resume();

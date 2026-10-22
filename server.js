@@ -17,6 +17,9 @@ const server = createServer(app);
 const io = new Server(server);
 
 app.use(express.static(fileURLToPath(new URL('./public', import.meta.url))));
+// Three.js (3D games) is served from node_modules, so it works without internet.
+app.get('/vendor/three.module.js', (req, res) =>
+  res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));
 
 // Tiny endpoint the phone's debug view uses to measure round-trip time.
 app.get('/ping', (req, res) => res.set('Cache-Control', 'no-store').send('pong'));
@@ -88,6 +91,12 @@ io.on('connection', (socket) => {
     io.to(remotesChannel(socket.data.room)).emit(EV.FEEDBACK_SETTINGS, payload);
   });
 
+  // Controller layout for all phones: { mode: 'pointer' | 'wheel' }
+  socket.on(EV.FEEDBACK_MODE, (payload) => {
+    if (socket.data.role !== 'console') return;
+    io.to(remotesChannel(socket.data.room)).emit(EV.FEEDBACK_MODE, payload);
+  });
+
   // --- Remote (phone) ---
   socket.on(EV.REMOTE_JOIN, (payload, ack) => {
     if (typeof ack !== 'function') return;
@@ -125,8 +134,8 @@ io.on('connection', (socket) => {
       const room = rooms.get(socket.data.room);
       if (!room) return;
       const data = { ...(payload && typeof payload === 'object' ? payload : {}), playerId: socket.data.playerId };
-      // Pointer updates are frequent; it's fine to drop one if the network is busy.
-      const target = event === EV.INPUT_POINTER ? io.volatile : io;
+      // Pointer/wheel updates are frequent; it's fine to drop one if the network is busy.
+      const target = event === EV.INPUT_POINTER || event === EV.INPUT_WHEEL ? io.volatile : io;
       target.to(room.consoleId).emit(event, data);
     });
   }
