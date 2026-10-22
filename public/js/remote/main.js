@@ -47,6 +47,7 @@ function showJoinForm(message = '') {
   setPlayer(null, '');
   $('controller').hidden = true;
   $('wheel-pad').hidden = true;
+  $('keyboard-pad').hidden = true;
   $('start').hidden = true;
   $('join-form').hidden = false;
   $('message').textContent = message;
@@ -158,17 +159,28 @@ const wheel = createWheel({
 
 function applyMode() {
   if (!joined) return;
-  const isWheel = mode === 'wheel';
-  $('controller').hidden = isWheel;
+  const isWheel = mode === 'wheel', isKeys = mode === 'keyboard';
+  $('controller').hidden = isWheel || isKeys;
   $('wheel-pad').hidden = !isWheel;
+  $('keyboard-pad').hidden = !isKeys;
+  if (isKeys) { $('keyboard-input').value = ''; $('keyboard-input').focus(); }
   if (isWheel && started) wheel.start();
   else wheel.stop();
 }
 
-socket.on(EV.FEEDBACK_MODE, ({ mode: m } = {}) => {
-  mode = m === 'wheel' ? 'wheel' : 'pointer';
+socket.on(EV.FEEDBACK_MODE, ({ mode: m, prompt } = {}) => {
+  mode = ['wheel', 'keyboard'].includes(m) ? m : 'pointer';
+  $('keyboard-prompt').textContent = prompt || 'Type here';
   applyMode();
 });
+
+// Keyboard layout: send the text (or '' to cancel)
+$('keyboard-pad').addEventListener('submit', (e) => {
+  e.preventDefault();
+  $('keyboard-input').blur();
+  emit(EV.INPUT_TEXT, { text: $('keyboard-input').value.trim().slice(0, 100) });
+});
+$('keyboard-cancel').addEventListener('click', () => emit(EV.INPUT_TEXT, { text: '' }));
 
 function showTouchpad(message) {
   $('touchpad').hidden = false;

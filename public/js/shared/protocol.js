@@ -30,9 +30,10 @@ export const EV = {
   INPUT_RECENTER: 'input:recenter',
   FEEDBACK_RUMBLE: 'feedback:rumble',
   FEEDBACK_SETTINGS: 'feedback:settings',
-  FEEDBACK_MODE: 'feedback:mode',   // { mode: 'pointer' | 'wheel' }
+  FEEDBACK_MODE: 'feedback:mode',   // { mode: 'pointer' | 'wheel' | 'keyboard', prompt? }
   INPUT_WHEEL: 'input:wheel',       // { steer: -1..1 }
+  INPUT_TEXT: 'input:text',         // { text } typed on the phone ('' = cancelled)
 };
 
 // The remote -> console input events the server relays (with playerId added).
-export const INPUT_EVENTS = [EV.INPUT_POINTER, EV.INPUT_BUTTON, EV.INPUT_SWING, EV.INPUT_RECENTER, EV.INPUT_WHEEL];
+export const INPUT_EVENTS = [EV.INPUT_POINTER, EV.INPUT_BUTTON, EV.INPUT_SWING, EV.INPUT_RECENTER, EV.INPUT_WHEEL, EV.INPUT_TEXT];

@@ -6,3 +6,4 @@ certs/
 photos/*
 !photos/README.txt
 videos.txt
+config.json

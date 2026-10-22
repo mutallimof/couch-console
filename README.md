@@ -119,6 +119,23 @@ To stop everything, press `Ctrl + C` in each terminal.
 
 ---
 
+## YouTube search (optional)
+
+The **Video** channel always plays the links in `videos.txt`. To also **search YouTube** from the console, you need a free *YouTube Data API key* (one-time setup, about 5 minutes):
+
+1. Go to <https://console.cloud.google.com/> and sign in with your Google account.
+2. At the top, click the project picker → **New Project** → name it `couch-console` → **Create**, then make sure it's selected.
+3. Open the menu ☰ → **APIs & Services** → **Library**, search for **YouTube Data API v3**, open it and click **Enable**.
+4. Go to **APIs & Services** → **Credentials** → **+ Create credentials** → **API key**, and copy the key.
+5. (Recommended) Click the key → under **API restrictions** choose **Restrict key** → tick **YouTube Data API v3** → **Save**.
+6. In the `couch-console` folder, copy `config.example.json` to a new file `config.json`, open it in Notepad and paste your key where it says `PASTE-YOUR-KEY-HERE`. Save, then restart `npm start`.
+
+Now open **Video** → **Search YouTube**: your phone shows a text box. Type, press **Send**, and pick a result.
+`config.json` is **never** uploaded to GitHub (it's in `.gitignore`). Keep your key private.
+The free key allows about 100 searches per day.
+
+---
+
 ## Local setup (faster, no tunnel)
 
 Instead of the cloudflared tunnel, phones on the **same Wi-Fi** as your laptop can connect directly, which means less delay. You set this up **once**.

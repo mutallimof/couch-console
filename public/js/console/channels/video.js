@@ -1,6 +1,6 @@
-// Video channel: YouTube videos from the list in videos.txt (or videos.example.txt),
-// played with YouTube's embedded player and controlled from the phone. Needs internet.
-//   List:  point or D-pad to choose · A = play · B = back to the menu
+// Video channel: YouTube videos from the list in videos.txt (or videos.example.txt), or found with
+// "Search YouTube" (typed on the phone; needs a free API key, see README). Needs internet.
+//   List:  point or D-pad to choose · A = play · B = back (to your list, then to the menu)
 //   Video: A = play/pause · ◀ ▶ = −10 s / +10 s · + / − = volume · ▲ ▼ = previous / next · B = list
 import { createFocusGrid } from './focus-grid.js';
 
@@ -9,6 +9,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 </svg>`;
 
 let api, root, videos, grid, player, playing, frame, osdTimer, startCheck, ytReady;
+let myList = [], canSearch = false, searchTerm = null, typing = false;
 
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -36,7 +37,7 @@ function osd(text) {
 
 async function play(i) {
   playing = { i };
-  grid.setIndex(i, true);
+  grid.setIndex(i + 1, true);
   let el = root.querySelector('.video-view');
   if (!el) {
     el = document.createElement('div');
@@ -103,10 +104,20 @@ function onButton({ button, state }) {
     }
     return;
   }
-  if (button === 'B') return api.exit();
-  if (!videos.length) return;
-  if (button === 'A') { api.sound.play('select'); play(grid.index); }
-  else grid.move(button);
+  if (typing) {
+    if (button === 'B') { typing = false; api.setController('pointer'); closeBox(); }
+    return;
+  }
+  if (root.querySelector('.video-box')) { if (button === 'B' || button === 'A') closeBox(); return; }
+  if (button === 'B') {
+    if (searchTerm) { searchTerm = null; videos = myList; renderList(); api.sound.play('back'); return; }
+    return api.exit();
+  }
+  if (!grid) return;
+  if (button === 'A') {
+    api.sound.play('select');
+    if (grid.index === 0) startSearch(); else play(grid.index - 1);
+  } else grid.move(button);
 }
 
 function hoverLoop() {
@@ -114,23 +125,66 @@ function hoverLoop() {
   frame = requestAnimationFrame(hoverLoop);
 }
 
-async function load() {
-  try {
-    videos = await (await fetch('/api/videos')).json();
-  } catch {
-    videos = [];
-  }
-  if (!root) return;
-  if (!videos.length) {
-    root.innerHTML = `<div class="channel-empty"><h1>Video</h1><p>No videos in the list yet.</p>
-      <p>Add YouTube links to <b>videos.txt</b> in the <b>couch-console</b> folder (see videos.example.txt).</p><p class="muted">B = back</p></div>`;
+// The grid: a "Search YouTube" tile first, then the videos (your list or search results)
+function renderList() {
+  grid = null;
+  const head = searchTerm ? `Results for “${esc(searchTerm)}”` : 'Video';
+  const help = searchTerm ? 'A = play · B = back to your list' : 'A = play · B = menu';
+  const searchTile = `<div class="video-tile search-tile" data-index="0"><div class="thumb"><span>🔍</span></div>
+    <b>${canSearch ? (searchTerm ? 'Search again' : 'Search YouTube') : 'Search (needs a key)'}</b></div>`;
+  root.innerHTML = `<div class="channel-head"><h1>${head}</h1><span>${help}</span></div>
+    <div class="video-grid">${searchTile}${videos.map((v, i) => `<div class="video-tile" data-index="${i + 1}">
+      <div class="thumb"><span style="grid-area:1/1">▶</span><img src="${v.thumb || `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`}" alt="" loading="lazy"
+        onerror="this.classList.add('broken')"></div><b>${esc(v.title)}</b>${v.channel ? `<small>${esc(v.channel)}</small>` : ''}</div>`).join('')}</div>
+    ${!videos.length && !searchTerm ? '<p class="video-empty">Your list is empty: add links to videos.txt (see videos.example.txt), or search.</p>' : ''}`;
+  grid = createFocusGrid({ items: [...root.querySelectorAll('.video-tile')], columns: 3, onChange: () => api.sound.play('hover') });
+  if (videos.length) grid.setIndex(1, true);
+}
+
+function startSearch() {
+  if (!canSearch) {
+    osdBox('<h1>YouTube search needs a key</h1><p>Make a free <b>YouTube Data API key</b> and put it in <b>config.json</b><br>in the couch-console folder. See “YouTube search” in README.md.</p><p class="muted">B = back</p>');
     return;
   }
-  root.innerHTML = `<div class="channel-head"><h1>Video</h1><span>A = play · B = menu</span></div>
-    <div class="video-grid">${videos.map((v, i) => `<div class="video-tile" data-index="${i}">
-      <div class="thumb"><span style="grid-area:1/1">▶</span><img src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" alt="" loading="lazy"
-        onerror="this.classList.add('broken')"></div><b>${esc(v.title)}</b></div>`).join('')}</div>`;
-  grid = createFocusGrid({ items: [...root.querySelectorAll('.video-tile')], columns: 3, onChange: () => api.sound.play('hover') });
+  typing = true;
+  api.setController('keyboard', 'Search YouTube');
+  osdBox('<h1>Type on your phone…</h1><p>Write what you want to watch and press <b>Send</b>.</p><p class="muted">B or Cancel = back</p>');
+}
+
+function osdBox(html) {
+  let el = root.querySelector('.video-box');
+  if (!el) { el = document.createElement('div'); el.className = 'video-box'; root.append(el); }
+  el.innerHTML = html;
+}
+function closeBox() { root.querySelector('.video-box')?.remove(); }
+
+async function onText({ text }) {
+  if (!typing) return;
+  typing = false;
+  api.setController('pointer');
+  if (!text) { closeBox(); return; }
+  osdBox(`<h1>Searching for “${esc(text)}”…</h1>`);
+  try {
+    const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(text)}`);
+    const data = await res.json();
+    if (!root) return;
+    if (!res.ok) throw new Error(data.error === 'NO_KEY' ? 'No YouTube key yet (see README).' : data.error);
+    searchTerm = text;
+    videos = data;
+    closeBox();
+    renderList();
+    if (!data.length) osdBox('<h1>Nothing found</h1><p>Try other words.</p><p class="muted">B = back</p>');
+  } catch (err) {
+    osdBox(`<h1>Search didn't work</h1><p>${esc(err.message || 'Unknown error')}</p><p class="muted">B = back</p>`);
+  }
+}
+
+async function load() {
+  try { myList = await (await fetch('/api/videos')).json(); } catch { myList = []; }
+  try { canSearch = (await (await fetch('/api/youtube/status')).json()).search; } catch { canSearch = false; }
+  if (!root) return;
+  videos = myList;
+  renderList();
 }
 
 export default {
@@ -146,8 +200,9 @@ export default {
     root.className = 'channel video';
     root.innerHTML = '<div class="channel-empty"><p>Loading…</p></div>';
     container.append(root);
-    videos = []; grid = null; playing = null;
+    videos = []; myList = []; grid = null; playing = null; searchTerm = null; typing = false;
     api.onButton(onButton);
+    api.onText(onText);
     load();
     frame = requestAnimationFrame(hoverLoop);
   },

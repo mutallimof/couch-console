@@ -67,6 +67,35 @@ app.get('/api/videos', (req, res) => {
   res.json(videos);
 });
 
+// YouTube search (optional): needs a free YouTube Data API key in config.json
+// ({ "youtubeApiKey": "..." }) or the YOUTUBE_API_KEY environment variable.
+// The server asks YouTube, so the key never reaches the browser.
+function youtubeKey() {
+  if (process.env.YOUTUBE_API_KEY) return process.env.YOUTUBE_API_KEY;
+  try { return JSON.parse(readFileSync(file('./config.json'), 'utf8')).youtubeApiKey || null; } catch { return null; }
+}
+app.get('/api/youtube/status', (req, res) => res.json({ search: !!youtubeKey() }));
+app.get('/api/youtube/search', async (req, res) => {
+  const key = youtubeKey();
+  if (!key) return res.status(501).json({ error: 'NO_KEY' });
+  const q = String(req.query.q || '').slice(0, 100).trim();
+  if (!q) return res.json([]);
+  const base = process.env.YOUTUBE_API_URL || 'https://www.googleapis.com/youtube/v3/search'; // (overridable for testing)
+  const url = `${base}?part=snippet&type=video&videoEmbeddable=true`
+    + `&safeSearch=moderate&maxResults=12&q=${encodeURIComponent(q)}&key=${encodeURIComponent(key)}`;
+  try {
+    const r = await fetch(url);
+    const data = await r.json();
+    if (!r.ok) return res.status(502).json({ error: data?.error?.message || `YouTube answered ${r.status}` });
+    res.json((data.items || []).map((it) => ({
+      id: it.id.videoId, title: it.snippet.title, channel: it.snippet.channelTitle,
+      thumb: it.snippet.thumbnails?.medium?.url,
+    })).filter((v) => v.id));
+  } catch {
+    res.status(502).json({ error: 'Could not reach YouTube. Is the laptop online?' });
+  }
+});
+
 // The local certificate authority, so a phone can trust our https (public part only, never the key)
 app.get('/rootCA.crt', (req, res) => {
   if (!existsSync(ROOT_CA)) return res.status(404).send('No certificate yet. Run `npm run certs` on the laptop.');

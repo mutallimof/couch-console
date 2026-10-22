@@ -141,7 +141,7 @@ body {
 .message { margin: 0; min-height: 1.4em; color: #c0392b; font-weight: 700; }
 
 /* Inputs need normal touch behavior so they can be focused. */
-.room-input, .join-btn, .start-btn { touch-action: manipulation; font-family: inherit; }
+.room-input, .join-btn, .start-btn, .kb-cancel { touch-action: manipulation; font-family: inherit; }
 
 .room-input {
   width: 100%;
@@ -243,3 +243,9 @@ body {
 .wheel-item { width: 96px; height: 56px; border-radius: 16px; font-size: 18px; font-weight: 900; color: #fff; background: #BB6BD9; }
 .wheel-item span { display: inline-block; transform: rotate(90deg); }
 @media (orientation: landscape) { .wheel-item span { transform: none; } }
+
+/* Keyboard layout */
+.keyboard-pad { margin-top: 24px; }
+.kb-prompt { margin: 0; font-size: 24px; font-weight: 900; }
+.kb-input { font-size: 26px; letter-spacing: normal; text-transform: none; text-align: left; user-select: text; -webkit-user-select: text; }
+.kb-cancel { background: #8A94A6; }

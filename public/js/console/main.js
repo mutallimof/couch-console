@@ -89,7 +89,7 @@ socket.on('disconnect', () => {
 socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
   players.join(playerId, color);
   sendSettings(); // so the new phone uses the current pointer speed
-  socket.emit(EV.FEEDBACK_MODE, { mode: controllerMode }); // and the right controller layout
+  socket.emit(EV.FEEDBACK_MODE, { mode: controllerMode, prompt: controllerPrompt }); // and the right controller layout
   playerReturned(playerId);
   // A new phone joining a running multi-player game (not solo) gets let in, if there's room.
   if (current?.mounted && current.mode !== 'solo' && current.app.maxPlayers > current.allowed.size) {
@@ -137,10 +137,12 @@ players.onChange(() => { renderSlots(); setPairing(); });
 // current = { app, handlers, allowed: Set<playerId>, missing: Set<playerId>, mounted }
 
 let current = null;
-let controllerMode = 'pointer'; // phones show the normal remote, or the wheel in driving games
-function setController(mode) {
+// Phones show the normal remote ('pointer'), a steering wheel ('wheel') or a text box ('keyboard')
+let controllerMode = 'pointer', controllerPrompt = '';
+function setController(mode, prompt = '') {
   controllerMode = mode;
-  socket.emit(EV.FEEDBACK_MODE, { mode });
+  controllerPrompt = prompt;
+  socket.emit(EV.FEEDBACK_MODE, { mode, prompt });
 }
 let busy = false;    // true during the zoom animation
 let picker = null;   // { modes, index } while the mode picker is showing
@@ -156,7 +158,7 @@ function openApp(app) {
   busy = true;
   sound.play('select');
   const stage = $('stage');
-  current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
+  current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set(), text: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
   stage.style.setProperty('--tile', app.color);
   stage.hidden = false;
   const anim = stage.animate(
@@ -216,7 +218,8 @@ function makeApi(cur, mode) {
     onPointer: (fn) => handlers.pointer.add(fn),
     onSwing: (fn) => handlers.swing.add(fn),
     onWheel: (fn) => handlers.wheel.add(fn),          // { playerId, steer: -1..1 }
-    setController,                                    // 'wheel' for driving games
+    onText: (fn) => handlers.text.add(fn),            // { playerId, text } typed on a phone
+    setController,                                    // 'wheel' for driving games, 'keyboard' to type
     setCursor: (style) => pointers.setStyle(style),   // 'crosshair' for aiming games
     // Smoothed cursor position in screen pixels (the stage fills the screen).
     pointer: (playerId) => pointers.position(playerId),
@@ -305,6 +308,11 @@ socket.on(EV.INPUT_WHEEL, (e) => {
   count(e.playerId);
   if (!Number.isFinite(e.steer)) return;
   if (gameGets(e.playerId)) current.handlers.wheel.forEach((fn) => fn(e));
+});
+
+socket.on(EV.INPUT_TEXT, (e) => {
+  if (typeof e.text !== 'string') return;
+  if (gameGets(e.playerId)) current.handlers.text.forEach((fn) => fn({ playerId: e.playerId, text: e.text.slice(0, 100) }));
 });
 
 socket.on(EV.INPUT_RECENTER, (e) => count(e.playerId));

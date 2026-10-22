@@ -58,6 +58,14 @@
     <button class="btn wheel-btn gas" data-button="A"><span>GAS</span></button>
   </main>
 
+  <!-- Keyboard layout: type text for the console (e.g. a YouTube search) -->
+  <form id="keyboard-pad" class="panel keyboard-pad" hidden>
+    <p id="keyboard-prompt" class="kb-prompt">Type here</p>
+    <input id="keyboard-input" class="room-input kb-input" autocomplete="off" enterkeyhint="search" maxlength="100">
+    <button class="join-btn" type="submit">Send</button>
+    <button id="keyboard-cancel" class="join-btn kb-cancel" type="button">Cancel</button>
+  </form>
+
   <!-- Shown when there's no room in the link, or the room is gone -->
   <form id="join-form" class="panel" hidden>
     <p id="message" class="message"></p>
