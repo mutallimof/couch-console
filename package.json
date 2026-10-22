@@ -1,0 +1,22 @@
+{
+  "name": "couch-console",
+  "version": "0.0.1",
+  "description": "A phone-controlled couch console that runs in the browser.",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "certs": "node scripts/make-certs.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.4",
+    "three": "^0.160.0"
+  }
+}

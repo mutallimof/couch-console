@@ -1,0 +1,9 @@
+node_modules
+.DS_Store
+*.log
+certs/
+*.pem
+photos/*
+!photos/README.txt
+videos.txt
+config.json

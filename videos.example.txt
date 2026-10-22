@@ -1,0 +1,8 @@
+# Videos for the Video channel.
+# Make your own list: copy this file to "videos.txt" and edit it (videos.txt is used if it exists).
+# One video per line:   Title | YouTube link
+# Lines starting with # are ignored.
+Big Buck Bunny (Blender open movie) | https://www.youtube.com/watch?v=aqz-KE-bpKQ
+Sintel (Blender open movie) | https://www.youtube.com/watch?v=eRsGyueVLvQ
+Tears of Steel (Blender open movie) | https://www.youtube.com/watch?v=R6MlUcmOul8
+Spring (Blender open movie) | https://www.youtube.com/watch?v=WhWc3b3KhnY

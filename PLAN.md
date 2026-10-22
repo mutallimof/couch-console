@@ -22,6 +22,7 @@
 | Server | `express` (static files) + `socket.io` (real-time) |
 | QR code | `qrcode` npm package (server-side data URL) |
 | Client | Vanilla JS ES modules; socket.io client from `/socket.io/socket.io.js` |
+| 3D (Milestone 3) | `three` npm package, served by our server at `/vendor/three.module.js` (no CDN, no build step) |
 | Font | "Nunito" (Google Fonts) |
 | Sounds | Web Audio API synth blips, with no audio files |
 | Phone HTTPS | `cloudflared` quick tunnel (required: phones only allow motion sensors on HTTPS) |
@@ -96,6 +97,8 @@ couch-console/
 | `input:recenter` | remote → console | none |
 | `feedback:rumble` | console → one remote | `{ playerId, ms }` → `navigator.vibrate(ms)` (Android; iOS ignores it) |
 | `feedback:settings` | console → all remotes | `{ rangeX, rangeY }` |
+| `feedback:mode` | console → all remotes | `{ mode: 'pointer' \| 'wheel' }`. Switches the phone between the normal remote and the steering-wheel layout (Milestone 3) |
+| `input:wheel` | remote → console | `{ steer: -1..1 }`, ~60/s, `socket.volatile.emit`. Sent only in wheel mode (Milestone 3) |
 
 **Server rules**
 - The server adds `playerId` to every `input:*` event before forwarding it to the room's console.
@@ -228,8 +231,64 @@ Portrait, full height, no scrolling or zooming (`user-scalable=no`, `touch-actio
 
 ---
 
+# 🟩 MILESTONE 3: Better-looking games, boot animation, local setup, channels
+
+All games are original: no Nintendo names, characters, tracks or sounds.
+
+### Phase 10: Kart racer ("Turbo Karts")
+- Three.js, low-poly 3D look: a closed track with curbs, trees, barriers, boost pads and a start line.
+- **Wheel mode:** the console sends `feedback:mode {mode:'wheel'}`. The phone shows big **A = gas** and **B = brake/drift** buttons, and you steer by holding the phone sideways and tilting it like a wheel (from the gravity direction, calibrated on start and on Recenter). It sends `input:wheel {steer}`. Back in the menu, the console sends `mode:'pointer'`.
+- Arcade physics: acceleration, off-road slowdown, wall bounce, kart bumping. Hold B while turning at speed to **drift**; letting go after a drift gives a **mini-turbo**.
+- 6 karts (players + CPU), 3 laps, a 3-2-1-GO countdown, a position/lap HUD, a minimap and a results screen.
+- **Modes:** Solo (1 player + 5 CPU); Versus (2 players, **split screen** top/bottom); Co-op team race (your 2 karts' points vs the best 2 CPU karts).
+- Rumble on wall hits and boosts.
+
+### Phase 11: Table Tennis
+Swing the phone to hit. Versus, or a co-op rally (keep it going together).
+
+### Phase 12: Target Range
+Aim with the pointer and press A to hit pop-up targets. Versus or co-op against the clock.
+
+### Phase 13: Air Hockey
+Your mallet follows your pointer. 2 players, or solo vs CPU.
+
+### Phase 14: Co-op Dungeon
+Two heroes collect gems and avoid traps together.
+
+### Phase 15: Boot animation
+A short, original startup animation when the console opens.
+
+### Phase 16: Local HTTPS (no tunnel)
+Use `mkcert` for a trusted local HTTPS certificate, so phones on the same Wi-Fi connect directly with lower latency.
+
+### Phase 17: Content channels
+- **Photos:** pictures from the laptop's `photos/` folder (git-ignored). Grid → full screen with a slow zoom; ◀ ▶ browse, A = slideshow.
+- **Weather:** Open-Meteo (free, no key). "My location" (browser geolocation) or a city list (◀ ▶), °C/°F (+/−), today plus 5 days, original animated icons.
+- **Video:** YouTube IFrame player for links listed in `videos.txt` (falls back to `videos.example.txt`). A = play/pause, ◀ ▶ = ±10 s, +/− = volume, ▲ ▼ = previous/next.
+
+---
+
+# 🟪 MILESTONE 4: Kart racer deluxe + YouTube search
+
+Still original: no Nintendo characters, tracks, items or names.
+
+### Phase 18: Turbo Karts deluxe
+- 8 original characters and 4 karts with stats (speed, acceleration, handling, weight); select screen per player, then P1 picks a track.
+- 4 themed tracks (Sunny Park, Dune Canyon, Frosty Peaks with icy grip, Neon City at night) with hills, jump crests, a tunnel, a bridge, boost pads.
+- Item boxes with original items (Turbo, Homing Orb, Slick, Shield; better items further back) and coins (+top speed, lost when hit). 8 racers.
+- The phone wheel gets an ITEM button (sends the existing `UP` button).
+
+### Phase 19: YouTube search
+- Search YouTube from the Video channel with a free YouTube Data API key in a git-ignored `config.json` (the server makes the request, the key never reaches the browser).
+- Typing on the phone: `feedback:mode {mode:'keyboard'}` shows a text box on the phone, which sends `input:text {text}`.
+
+### Phase 20: Real 3D models
+- Free CC0 model packs (downloaded by the user) replace the code-built karts, characters and props where available, with code-built fallbacks.
+
+---
+
 ## 8. Later (not now)
-Photos channel, YouTube channel, weather channel, 3–4 players, a boot animation, and lower-latency local HTTPS with `mkcert`.
+3–4 players.
 
 ---
 
