@@ -380,3 +380,21 @@ html, body {
   border-radius: 24px; background: var(--c, #5B6577); color: #fff; text-align: center; box-shadow: var(--shadow); }
 .hud3d .panel h1 { margin: 0 0 10px; font-size: 52px; font-weight: 900; }
 .hud3d .panel p { margin: 8px 0; font-size: 26px; font-weight: 700; }
+
+/* Crosshair cursors (aiming games): a ring with a dot, centered on the aim point */
+.cursors.crosshair .cursor svg { display: none; }
+.cursors.crosshair .cursor::before {
+  content: '';
+  position: absolute;
+  left: -22px; top: -22px;
+  width: 44px; height: 44px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 4px solid var(--player);
+  box-shadow: 0 0 0 2px #fff, inset 0 0 0 2px #fff;
+  background: radial-gradient(circle, var(--player) 0 3px, transparent 4px);
+}
+.cursors.crosshair .cursor-label { left: 20px; top: 18px; }
+.range-pop { position: absolute; transform: translate(-50%, -100%); font-size: 30px; font-weight: 900; white-space: nowrap;
+  text-shadow: 0 2px 0 #fff, 0 0 8px rgba(255, 255, 255, 0.9); animation: range-pop 0.9s ease-out forwards; }
+@keyframes range-pop { from { opacity: 1; margin-top: 0; } to { opacity: 0; margin-top: -60px; } }

@@ -76,6 +76,8 @@ const SOUNDS = {
   strike: () => [523, 659, 784, 1046, 1318].forEach((f, i) => tone({ f0: f, dur: 0.16, type: 'triangle', vol: 0.15, delay: i * 0.07 })),
   roll: () => noise({ dur: 0.6, freq: 250, q: 0.7, vol: 0.18 }),
   pins: () => { noise({ dur: 0.25, freq: 1400, q: 1.5, vol: 0.35 }); noise({ dur: 0.18, freq: 700, q: 2, vol: 0.3, delay: 0.05 }); },
+  shot: () => { noise({ dur: 0.09, freq: 2600, q: 0.6, vol: 0.35 }); tone({ f0: 220, f1: 90, dur: 0.08, type: 'square', vol: 0.08 }); },
+  clink: () => [1568, 2093].forEach((f, i) => tone({ f0: f, dur: 0.12, type: 'triangle', vol: 0.1, delay: i * 0.04 })),
   clear: () => noise({ dur: 0.25, freq: 900, q: 0.4, vol: 0.25 }),
   tick: () => tone({ f0: 1000, dur: 0.05, type: 'square', vol: 0.05 }),
   start: () => [523, 659, 784].forEach((f, i) => tone({ f0: f, dur: 0.14, type: 'triangle', vol: 0.15, delay: i * 0.1 })),

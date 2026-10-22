@@ -61,6 +61,10 @@ export function createPointers(layer) {
       const p = this.position(playerId);
       return p ? document.elementFromPoint(p.x, p.y) : null;
     },
+    // 'arrow' (default) or 'crosshair' (for aiming games)
+    setStyle(style) {
+      layer.classList.toggle('crosshair', style === 'crosshair');
+    },
     destroy() {
       cancelAnimationFrame(frame);
       for (const id of [...cursors.keys()]) this.remove(id);

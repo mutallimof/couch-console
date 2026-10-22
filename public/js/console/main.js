@@ -11,6 +11,7 @@ import paddleDuel from './games/paddle-duel.js';
 import bowling from './games/bowling.js';
 import turboKarts from './games/turbo-karts.js';
 import tableTennis from './games/table-tennis.js';
+import targetRange from './games/target-range.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
@@ -45,7 +46,7 @@ const prefs = {
 
 // ---------- Menu ----------
 
-const apps = [turboKarts, tableTennis, balloonPop, draw, paddleDuel, bowling, createSettings(prefs)];
+const apps = [turboKarts, tableTennis, targetRange, balloonPop, draw, paddleDuel, bowling, createSettings(prefs)];
 const menu = createMenu({
   grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
   onFocusChange: () => sound.play('hover'),
@@ -183,6 +184,7 @@ function closeApp() {
   sound.play('back');
   if (current.mounted) current.app.unmount();
   if (controllerMode !== 'pointer') setController('pointer');
+  pointers.setStyle('arrow');
   hidePicker();
   hidePause();
   $('stage-content').innerHTML = '';
@@ -207,6 +209,7 @@ function makeApi(cur, mode) {
     onSwing: (fn) => handlers.swing.add(fn),
     onWheel: (fn) => handlers.wheel.add(fn),          // { playerId, steer: -1..1 }
     setController,                                    // 'wheel' for driving games
+    setCursor: (style) => pointers.setStyle(style),   // 'crosshair' for aiming games
     // Smoothed cursor position in screen pixels (the stage fills the screen).
     pointer: (playerId) => pointers.position(playerId),
     rumble: (playerId, ms) => socket.emit(EV.FEEDBACK_RUMBLE, { playerId, ms }),
