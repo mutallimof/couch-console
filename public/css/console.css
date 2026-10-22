@@ -30,11 +30,11 @@ html, body {
 .tiles {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* columns may shrink below their text */
   align-content: center;
   gap: clamp(12px, 2vw, 24px);
   /* fit 3 rows of 16:10 tiles on short laptop screens too */
-  width: min(92vw, (100vh - 170px) * 1.6);
+  width: min(92vw, (100vh - 170px) * 4.8 / var(--rows, 3)); /* shrink tiles when there are more rows */
   margin: 0 auto;
   padding: 24px 0;
 }
@@ -60,8 +60,9 @@ html, body {
   transform: scale(1.06);
   box-shadow: 0 0 0 5px #fff, 0 0 0 8px var(--tile), 0 16px 34px rgba(40, 60, 90, 0.25);
 }
-.tile-icon svg { display: block; width: clamp(36px, 5vw, 64px); height: auto; }
-.tile-title { font-weight: 900; font-size: clamp(16px, 1.8vw, 24px); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); }
+.tile { container-type: inline-size; } /* lets the icon and title scale with the tile */
+.tile-icon svg { display: block; width: clamp(28px, 22cqw, 64px); height: auto; }
+.tile-title { font-weight: 900; font-size: clamp(13px, 10cqw, 24px); white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); }
 
 .bar {
   display: flex;
@@ -459,3 +460,69 @@ html, body {
   .boot-dot { display: none; }
   .boot-ring, .boot-title span, .boot-tag { animation-duration: 0.01s; animation-delay: 0s; }
 }
+
+/* ---------- Channels (Photos, Weather, Video) ---------- */
+.channel { position: absolute; inset: 0; overflow: hidden; color: #fff; background: linear-gradient(160deg, #2B3445, #1B2130); }
+.channel-head { display: flex; align-items: baseline; gap: 24px; padding: 28px 48px 8px; }
+.channel-head h1 { margin: 0; font-size: 44px; font-weight: 900; }
+.channel-head span { color: rgba(255, 255, 255, 0.65); font-size: 20px; font-weight: 700; }
+.channel-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; }
+.channel-empty h1 { margin: 0 0 10px; font-size: 52px; font-weight: 900; }
+.channel-empty p { margin: 4px; font-size: 24px; line-height: 1.5; }
+.channel .muted { color: rgba(255, 255, 255, 0.6); }
+
+/* Photos */
+.photo-grid, .video-grid { display: grid; gap: 18px; padding: 16px 48px 48px; overflow: hidden; max-height: calc(100% - 100px); }
+.photo-grid { grid-template-columns: repeat(5, 1fr); }
+.photo-tile, .video-tile { border-radius: 14px; overflow: hidden; background: #0003; transition: transform 0.15s, box-shadow 0.15s; }
+.photo-tile { aspect-ratio: 4 / 3; }
+.photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-tile.focused, .video-tile.focused { transform: scale(1.05); box-shadow: 0 0 0 4px #fff, 0 12px 30px rgba(0, 0, 0, 0.5); }
+.photo-view { position: absolute; inset: 0; background: #000; display: grid; place-items: center; overflow: hidden; }
+.photo-bg { position: absolute; inset: -40px; background-size: cover; background-position: center; filter: blur(30px) brightness(0.5); }
+.photo-full { position: relative; max-width: 100%; max-height: 100%; object-fit: contain; animation: kenburns 12s ease-in-out infinite alternate; }
+@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.07) translate(1%, -1%); } }
+.photo-caption { position: absolute; left: 32px; bottom: 26px; font-size: 22px; font-weight: 900; text-shadow: 0 2px 8px #000; }
+.photo-help { position: absolute; right: 32px; bottom: 26px; font-size: 18px; font-weight: 700; opacity: 0.75; text-shadow: 0 2px 8px #000; }
+
+/* Weather: the background follows the sky */
+.weather { background: linear-gradient(170deg, #4BA3F5, #9ED0FF); }
+.weather[data-kind="cloudy"], .weather[data-kind="fog"] { background: linear-gradient(170deg, #7D8FA6, #B9C6D6); }
+.weather[data-kind="rain"], .weather[data-kind="storm"] { background: linear-gradient(170deg, #34465E, #6C7F99); }
+.weather[data-kind="snow"] { background: linear-gradient(170deg, #9DB4CC, #E3ECF5); }
+.weather[data-kind="night"] { background: linear-gradient(170deg, #121A35, #34406B); }
+.wx-status { position: absolute; inset: 0; display: grid; place-items: center; font-size: 32px; font-weight: 900; text-align: center; padding: 40px; }
+.wx-now { display: flex; align-items: center; justify-content: center; gap: 40px; margin-top: 2vh; }
+.wx-temp { font-size: clamp(72px, 14vh, 140px); font-weight: 900; line-height: 1; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); }
+.wx-words { font-size: 36px; font-weight: 900; }
+.wx-details { margin-top: 10px; font-size: 20px; font-weight: 700; opacity: 0.85; }
+.wx-days { display: flex; justify-content: center; gap: 16px; margin-top: 3vh; }
+.wx-day { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 130px; padding: 14px 8px; border-radius: 18px;
+  background: rgba(255, 255, 255, 0.2); font-size: 22px; font-weight: 900; }
+.wx-day small { font-size: 16px; opacity: 0.8; }
+.wx-sun { animation: wx-spin 24s linear infinite; transform-origin: 60px 50px; }
+.wx-moon { animation: wx-float 4s ease-in-out infinite alternate; }
+.wx-cloud { animation: wx-drift 6s ease-in-out infinite alternate; }
+.wx-cloud.slow { animation-duration: 9s; }
+.wx-drop { animation: wx-fall 1s linear infinite; animation-delay: var(--d); }
+.wx-fog { animation: wx-drift 5s ease-in-out infinite alternate; animation-delay: var(--d); }
+.wx-bolt { animation: wx-flash 2.4s infinite; }
+@keyframes wx-spin { to { transform: rotate(360deg); } }
+@keyframes wx-float { to { transform: translateY(-6px); } }
+@keyframes wx-drift { to { translate: 8px 0; } }
+@keyframes wx-fall { from { transform: translateY(-10px); opacity: 0; } 30% { opacity: 1; } to { transform: translateY(14px); opacity: 0; } }
+@keyframes wx-flash { 0%, 80%, 100% { opacity: 1; } 85%, 95% { opacity: 0.1; } }
+
+/* Video */
+.video-grid { grid-template-columns: repeat(3, 1fr); }
+.video-tile b { display: block; padding: 10px 14px 14px; font-size: 20px; }
+.video-tile .thumb { aspect-ratio: 16 / 9; display: grid; place-items: center; font-size: 56px; color: rgba(255, 255, 255, 0.5);
+  background: linear-gradient(135deg, #E03131, #7B2D5C); }
+.video-tile img { width: 100%; height: 100%; object-fit: cover; display: block; grid-area: 1 / 1; }
+.video-tile img.broken { visibility: hidden; } /* no thumbnail (offline): the ▶ placeholder shows */
+.video-view { position: absolute; inset: 0; background: #000; }
+.video-frame, .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-osd { position: absolute; top: 28px; right: 32px; padding: 10px 20px; border-radius: 14px; background: rgba(0, 0, 0, 0.6);
+  font-size: 26px; font-weight: 900; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.video-osd.show { opacity: 1; }
+.video-title { position: absolute; left: 32px; top: 28px; font-size: 22px; font-weight: 900; text-shadow: 0 2px 8px #000; opacity: 0.85; pointer-events: none; }

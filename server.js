@@ -2,7 +2,7 @@
 // phones (remotes) and the laptop (console). All game logic runs in the browser.
 import { createServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
@@ -39,6 +39,33 @@ app.use(express.static(fileURLToPath(new URL('./public', import.meta.url))));
 // Three.js (3D games) is served from node_modules, so it works without internet.
 app.get('/vendor/three.module.js', (req, res) =>
   res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));
+
+// ---------- Channels (Phase 17) ----------
+// Photos: any pictures you put in the photos/ folder.
+const PHOTOS = file('./photos');
+app.use('/photos', express.static(PHOTOS));
+app.get('/api/photos', (req, res) => {
+  const list = existsSync(PHOTOS)
+    ? readdirSync(PHOTOS).filter((f) => /\.(jpe?g|png|gif|webp)$/i.test(f)).sort((a, b) => a.localeCompare(b))
+    : [];
+  res.json(list.map((name) => ({ name, url: `/photos/${encodeURIComponent(name)}` })));
+});
+
+// Videos: one YouTube link per line in videos.txt ("Title | link"), or the example list.
+app.get('/api/videos', (req, res) => {
+  const path = existsSync(file('./videos.txt')) ? file('./videos.txt') : file('./videos.example.txt');
+  const lines = existsSync(path) ? readFileSync(path, 'utf8').split(/\r?\n/) : [];
+  const videos = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const [a, b] = line.includes('|') ? line.split('|').map((x) => x.trim()) : [null, line];
+    // youtu.be/ID, watch?v=ID, embed/ID, shorts/ID or just the 11-character ID
+    const id = (b.match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)([\w-]{11})/) || b.match(/^([\w-]{11})$/) || [])[1];
+    if (id) videos.push({ id, title: a || `Video ${videos.length + 1}` });
+  }
+  res.json(videos);
+});
 
 // The local certificate authority, so a phone can trust our https (public part only, never the key)
 app.get('/rootCA.crt', (req, res) => {

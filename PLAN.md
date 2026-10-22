@@ -261,8 +261,10 @@ A short, original startup animation when the console opens.
 ### Phase 16: Local HTTPS (no tunnel)
 Use `mkcert` for a trusted local HTTPS certificate, so phones on the same Wi-Fi connect directly with lower latency.
 
-### Phase 17: Content channel
-Weather, photos and/or video. Details to be decided before starting.
+### Phase 17: Content channels
+- **Photos:** pictures from the laptop's `photos/` folder (git-ignored). Grid → full screen with a slow zoom; ◀ ▶ browse, A = slideshow.
+- **Weather:** Open-Meteo (free, no key). "My location" (browser geolocation) or a city list (◀ ▶), °C/°F (+/−), today plus 5 days, original animated icons.
+- **Video:** YouTube IFrame player for links listed in `videos.txt` (falls back to `videos.example.txt`). A = play/pause, ◀ ▶ = ±10 s, +/− = volume, ▲ ▼ = previous/next.
 
 ---
 

@@ -6,7 +6,7 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started: **Turbo Karts**, **Table Tennis**, **Target Range**, **Air Hockey** and **Gem Dungeon** are in. See `PLAN.md` for the roadmap.
+> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started: **Turbo Karts**, **Table Tennis**, **Target Range**, **Air Hockey**, **Gem Dungeon**, a boot animation, local HTTPS, and the **Photos**, **Weather** and **Video** channels are in. See `PLAN.md` for the roadmap.
 >
 > **After pulling new code, run `npm install` again.** Turbo Karts uses the `three` 3D library, which needs to be downloaded once.
 
@@ -95,6 +95,9 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 - **Draw:** hold A to paint. The D-pad changes the color, + and − change the brush size, and B clears the picture.
 - **Paddle Duel:** a bat-and-ball game. Your paddle follows how high you point. Press A to serve; the ball gets 5% faster on every hit, and the first to 7 points wins. With 2 phones choose **Versus** (P1 left, P2 right) or **Solo** against the computer.
 - **Bowling:** point left/right to aim, then **hold B and swing your phone** like you're bowling. A harder swing throws faster, and tilting the phone sideways curves the ball. Can't get swings to work? Press **A** for a medium, straight throw. 10 frames with real bowling scoring (strikes and spares); with 2 phones you take turns.
+- **Photos:** put pictures (.jpg, .png, .gif, .webp) in the `photos` folder inside `couch-console`. Point or use the D-pad to choose one and press A to open it. ◀ ▶ flips through them, A starts or stops a slideshow, and B goes back. Your photos are never uploaded to GitHub.
+- **Weather:** today's weather and the next days (needs internet). ◀ ▶ changes the city. "My location" asks the laptop's browser for permission once. + / − switches between °C and °F, and A refreshes.
+- **Video:** plays YouTube videos (needs internet). The list comes from `videos.txt` in the `couch-console` folder. Copy `videos.example.txt` to `videos.txt` and put one `Title | YouTube link` per line. While watching: A = play/pause, ◀ ▶ = back/forward 10 s, + / − = volume, ▲ ▼ = previous/next video, B = back to the list. If a video doesn't start, click the laptop page once (browsers block autoplay with sound) and press A.
 - **Settings:** pointer speed (1 to 10), sound on/off, and **Show QR code** to connect a phone again.
 
 If the phone can't use motion sensors, or you tapped "Don't Allow", it shows a **touchpad** instead. Drag on it to move the cursor.

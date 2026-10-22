@@ -2,10 +2,12 @@
 // The router (main.js) feeds it pointer hovers and D-pad moves, and asks which tile to open.
 
 const COLUMNS = 4;
-const TOTAL_TILES = 12; // real apps first, then faint empty tiles
 
 export function createMenu({ grid, clock, date, apps, onFocusChange }) {
   let focus = 0;
+  // Real apps first, then faint empty tiles to fill the last row (at least 3 rows)
+  const TOTAL_TILES = Math.max(12, Math.ceil(apps.length / COLUMNS) * COLUMNS);
+  grid.style.setProperty('--rows', TOTAL_TILES / COLUMNS);
 
   // ---- Tiles ----
   grid.innerHTML = '';

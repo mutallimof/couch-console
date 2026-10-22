@@ -3,3 +3,6 @@ node_modules
 *.log
 certs/
 *.pem
+photos/*
+!photos/README.txt
+videos.txt
