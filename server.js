@@ -1,6 +1,9 @@
 // Couch Console server: serves the web pages and relays input between
 // phones (remotes) and the laptop (console). All game logic runs in the browser.
 import { createServer } from 'node:http';
+import { createServer as createHttpsServer } from 'node:https';
+import { existsSync, readFileSync } from 'node:fs';
+import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { Server } from 'socket.io';
@@ -11,15 +14,37 @@ import {
 } from './public/js/shared/protocol.js';
 
 const PORT = process.env.PORT || 3000;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
+const file = (path) => fileURLToPath(new URL(path, import.meta.url));
+
+// Local HTTPS (Phase 16): if `npm run certs` made a certificate, also serve https on port 3443,
+// so phones on the same Wi-Fi can connect directly (no tunnel).
+const CERT = file('./certs/cert.pem'), KEY = file('./certs/key.pem'), ROOT_CA = file('./certs/rootCA.crt');
+const httpsReady = existsSync(CERT) && existsSync(KEY);
+
+// This laptop's address on the Wi-Fi (e.g. 192.168.1.23)
+function lanIp() {
+  const all = Object.values(networkInterfaces()).flat().filter((a) => a && a.family === 'IPv4' && !a.internal);
+  const home = all.find((a) => /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address));
+  return (home || all[0])?.address;
+}
 
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
+const httpsServer = httpsReady ? createHttpsServer({ cert: readFileSync(CERT), key: readFileSync(KEY) }, app) : null;
+if (httpsServer) io.attach(httpsServer); // same rooms on both
 
 app.use(express.static(fileURLToPath(new URL('./public', import.meta.url))));
 // Three.js (3D games) is served from node_modules, so it works without internet.
 app.get('/vendor/three.module.js', (req, res) =>
   res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));
+
+// The local certificate authority, so a phone can trust our https (public part only, never the key)
+app.get('/rootCA.crt', (req, res) => {
+  if (!existsSync(ROOT_CA)) return res.status(404).send('No certificate yet. Run `npm run certs` on the laptop.');
+  res.type('application/x-x509-ca-cert').sendFile(ROOT_CA);
+});
 
 // Tiny endpoint the phone's debug view uses to measure round-trip time.
 app.get('/ping', (req, res) => res.set('Cache-Control', 'no-store').send('pong'));
@@ -58,10 +83,18 @@ app.get('/qr', async (req, res) => {
     return res.status(400).json({ error: 'bad room' });
   }
   // Behind the cloudflared tunnel the public host is in x-forwarded-host.
-  const host = (req.get('x-forwarded-host') || req.get('host')).split(',')[0].trim();
-  // Phones need https for motion sensors; only plain localhost uses http.
+  const forwarded = req.get('x-forwarded-host');
+  const host = (forwarded || req.get('host')).split(',')[0].trim();
   const isLocal = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
-  const url = `${isLocal ? 'http' : 'https'}://${host}/remote.html?room=${room}`;
+  const isLan = /^(\d+\.){3}\d+(:\d+)?$/.test(host);
+  let url;
+  if (!forwarded && httpsReady && (isLocal || isLan) && lanIp()) {
+    // Local setup: send phones straight to this laptop's https address on the Wi-Fi
+    url = `https://${lanIp()}:${HTTPS_PORT}/remote.html?room=${room}`;
+  } else {
+    // Phones need https for motion sensors; only plain localhost uses http.
+    url = `${isLocal ? 'http' : 'https'}://${host}/remote.html?room=${room}`;
+  }
   const dataUrl = await QRCode.toDataURL(url, { margin: 1, width: 512 });
   res.json({ url, dataUrl });
 });
@@ -164,6 +197,14 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log(`Couch Console running at http://localhost:${PORT}`);
+  if (httpsServer) return;
   console.log(`For phones, start the tunnel in a second terminal:`);
   console.log(`  cloudflared tunnel --url http://localhost:${PORT}`);
+  console.log(`(Or set up the faster local mode once: see "Local setup" in README.md)`);
+});
+httpsServer?.listen(HTTPS_PORT, () => {
+  const ip = lanIp();
+  console.log(`Local HTTPS is on. Open this on the laptop:  https://${ip || 'localhost'}:${HTTPS_PORT}`);
+  console.log(`Phones on the same Wi-Fi just scan the QR code (no tunnel needed).`);
+  console.log(`First time on a phone? Trust the certificate: http://${ip}:${PORT}/rootCA.crt  (see README)`);
 });

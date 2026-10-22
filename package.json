@@ -7,7 +7,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "certs": "node scripts/make-certs.js"
   },
   "engines": {
     "node": ">=20"

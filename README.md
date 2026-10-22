@@ -50,7 +50,7 @@ npm start
 ```
 Leave it running. (While developing, `npm run dev` restarts the server automatically whenever you save a file.)
 
-**Terminal 2: start the https tunnel**
+**Terminal 2: start the https tunnel** (skip this if you did the *Local setup* below)
 ```
 cloudflared tunnel --url http://localhost:3000
 ```
@@ -113,6 +113,26 @@ On the phone, add `&debug=1` to the end of its link. You'll see live sensor numb
 - Refreshing the laptop page makes a new room and QR code. Scan the new one with your phone.
 
 To stop everything, press `Ctrl + C` in each terminal.
+
+---
+
+## Local setup (faster, no tunnel)
+
+Instead of the cloudflared tunnel, phones on the **same Wi-Fi** as your laptop can connect directly, which means less delay. You set this up **once**.
+
+**On the laptop (Windows):**
+1. Install mkcert: `winget install FiloSottile.mkcert`, then **close and reopen** your terminal.
+2. In the `couch-console` folder run: `npm run certs`. Click **Yes** if Windows asks about installing a certificate.
+3. Run `npm start`. It prints a line like `Open this on the laptop: https://192.168.1.23:3443`. Open that address on the laptop.
+4. If Windows Firewall asks about Node.js, allow it on **Private networks**. Your Wi-Fi should be set to *Private* in Windows network settings.
+
+**On each phone (once):** the phone must trust your laptop's certificate. The server prints the link, which looks like `http://192.168.1.23:3000/rootCA.crt`.
+- **iPhone:** open the link in **Safari** and tap **Allow**. Then go to Settings → General → VPN & Device Management → tap the *mkcert* profile → **Install**. Then go to Settings → General → About → Certificate Trust Settings and **switch on** *mkcert*.
+- **Android:** open the link in **Chrome** to download it. Then go to Settings, search for **"CA certificate"** (often under Security → Encryption & credentials → Install a certificate), choose it and pick the downloaded `rootCA.crt`.
+
+After that, just scan the QR code as usual. It points straight to your laptop.
+If your laptop's Wi-Fi address changes (another network), run `npm run certs` again.
+The `certs` folder holds a private key: it is **never** uploaded to GitHub (it's in `.gitignore`).
 
 ---
 
