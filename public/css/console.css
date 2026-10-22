@@ -398,3 +398,7 @@ html, body {
 .range-pop { position: absolute; transform: translate(-50%, -100%); font-size: 30px; font-weight: 900; white-space: nowrap;
   text-shadow: 0 2px 0 #fff, 0 0 8px rgba(255, 255, 255, 0.9); animation: range-pop 0.9s ease-out forwards; }
 @keyframes range-pop { from { opacity: 1; margin-top: 0; } to { opacity: 0; margin-top: -60px; } }
+.dungeon-bar { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 28px; align-items: center;
+  padding: 8px 24px; border-radius: 18px; background: rgba(255, 255, 255, 0.92); box-shadow: var(--shadow); font-size: 26px; font-weight: 900; white-space: nowrap; }
+.dungeon-bar .heart { color: #D5DBE3; font-size: 28px; }
+.dungeon-bar .heart.on { color: #E03131; }

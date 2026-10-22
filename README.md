@@ -6,7 +6,7 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started: **Turbo Karts**, **Table Tennis**, **Target Range** and **Air Hockey** are in. See `PLAN.md` for the roadmap.
+> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started: **Turbo Karts**, **Table Tennis**, **Target Range**, **Air Hockey** and **Gem Dungeon** are in. See `PLAN.md` for the roadmap.
 >
 > **After pulling new code, run `npm install` again.** Turbo Karts uses the `three` 3D library, which needs to be downloaded once.
 
@@ -90,6 +90,7 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 - **Table Tennis:** a 3D ping-pong table. The paddles move by themselves; you **swing your phone** to hit when the ball reaches you (or press A). Swinging early or late, or tilting the phone, aims left or right; a harder swing hits faster. **Versus** is first to 11 (win by 2), **Co-op** counts how long you can keep a rally going together, and **Solo** is against the computer.
 - **Target Range:** a 3D shooting gallery. Your cursor becomes a **crosshair**: aim and press **A** to shoot targets as they pop up. Center = 3, middle = 2, edge = 1, gold movers = +5, and red X signs = −5 (don't shoot those!). 45-second rounds: **Versus** (whoever hits a target first scores), **Co-op** (team goal of 120) or **Solo** (beat your best).
 - **Air Hockey:** your mallet follows your pointer on your half of a 3D table. Knock the puck into the other goal; first to 7 wins. **Versus** (P1 left, P2 right) or **Solo** against the computer.
+- **Gem Dungeon:** a 3D dungeon crawl for 1–2 heroes. **Point at the floor** and your hero walks there; press **A** to swing your sword at slimes. Collect every gem to open the purple exit portal, then get everyone into it. Avoid spike traps (they go up and down). Hearts are shared. Golden **pressure plates** open the gates: in **Co-op** a gate only stays open while someone stands on a plate, so take turns holding it for each other. 3 levels.
 - **Balloon Pop:** press A to start, then point at balloons and press A to pop them. Normal balloons are +1, golden ones +3, and spiky ones −2 (your phone buzzes on Android). A round lasts 60 seconds, and your best score is saved.
 - **Draw:** hold A to paint. The D-pad changes the color, + and − change the brush size, and B clears the picture.
 - **Paddle Duel:** a bat-and-ball game. Your paddle follows how high you point. Press A to serve; the ball gets 5% faster on every hit, and the first to 7 points wins. With 2 phones choose **Versus** (P1 left, P2 right) or **Solo** against the computer.
