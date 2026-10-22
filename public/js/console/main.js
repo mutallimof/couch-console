@@ -1,14 +1,58 @@
-// Console (laptop) entry point: pairing screen, cursors, and (for now) an input log.
+// Console (laptop) entry point: socket, pairing overlay, and the router menu <-> apps.
 import { EV, colorFor } from '../shared/protocol.js';
 import { players } from './players.js';
 import { createPointers } from './pointer.js';
+import { createMenu } from './menu.js';
+import { createSettings } from './settings.js';
+import { sound } from './sound.js';
+import balloonPop from './games/balloon-pop.js';
+import draw from './games/draw.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const pointers = createPointers($('cursors'));
+const ZOOM_MS = 300;
 
-// ---------- Pairing ----------
+// ---------- Pointer sensitivity (1 = slow ... 10 = fast) ----------
+// Sent to the phones as the tilt (in degrees) needed to sweep the whole screen.
+
+let sensitivity = 5;
+try { sensitivity = Number(localStorage.getItem('couch.sensitivity')) || 5; } catch { /* ignore */ }
+
+function sendSettings() {
+  const f = 1.2 ** (5 - sensitivity); // level 5 = PLAN defaults (25° x 18°)
+  socket.emit(EV.FEEDBACK_SETTINGS, { rangeX: 25 * f, rangeY: 18 * f });
+}
+
+const prefs = {
+  getSensitivity: () => sensitivity,
+  setSensitivity(n) {
+    sensitivity = n;
+    try { localStorage.setItem('couch.sensitivity', String(n)); } catch { /* ignore */ }
+    sendSettings();
+  },
+  showQR: () => setPairing(true),
+};
+
+// ---------- Menu ----------
+
+const apps = [balloonPop, draw, createSettings(prefs)];
+const menu = createMenu({
+  grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
+  onFocusChange: () => sound.play('hover'),
+});
+
+// ---------- Pairing overlay ----------
+// Shown when no phone is connected, or when "Show QR" is chosen in Settings.
+
+let pairingForced = false;
+function setPairing(forced = pairingForced) {
+  pairingForced = forced;
+  const show = forced || players.list().length === 0;
+  $('pairing').hidden = !show;
+  $('pairing-close').hidden = !(forced && players.list().length > 0);
+}
 
 // A new room is created on every (re)connect, e.g. after the server restarts.
 socket.on('connect', () => {
@@ -24,12 +68,11 @@ socket.on('disconnect', () => {
 
 socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
   players.join(playerId, color);
-  log(`P${playerId} joined`);
+  sendSettings(); // so the new phone uses the current pointer speed
 });
 socket.on(EV.PLAYER_LEFT, ({ playerId }) => {
   players.leave(playerId);
   pointers.remove(playerId);
-  log(`P${playerId} left`);
 });
 
 async function showRoom(room) {
@@ -57,40 +100,142 @@ function renderSlots() {
     </div>`).join('');
 }
 
-players.onChange(renderSlots);
+players.onChange(() => { renderSlots(); setPairing(); });
 renderSlots();
+setPairing();
 
-// ---------- Input ----------
+// ---------- Opening and closing apps (tile zoom) ----------
+
+let current = null;   // { app, handlers } while an app is open
+let busy = false;     // true during the zoom animation
+
+// clip-path that matches a tile's rectangle (used to zoom from/to it).
+function tileClip(tile) {
+  const r = tile.getBoundingClientRect();
+  return `inset(${r.top}px ${innerWidth - r.right}px ${innerHeight - r.bottom}px ${r.left}px round 16px)`;
+}
+
+function openApp(app) {
+  if (busy || current) return;
+  busy = true;
+  sound.play('select');
+  const stage = $('stage');
+  const handlers = { button: new Set(), pointer: new Set(), swing: new Set() };
+  current = { app, handlers };
+  stage.style.setProperty('--tile', app.color);
+  stage.hidden = false;
+  const anim = stage.animate(
+    [{ clipPath: tileClip(menu.focusedTile()) }, { clipPath: 'inset(0px 0px 0px 0px round 0px)' }],
+    { duration: ZOOM_MS, easing: 'cubic-bezier(.2,.8,.2,1)' },
+  );
+  anim.onfinish = () => {
+    busy = false;
+    app.mount($('stage-content'), makeApi(handlers));
+  };
+}
+
+function closeApp() {
+  if (busy || !current) return;
+  busy = true;
+  sound.play('back');
+  current.app.unmount();
+  $('stage-content').innerHTML = '';
+  current = null;
+  const stage = $('stage');
+  const anim = stage.animate(
+    [{ clipPath: 'inset(0px 0px 0px 0px round 0px)' }, { clipPath: tileClip(menu.focusedTile()) }],
+    { duration: ZOOM_MS, easing: 'cubic-bezier(.2,.8,.2,1)' },
+  );
+  anim.onfinish = () => { stage.hidden = true; busy = false; };
+}
+
+// The `api` object every game gets in mount(). See PLAN.md, Phase 4.
+function makeApi(handlers) {
+  return {
+    get players() { return players.list(); },
+    onButton: (fn) => handlers.button.add(fn),
+    onPointer: (fn) => handlers.pointer.add(fn),
+    onSwing: (fn) => handlers.swing.add(fn),
+    // Smoothed cursor position in screen pixels (the stage fills the screen).
+    pointer: (playerId) => pointers.position(playerId),
+    rumble: (playerId, ms) => socket.emit(EV.FEEDBACK_RUMBLE, { playerId, ms }),
+    sound,
+    exit: closeApp,
+  };
+}
+
+// ---------- Input routing ----------
 
 const msgCount = new Map(); // playerId -> messages this second (debug)
 const count = (playerId) => msgCount.set(playerId, (msgCount.get(playerId) || 0) + 1);
 
-socket.on(EV.INPUT_POINTER, ({ playerId, x, y }) => {
-  count(playerId);
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-  pointers.move(playerId, x, y, colorFor(playerId));
-  $('log-pointer').textContent = `P${playerId} pointer  x ${x.toFixed(2)}  y ${y.toFixed(2)}`;
+socket.on(EV.INPUT_POINTER, (e) => {
+  count(e.playerId);
+  if (!Number.isFinite(e.x) || !Number.isFinite(e.y)) return;
+  pointers.move(e.playerId, e.x, e.y, colorFor(e.playerId));
+  current?.handlers.pointer.forEach((fn) => fn(e));
 });
 
-socket.on(EV.INPUT_BUTTON, ({ playerId, button, state }) => {
-  count(playerId);
-  log(`P${playerId}  ${button} ${state}`);
+socket.on(EV.INPUT_SWING, (e) => {
+  count(e.playerId);
+  current?.handlers.swing.forEach((fn) => fn(e));
 });
 
-socket.on(EV.INPUT_RECENTER, ({ playerId }) => {
-  count(playerId);
-  log(`P${playerId}  recenter`);
+socket.on(EV.INPUT_RECENTER, (e) => count(e.playerId));
+
+socket.on(EV.INPUT_BUTTON, (e) => {
+  count(e.playerId);
+  const { button, state } = e;
+  const down = state === 'down';
+
+  // The QR overlay opened from Settings: A, B or HOME closes it.
+  if (pairingForced) {
+    if (down && ['A', 'B', 'HOME'].includes(button)) { setPairing(false); sound.play('back'); }
+    return;
+  }
+  // HOME always goes back to the menu.
+  if (button === 'HOME') {
+    if (down) closeApp();
+    return;
+  }
+  if (busy) return;
+  if (current) {
+    current.handlers.button.forEach((fn) => fn(e));
+    return;
+  }
+  // In the menu
+  if (!down) return;
+  if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(button)) menu.move(button);
+  // Open the focused tile (moving the cursor over a tile focuses it, see below).
+  else if (button === 'A') openApp(menu.focusedApp());
 });
 
-// ---------- Temporary input log (Phase 2/3; replaced by the menu in Phase 4) ----------
+// While the menu is showing, hovering a tile with the cursor focuses it.
+// Only when the cursor actually moves, so it doesn't fight with the D-pad.
+const lastHover = new Map();
+(function hoverLoop() {
+  if (!current && !busy && $('pairing').hidden) {
+    for (const p of players.list()) {
+      const pos = pointers.position(p.playerId);
+      const prev = lastHover.get(p.playerId);
+      if (pos && (!prev || Math.hypot(pos.x - prev.x, pos.y - prev.y) > 1)) {
+        lastHover.set(p.playerId, pos);
+        menu.hover(pointers.elementAt(p.playerId));
+      }
+    }
+  }
+  requestAnimationFrame(hoverLoop);
+})();
 
-function log(text) {
-  const li = document.createElement('li');
-  const t = new Date().toLocaleTimeString([], { hour12: false });
-  li.textContent = `${t}  ${text}`;
-  $('log-list').prepend(li);
-  while ($('log-list').children.length > 12) $('log-list').lastChild.remove();
+// ---------- Sound unlock ----------
+// Browsers block sound until the page itself is clicked once.
+
+function unlockSound() {
+  sound.unlock();
+  $('sound-hint').hidden = true;
 }
+addEventListener('pointerdown', unlockSound);
+addEventListener('keydown', unlockSound);
 
 // ---------- Debug readout (?debug=1) ----------
 

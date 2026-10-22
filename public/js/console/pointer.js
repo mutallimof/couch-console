@@ -1,7 +1,7 @@
 // On-screen cursors: one per player, in the player's color, labeled "P1", "P2", ...
 // Phones send x, y in -1..1; we smooth toward that target every frame.
 
-const SMOOTHING = 0.35;  // pos += (target - pos) * SMOOTHING each frame
+const SMOOTHING = 0.5;   // pos += (target - pos) * SMOOTHING each frame (PLAN says 0.35; raised for a snappier feel)
 const HIDE_AFTER_MS = 3000;
 
 export function createPointers(layer) {

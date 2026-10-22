@@ -11,7 +11,23 @@
   <link rel="stylesheet" href="/css/console.css">
 </head>
 <body>
-  <main id="pairing" class="pairing">
+  <!-- Home menu -->
+  <main class="menu">
+    <div id="tiles" class="tiles"></div>
+    <footer class="bar">
+      <span id="clock" class="clock"></span>
+      <span id="date" class="date"></span>
+      <span id="sound-hint" class="sound-hint">Click this page once to turn on sound</span>
+    </footer>
+  </main>
+
+  <!-- An open app (game or settings) zooms out of its tile into this layer -->
+  <div id="stage" class="stage" hidden>
+    <div id="stage-content" class="stage-content"></div>
+  </div>
+
+  <!-- Pairing: shown when no phone is connected, or from Settings -> Show QR code -->
+  <section id="pairing" class="pairing">
     <h1 class="title">Couch Console</h1>
 
     <div class="pair-card">
@@ -28,15 +44,9 @@
     </div>
 
     <div id="slots" class="slots"></div>
+    <p id="pairing-close" class="pairing-close" hidden>Press A or B to close</p>
     <p id="status" class="status"></p>
-  </main>
-
-  <!-- Temporary input log (Phases 2–3) -->
-  <aside class="input-log">
-    <h2>Input log</h2>
-    <p id="log-pointer" class="log-pointer">pointer: –</p>
-    <ul id="log-list"></ul>
-  </aside>
+  </section>
 
   <!-- One cursor per player is drawn here, above everything -->
   <div id="cursors" class="cursors"></div>

@@ -6,7 +6,7 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> 🚧 Work in progress. Done so far: pairing by QR code (Phase 1), phone buttons (Phase 2) and the tilt pointer (Phase 3). The menu and games come next. See `PLAN.md` for the roadmap.
+> 🚧 Work in progress. Milestone 1 is almost done: pairing, phone buttons, tilt pointer, the home menu, Balloon Pop and Draw. Two-player games come next. See `PLAN.md` for the roadmap.
 
 ---
 
@@ -61,6 +61,20 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 4. On the phone, tap **Tap to start**. On iPhone, tap **Allow** when it asks about motion.
 5. Hold the phone like a TV remote, with its top edge pointing at the laptop screen. Turn and tilt it to move your cursor on the laptop.
 6. Press **Recenter** any time to make the current direction the middle of the screen.
+
+7. **Click the laptop page once** with your mouse or touchpad. Browsers block sound until you do. Press **F11** for full screen.
+
+### Using the console
+| Phone button | What it does |
+|---|---|
+| Point + **A** | open the tile you're pointing at |
+| **D-pad** | move between tiles |
+| **B** | go back |
+| **HOME** | return to the menu from anywhere |
+
+- **Balloon Pop:** press A to start, then point at balloons and press A to pop them. Normal balloons are +1, golden ones +3, and spiky ones −2 (your phone buzzes on Android). A round lasts 60 seconds, and your best score is saved.
+- **Draw:** hold A to paint. The D-pad changes the color, + and − change the brush size, and B clears the picture.
+- **Settings:** pointer speed (1 to 10), sound on/off, and **Show QR code** to connect a phone again.
 
 If the phone can't use motion sensors, or you tapped "Don't Allow", it shows a **touchpad** instead. Drag on it to move the cursor.
 On iPhone, to get the motion question again: Settings → Apps → Safari → Clear History and Website Data, then reload the page.

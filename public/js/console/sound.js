@@ -1,0 +1,94 @@
+// Tiny synth sounds made with the Web Audio API (no audio files).
+// Browsers only allow sound after the user clicks the page once, so the console
+// calls sound.unlock() on the first click or key press.
+
+let ctx = null;
+let muted = false;
+try { muted = localStorage.getItem('couch.muted') === '1'; } catch { /* ignore */ }
+
+function audio() {
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  return ctx;
+}
+
+// One oscillator note: frequency slides from f0 to f1 over `dur` seconds.
+function tone({ f0, f1 = f0, dur = 0.1, type = 'sine', vol = 0.2, delay = 0 }) {
+  const a = audio();
+  const t = a.currentTime + delay;
+  const osc = a.createOscillator();
+  const gain = a.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(f0, t);
+  osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(gain).connect(a.destination);
+  osc.start(t);
+  osc.stop(t + dur + 0.02);
+}
+
+// A short burst of filtered white noise (pops, whooshes, booms).
+function noise({ dur = 0.1, freq = 2000, q = 1, vol = 0.3, delay = 0 }) {
+  const a = audio();
+  const t = a.currentTime + delay;
+  const buf = a.createBuffer(1, Math.ceil(a.sampleRate * dur), a.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = a.createBufferSource();
+  src.buffer = buf;
+  const filter = a.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = freq;
+  filter.Q.value = q;
+  const gain = a.createGain();
+  gain.gain.setValueAtTime(vol, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(filter).connect(gain).connect(a.destination);
+  src.start(t);
+}
+
+const SOUNDS = {
+  hover: () => tone({ f0: 1200, dur: 0.04, type: 'triangle', vol: 0.06 }),
+  select: () => {
+    tone({ f0: 660, dur: 0.08, type: 'triangle', vol: 0.15 });
+    tone({ f0: 990, dur: 0.12, type: 'triangle', vol: 0.15, delay: 0.07 });
+  },
+  back: () => {
+    tone({ f0: 760, dur: 0.08, type: 'triangle', vol: 0.15 });
+    tone({ f0: 500, dur: 0.12, type: 'triangle', vol: 0.15, delay: 0.07 });
+  },
+  pop: () => {
+    noise({ dur: 0.08, freq: 1800, q: 0.8, vol: 0.5 });
+    tone({ f0: 500, f1: 120, dur: 0.1, vol: 0.25 });
+  },
+  golden: () => {
+    noise({ dur: 0.06, freq: 2500, vol: 0.4 });
+    [880, 1100, 1320, 1760].forEach((f, i) => tone({ f0: f, dur: 0.1, type: 'triangle', vol: 0.12, delay: i * 0.05 }));
+  },
+  bomb: () => {
+    noise({ dur: 0.4, freq: 200, q: 0.5, vol: 0.8 });
+    tone({ f0: 150, f1: 40, dur: 0.4, type: 'sawtooth', vol: 0.25 });
+  },
+  clear: () => noise({ dur: 0.25, freq: 900, q: 0.4, vol: 0.25 }),
+  tick: () => tone({ f0: 1000, dur: 0.05, type: 'square', vol: 0.05 }),
+  start: () => [523, 659, 784].forEach((f, i) => tone({ f0: f, dur: 0.14, type: 'triangle', vol: 0.15, delay: i * 0.1 })),
+  end: () => [784, 659, 523, 1046].forEach((f, i) => tone({ f0: f, dur: 0.18, type: 'triangle', vol: 0.15, delay: i * 0.12 })),
+};
+
+export const sound = {
+  play(name) {
+    if (muted || !ctx || ctx.state !== 'running') return;
+    SOUNDS[name]?.();
+  },
+  // Call from a real click/key press on the laptop.
+  unlock() {
+    audio().resume();
+  },
+  get unlocked() { return ctx?.state === 'running'; },
+  get muted() { return muted; },
+  setMuted(value) {
+    muted = value;
+    try { localStorage.setItem('couch.muted', value ? '1' : '0'); } catch { /* ignore */ }
+  },
+};
