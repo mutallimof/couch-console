@@ -7,6 +7,7 @@ import { createSettings } from './settings.js';
 import { sound } from './sound.js';
 import balloonPop from './games/balloon-pop.js';
 import draw from './games/draw.js';
+import paddleDuel from './games/paddle-duel.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
@@ -41,7 +42,7 @@ const prefs = {
 
 // ---------- Menu ----------
 
-const apps = [balloonPop, draw, createSettings(prefs)];
+const apps = [balloonPop, draw, paddleDuel, createSettings(prefs)];
 const menu = createMenu({
   grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
   onFocusChange: () => sound.play('hover'),
@@ -149,7 +150,9 @@ function openApp(app) {
     // A 2-player game with 2 phones connected: ask which mode first.
     const modes = app.modes || [];
     if (modes.length > 1 && app.maxPlayers >= 2 && players.list().length >= 2) showPicker(modes);
-    // No picker: the game's first mode, or 'free' (everyone plays) for multi-player apps like Draw.
+    // No picker: 'solo' if only one phone is here, else the game's first mode,
+    // or 'free' (everyone plays) for multi-player apps without modes, like Draw.
+    else if (modes.includes('solo') && players.list().length < 2) startApp('solo');
     else startApp(modes[0] || (app.maxPlayers > 1 ? 'free' : 'solo'));
   };
 }
