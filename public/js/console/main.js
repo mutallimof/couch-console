@@ -8,6 +8,7 @@ import { sound } from './sound.js';
 import balloonPop from './games/balloon-pop.js';
 import draw from './games/draw.js';
 import paddleDuel from './games/paddle-duel.js';
+import bowling from './games/bowling.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
@@ -42,7 +43,7 @@ const prefs = {
 
 // ---------- Menu ----------
 
-const apps = [balloonPop, draw, paddleDuel, createSettings(prefs)];
+const apps = [balloonPop, draw, paddleDuel, bowling, createSettings(prefs)];
 const menu = createMenu({
   grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
   onFocusChange: () => sound.play('hover'),

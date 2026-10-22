@@ -1,6 +1,7 @@
 // Remote (phone) entry point: join a room, buttons, player badge, motion pointer.
 import { EV, ROOM_LETTERS, ROOM_CODE_LENGTH } from '../shared/protocol.js';
 import { createMotion } from './motion.js';
+import { createSwing } from './swing.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
@@ -135,6 +136,12 @@ const motion = createMotion({
 });
 let started = false;
 
+// Swings (for Bowling): sent to the console, which decides what to do with them.
+const swing = createSwing({
+  onSwing: ({ power, tilt }) => emit(EV.INPUT_SWING, { power, tilt }),
+  getGamma: () => motion.stats.gamma,
+});
+
 function showTouchpad(message) {
   $('touchpad').hidden = false;
   if (message) {
@@ -150,6 +157,7 @@ $('start-btn').addEventListener('click', async () => {
   const result = await motion.start();
   started = true;
   $('start').hidden = true;
+  if (result.ok) swing.start();
   requestWakeLock();
   if (result.reason === 'denied') {
     showTouchpad('Motion access was denied. To fix it: Settings → Apps → Safari → '
@@ -203,7 +211,9 @@ if (DEBUG) {
   }, 2000);
   setInterval(() => {
     const s = motion.stats;
+    const w = swing.stats;
     box.textContent = `alpha ${fmt(s.alpha)}  beta ${fmt(s.beta)}  gamma ${fmt(s.gamma)}\n`
-      + `mag ${fmt(s.mag)}  msgs/s ${rate}  ping ${pingMs} ms`;
+      + `mag ${fmt(w.mag ?? s.mag)}  msgs/s ${rate}  ping ${pingMs} ms\n`
+      + `swings ${w.swings}  last power ${w.lastPower == null ? '–' : w.lastPower.toFixed(2)}`;
   }, 100);
 }

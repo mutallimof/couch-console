@@ -6,7 +6,7 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> 🚧 Work in progress. Milestone 1 (1 phone) is done and tagged `v0.1`. Milestone 2 is in progress: 2 phones can connect, Balloon Pop has Versus and Co-op modes, and Paddle Duel is playable. Bowling comes next. See `PLAN.md` for the roadmap.
+> Milestone 1 (1 phone) and Milestone 2 (2 phones: Balloon Pop Versus/Co-op, Paddle Duel, Bowling) are built. See `PLAN.md` for the roadmap and ideas for later.
 
 ---
 
@@ -87,6 +87,7 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 - **Balloon Pop:** press A to start, then point at balloons and press A to pop them. Normal balloons are +1, golden ones +3, and spiky ones −2 (your phone buzzes on Android). A round lasts 60 seconds, and your best score is saved.
 - **Draw:** hold A to paint. The D-pad changes the color, + and − change the brush size, and B clears the picture.
 - **Paddle Duel:** a bat-and-ball game. Your paddle follows how high you point. Press A to serve; the ball gets 5% faster on every hit, and the first to 7 points wins. With 2 phones choose **Versus** (P1 left, P2 right) or **Solo** against the computer.
+- **Bowling:** point left/right to aim, then **hold B and swing your phone** like you're bowling. A harder swing throws faster, and tilting the phone sideways curves the ball. Can't get swings to work? Press **A** for a medium, straight throw. 10 frames with real bowling scoring (strikes and spares); with 2 phones you take turns.
 - **Settings:** pointer speed (1 to 10), sound on/off, and **Show QR code** to connect a phone again.
 
 If the phone can't use motion sensors, or you tapped "Don't Allow", it shows a **touchpad** instead. Drag on it to move the cursor.
