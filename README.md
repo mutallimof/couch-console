@@ -102,6 +102,8 @@ On iPhone, to get the motion question again: Settings → Apps → Safari → Cl
 
 No camera handy? Open `https://…trycloudflare.com/remote.html` on the phone and type the 4-letter room code shown on the laptop.
 
+**Boot animation:** a short intro plays when the console page opens. Click, press any key or press any phone button to skip it. To turn it off completely, add `?noboot=1` to the laptop link.
+
 **Debug mode:** add `?debug=1` to the end of the laptop link (for example `https://…trycloudflare.com/console.html?debug=1`).
 On the phone, add `&debug=1` to the end of its link. You'll see live sensor numbers, messages per second and ping times.
 

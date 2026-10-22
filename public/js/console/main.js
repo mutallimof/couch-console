@@ -5,6 +5,7 @@ import { createPointers } from './pointer.js';
 import { createMenu } from './menu.js';
 import { createSettings } from './settings.js';
 import { sound } from './sound.js';
+import { playBoot } from './boot.js';
 import balloonPop from './games/balloon-pop.js';
 import draw from './games/draw.js';
 import paddleDuel from './games/paddle-duel.js';
@@ -19,6 +20,8 @@ const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const pointers = createPointers($('cursors'));
+// Boot animation (skip it with ?noboot=1)
+const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoot({ sound });
 const ZOOM_MS = 300;
 const MODE_LABELS = { solo: 'Solo', versus: 'Versus', coop: 'Co-op' };
 
@@ -305,6 +308,7 @@ socket.on(EV.INPUT_RECENTER, (e) => count(e.playerId));
 
 socket.on(EV.INPUT_BUTTON, (e) => {
   count(e.playerId);
+  if (boot?.playing) { boot.skip(); return; } // any phone button skips the boot animation
   const { playerId, button, state } = e;
   const down = state === 'down';
   const isDriver = playerId === driverId();

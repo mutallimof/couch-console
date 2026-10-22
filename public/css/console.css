@@ -402,3 +402,60 @@ html, body {
   padding: 8px 24px; border-radius: 18px; background: rgba(255, 255, 255, 0.92); box-shadow: var(--shadow); font-size: 26px; font-weight: 900; white-space: nowrap; }
 .dungeon-bar .heart { color: #D5DBE3; font-size: 28px; }
 .dungeon-bar .heart.on { color: #E03131; }
+
+/* ---------- Boot animation ---------- */
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: radial-gradient(circle at 50% 45%, #ffffff 0%, #EEF3FA 45%, #DCE6F3 100%);
+  transition: opacity 0.5s, transform 0.5s;
+}
+.boot.boot-out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+.boot-stage { position: relative; width: 180px; height: 180px; }
+/* Each dot flies in from a corner, circles the center, then sinks into the ring */
+.boot-dot {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 34px; height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--c) 50%, transparent);
+  animation: boot-orbit 1.6s cubic-bezier(.5, 0, .3, 1) both;
+  animation-delay: calc(var(--i) * 0.08s);
+  --a: calc(var(--i) * 90deg + 45deg);
+}
+@keyframes boot-orbit {
+  0%   { transform: rotate(var(--a)) translateX(60vmax) scale(1.6); opacity: 0; }
+  25%  { opacity: 1; }
+  70%  { transform: rotate(calc(var(--a) + 300deg)) translateX(70px) scale(1); opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: rotate(calc(var(--a) + 420deg)) translateX(0) scale(0.2); opacity: 0; }
+}
+.boot-ring {
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  border: 12px solid transparent;
+  background: conic-gradient(#2F80ED, #EB5757, #F2C94C, #27AE60, #2F80ED) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: boot-ring 1.2s 1.45s cubic-bezier(.2, .9, .3, 1.3) both, boot-spin 3s 1.45s linear infinite;
+}
+@keyframes boot-ring { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes boot-spin { to { rotate: 360deg; } }
+.boot-title { margin: 0; font-size: clamp(40px, 7vw, 84px); font-weight: 900; color: #2B3445; display: flex; }
+.boot-title span { display: inline-block; animation: boot-letter 0.5s both; animation-delay: calc(1.8s + var(--i) * 0.04s); }
+@keyframes boot-letter { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.boot-tag { margin: 0; font-size: 22px; font-weight: 700; color: var(--muted); animation: boot-letter 0.6s 2.4s both; }
+@media (prefers-reduced-motion: reduce) {
+  .boot-dot { display: none; }
+  .boot-ring, .boot-title span, .boot-tag { animation-duration: 0.01s; animation-delay: 0s; }
+}
