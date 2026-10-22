@@ -25,7 +25,7 @@ A console you run in your web browser and control with your phone.
    - **Windows**: `winget install --id Cloudflare.cloudflared`
    - **Linux**: see <https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/>
 
-   Check it:
+   Then **close your terminal and open a new one**, because a terminal that was already open won't find the newly installed command. Check it:
    ```
    cloudflared --version
    ```
