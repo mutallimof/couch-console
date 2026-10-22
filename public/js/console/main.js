@@ -114,6 +114,8 @@ async function showRoom(room) {
     $('qr').hidden = false;
     $('qr-loading').hidden = true;
     $('join-url').textContent = url;
+    // A phone can't open "localhost" (that's the phone itself): say what to do instead
+    $('join-warning').hidden = !/^https?:\/\/(localhost|127\.0\.0\.1)/.test(url);
   } catch (err) {
     $('qr-loading').textContent = 'Could not load the QR code.';
     console.error(err);

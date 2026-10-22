@@ -582,3 +582,5 @@ html, body {
 .kart-loading { z-index: 6; background: #9FD3FF; text-align: center; }
 .kart-progress { width: min(420px, 70vw); height: 18px; margin-top: 14px; border-radius: 9px; background: rgba(43, 52, 69, 0.2); overflow: hidden; }
 .kart-progress i { display: block; width: 0; height: 100%; background: #2F80ED; transition: width 0.2s; }
+.join-warning { margin-top: 10px !important; padding: 10px 14px; border-radius: 12px; background: #FFF3BF; color: #7A4D00; font-size: 14px; font-weight: 700; max-width: 380px; }
+.join-warning code { font-size: 12px; }
