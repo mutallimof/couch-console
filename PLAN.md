@@ -268,6 +268,25 @@ Use `mkcert` for a trusted local HTTPS certificate, so phones on the same Wi-Fi 
 
 ---
 
+# 🟪 MILESTONE 4: Kart racer deluxe + YouTube search
+
+Still original: no Nintendo characters, tracks, items or names.
+
+### Phase 18: Turbo Karts deluxe
+- 8 original characters and 4 karts with stats (speed, acceleration, handling, weight); select screen per player, then P1 picks a track.
+- 4 themed tracks (Sunny Park, Dune Canyon, Frosty Peaks with icy grip, Neon City at night) with hills, jump crests, a tunnel, a bridge, boost pads.
+- Item boxes with original items (Turbo, Homing Orb, Slick, Shield; better items further back) and coins (+top speed, lost when hit). 8 racers.
+- The phone wheel gets an ITEM button (sends the existing `UP` button).
+
+### Phase 19: YouTube search
+- Search YouTube from the Video channel with a free YouTube Data API key in a git-ignored `config.json` (the server makes the request, the key never reaches the browser).
+- Typing on the phone: `feedback:mode {mode:'keyboard'}` shows a text box on the phone, which sends `input:text {text}`.
+
+### Phase 20: Real 3D models
+- Free CC0 model packs (downloaded by the user) replace the code-built karts, characters and props where available, with code-built fallbacks.
+
+---
+
 ## 8. Later (not now)
 3–4 players.
 

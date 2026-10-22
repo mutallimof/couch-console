@@ -351,7 +351,7 @@ html, body {
   border-bottom: 3px solid rgba(255, 255, 255, 0.7);
 }
 .kart-hud:last-of-type { border-bottom: none; }
-.kart-place { position: absolute; right: 28px; bottom: 16px; font-size: clamp(48px, 9vh, 96px); font-weight: 900; color: var(--player); -webkit-text-stroke: 3px #fff; }
+.kart-place { position: relative; font-size: clamp(48px, 9vh, 96px); font-weight: 900; color: var(--player); -webkit-text-stroke: 3px #fff; }
 .kart-lap { position: absolute; left: 24px; top: 16px; font-size: 32px; font-weight: 900; }
 .kart-tag { position: absolute; left: 24px; bottom: 18px; padding: 2px 12px; border-radius: 12px; background: var(--player); font-weight: 900; font-size: 22px; text-shadow: none; }
 .kart-drift { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); font-size: 26px; font-weight: 900; color: #FFE066; }
@@ -361,7 +361,7 @@ html, body {
 .kart-card { background: #fff; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); min-width: 460px; text-align: center; }
 .kart-card h1 { margin: 0; padding: 22px 32px; color: #fff; font-size: 40px; font-weight: 900; }
 .kart-card table { width: 100%; border-collapse: collapse; font-size: 22px; font-weight: 700; }
-.kart-card td { padding: 8px 24px; border-bottom: 1px solid #EEF2F7; text-align: left; }
+.kart-card td { padding: min(8px, 1vh) 24px; border-bottom: 1px solid #EEF2F7; text-align: left; }
 .kart-card .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; background: var(--c); }
 .kart-card p { margin: 14px 0 18px; color: #2F80ED; font-weight: 900; font-size: 22px; }
 
@@ -526,3 +526,47 @@ html, body {
   font-size: 26px; font-weight: 900; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
 .video-osd.show { opacity: 1; }
 .video-title { position: absolute; left: 32px; top: 28px; font-size: 22px; font-weight: 900; text-shadow: 0 2px 8px #000; opacity: 0.85; pointer-events: none; }
+
+/* Turbo Karts v2: HUD extras */
+.kart-place-wrap { position: absolute; right: 24px; bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.kart-face { width: 64px; height: 64px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); border: 3px solid var(--player); }
+.kart-itembox { position: absolute; left: 24px; top: 60px; width: 76px; height: 76px; border-radius: 18px; background: rgba(20, 30, 50, 0.45);
+  border: 3px solid rgba(255, 255, 255, 0.85); display: grid; place-items: center; }
+.kart-itembox.ready { border-color: #FFE066; box-shadow: 0 0 18px rgba(255, 224, 102, 0.8); }
+.kart-item svg { width: 56px; height: 56px; display: block; }
+.kart-coins { position: absolute; left: 112px; top: 82px; font-size: 28px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
+.coin { width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFF3BF, #FCC419 55%, #E8A400); box-shadow: 0 0 0 2px #fff; }
+.kart-card td img { width: 30px; height: 30px; vertical-align: middle; margin-right: 8px; border-radius: 50%; background: #EEF2F7; }
+
+/* Turbo Karts select screen */
+.kart-select { position: absolute; inset: 0; z-index: 5; padding: 22px 32px; overflow: hidden; color: #fff;
+  background: radial-gradient(circle at 50% 0%, #4C6EF5, #1B1F3A 70%); display: flex; flex-direction: column; align-items: center; }
+.kart-select h1 { margin: 0 0 14px; font-size: 40px; font-weight: 900; }
+.ks-seats { display: flex; gap: 24px; width: 100%; justify-content: center; flex: 1; min-height: 0; }
+.ks-seat { flex: 1; min-width: 0; max-width: 640px; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; border-radius: 22px;
+  background: rgba(255, 255, 255, 0.08); border: 4px solid var(--c); }
+.ks-seat.ready { box-shadow: 0 0 30px var(--c); }
+.ks-top { display: flex; align-items: center; gap: 16px; }
+.ks-tag { padding: 4px 12px; border-radius: 10px; background: var(--c); font-weight: 900; font-size: 20px; }
+.ks-big { width: clamp(64px, 14vh, 140px); height: clamp(64px, 14vh, 140px); border-radius: 50%; background: rgba(255, 255, 255, 0.9); }
+.ks-name { font-size: 32px; }
+.ks-kart-name { opacity: 0.75; font-weight: 700; }
+.ks-chars { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; opacity: 0.55; }
+.ks-chars img { width: 100%; aspect-ratio: 1; border-radius: 12px; background: rgba(255, 255, 255, 0.85); border: 3px solid transparent; box-sizing: border-box; }
+.ks-chars img.focused { border-color: var(--c); transform: scale(1.06); }
+.ks-karts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; opacity: 0.55; }
+.ks-chars.active, .ks-karts.active { opacity: 1; }
+.ks-kart { padding: 8px 10px; border-radius: 14px; background: rgba(255, 255, 255, 0.1); border: 3px solid transparent; min-width: 0;
+  display: grid; grid-template-columns: auto auto; justify-content: start; gap: 2px 6px; align-items: center; font-size: 12px; font-weight: 700; }
+.ks-kart b { grid-column: 1 / -1; font-size: 18px; }
+.ks-kart em { display: flex; gap: 2px; }
+.ks-kart i { width: 7px; height: 9px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); }
+.ks-kart i.on { background: #FFE066; }
+.ks-kart.focused { border-color: var(--c); background: rgba(255, 255, 255, 0.2); }
+.ks-hint { margin: 0; font-weight: 900; opacity: 0.85; text-align: center; }
+.ks-tracks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; width: min(1100px, 100%); }
+.ks-track { min-height: 20vh; border-radius: 22px; padding: 20px 24px; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px;
+  background: linear-gradient(180deg, var(--a) 0%, var(--a) 55%, var(--b) 56%); border: 5px solid transparent; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); }
+.ks-track b { font-size: 32px; }
+.ks-track span { font-weight: 700; }
+.ks-track.focused { border-color: #fff; transform: scale(1.03); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
