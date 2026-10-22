@@ -79,7 +79,7 @@ export function createSettings(prefs) {
     color: '#8A94A6',
     icon: ICON,
     minPlayers: 1,
-    maxPlayers: 4,
+    maxPlayers: 1, // only the menu driver (P1) changes settings
     mount(container, gameApi) {
       api = gameApi;
       root = container;

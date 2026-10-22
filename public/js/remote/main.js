@@ -59,6 +59,7 @@ function join() {
       return showJoinForm(ERRORS[res?.error] || 'Could not join.');
     }
     joined = true;
+    navigator.vibrate?.(150); // "you're in!" (Android; iPhone ignores it)
     setPlayer(res.playerId, res.color);
     setConnected(true, `Room ${room}`);
     $('join-form').hidden = true;

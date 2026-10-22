@@ -15,6 +15,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 let api, canvas, ctx, frame, resizeObserver;
 let W = 0, H = 0, scale = 1;
 let state, balloons, particles, floaters, clouds, score, timeLeft, spawnIn, lastT, shake, lastTick, overAt;
+let paused = false; // set by the console when a phone disconnects
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const getBest = () => { try { return Number(localStorage.getItem(BEST_KEY)) || 0; } catch { return 0; } };
@@ -202,7 +203,7 @@ function draw() {
 function loop(t) {
   const dt = Math.min(0.05, (t - (lastT ?? t)) / 1000);
   lastT = t;
-  update(dt);
+  if (!paused) update(dt);
   draw();
   frame = requestAnimationFrame(loop);
 }
@@ -243,7 +244,10 @@ export default {
     api.onButton(onButton);
     frame = requestAnimationFrame(loop);
   },
+  pause() { paused = true; },
+  resume() { paused = false; },
   unmount() {
+    paused = false;
     cancelAnimationFrame(frame);
     resizeObserver?.disconnect();
     canvas?.remove();

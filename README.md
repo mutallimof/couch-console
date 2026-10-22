@@ -6,7 +6,7 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> 🚧 Work in progress. Milestone 1 is almost done: pairing, phone buttons, tilt pointer, the home menu, Balloon Pop and Draw. Two-player games come next. See `PLAN.md` for the roadmap.
+> 🚧 Work in progress. Milestone 1 (1 phone) is done and tagged `v0.1`. Milestone 2 has started: 2 phones can now connect at the same time. Two-player game modes come next. See `PLAN.md` for the roadmap.
 
 ---
 
@@ -63,6 +63,14 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 6. Press **Recenter** any time to make the current direction the middle of the screen.
 
 7. **Click the laptop page once** with your mouse or touchpad. Browsers block sound until you do. Press **F11** for full screen.
+
+### Playing with 2 phones
+- Both phones scan the **same QR code**. The first phone is **P1 (blue)**, the second is **P2 (red)**.
+- While you're in the menu, a small QR code in the bottom-right corner lets the second phone join.
+- **P1 controls the menu.** P2's cursor shows, but only P1 can open and close things.
+- In **Draw**, both players paint at the same time, each with their own color and brush.
+- If a phone disconnects during a game, the game pauses. Scan the QR code again within 30 seconds to get the same player number back, or press **B** to quit.
+- No second phone? Open the `…/remote.html` link in another browser window on the laptop and type the room code. It shows a touchpad you can drag with your mouse.
 
 ### Using the console
 | Phone button | What it does |

@@ -18,12 +18,34 @@
       <span id="clock" class="clock"></span>
       <span id="date" class="date"></span>
       <span id="sound-hint" class="sound-hint">Click this page once to turn on sound</span>
+      <span id="bar-players" class="bar-players"></span>
+      <!-- Small QR so another phone can join while you're in the menu -->
+      <span id="mini-join" class="mini-join" hidden>
+        <img class="qr-img" alt="QR code to join">
+        <span>Scan to join<br><b id="mini-room"></b></span>
+      </span>
     </footer>
   </main>
 
   <!-- An open app (game or settings) zooms out of its tile into this layer -->
   <div id="stage" class="stage" hidden>
     <div id="stage-content" class="stage-content"></div>
+
+    <!-- Solo / Versus / Co-op, for 2-player games when 2 phones are connected -->
+    <div id="picker" class="picker" hidden>
+      <h1 id="picker-title"></h1>
+      <div id="picker-modes" class="modes"></div>
+      <p class="picker-hint">P1: point or use the D-pad, then press A · B = back</p>
+    </div>
+
+    <!-- Shown when a player's phone disconnects mid-game -->
+    <div id="pause" class="pause" hidden>
+      <div class="pause-card">
+        <img class="qr-img" alt="QR code to rejoin">
+        <p id="pause-text"></p>
+        <p class="pause-hint">Waiting… the game continues when they're back.</p>
+      </div>
+    </div>
   </div>
 
   <!-- Pairing: shown when no phone is connected, or from Settings -> Show QR code -->
@@ -32,7 +54,7 @@
 
     <div class="pair-card">
       <div class="qr-box">
-        <img id="qr" alt="QR code to join with your phone" hidden>
+        <img id="qr" class="qr-img" alt="QR code to join with your phone" hidden>
         <div id="qr-loading" class="qr-loading">Loading…</div>
       </div>
       <div class="pair-info">

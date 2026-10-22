@@ -1,7 +1,7 @@
 // Shared constants used by the server, the console (laptop) and the remote (phone).
 
-// Milestone 1 = 1 player. The code supports up to 4 (one color each).
-export const MAX_PLAYERS = 1;
+// Milestone 2 = 2 players. The code supports up to 4 (one color each).
+export const MAX_PLAYERS = 2;
 
 // Index 0 = P1, index 1 = P2, ...
 export const PLAYER_COLORS = ['#2F80ED', '#EB5757', '#27AE60', '#F2C94C'];
