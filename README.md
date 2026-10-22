@@ -6,7 +6,7 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> 🚧 Work in progress. Done so far: Phase 1, pairing a phone with the laptop by QR code. Buttons, motion and games come in later phases. See `PLAN.md` for the roadmap.
+> 🚧 Work in progress. Done so far: pairing by QR code (Phase 1), phone buttons (Phase 2) and the tilt pointer (Phase 3). The menu and games come next. See `PLAN.md` for the roadmap.
 
 ---
 
@@ -58,8 +58,17 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 1. Open that `https://…trycloudflare.com` link **on your laptop**.
 2. Scan the QR code on the laptop screen with your phone's camera.
 3. The phone shows a big **P1** badge, and the laptop shows **P1 Connected**.
+4. On the phone, tap **Tap to start**. On iPhone, tap **Allow** when it asks about motion.
+5. Hold the phone like a TV remote, with its top edge pointing at the laptop screen. Turn and tilt it to move your cursor on the laptop.
+6. Press **Recenter** any time to make the current direction the middle of the screen.
+
+If the phone can't use motion sensors, or you tapped "Don't Allow", it shows a **touchpad** instead. Drag on it to move the cursor.
+On iPhone, to get the motion question again: Settings → Apps → Safari → Clear History and Website Data, then reload the page.
 
 No camera handy? Open `https://…trycloudflare.com/remote.html` on the phone and type the 4-letter room code shown on the laptop.
+
+**Debug mode:** add `?debug=1` to the end of the laptop link (for example `https://…trycloudflare.com/console.html?debug=1`).
+On the phone, add `&debug=1` to the end of its link. You'll see live sensor numbers, messages per second and ping times.
 
 **Good to know**
 - Refreshing the phone page keeps you as P1.

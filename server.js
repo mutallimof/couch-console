@@ -18,6 +18,9 @@ const io = new Server(server);
 
 app.use(express.static(fileURLToPath(new URL('./public', import.meta.url))));
 
+// Tiny endpoint the phone's debug view uses to measure round-trip time.
+app.get('/ping', (req, res) => res.set('Cache-Control', 'no-store').send('pong'));
+
 // ---------- Rooms ----------
 // rooms: code -> { consoleId, slots: Map<playerId, { clientId, socketId, leaveTimer }> }
 // A slot with socketId = null is "reserved": the phone left and has 30 s to come back.

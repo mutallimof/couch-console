@@ -88,3 +88,52 @@ html, body {
 .slot-state { font-size: 20px; font-weight: 700; }
 
 .status { margin: 0; min-height: 1.4em; color: #c0392b; font-weight: 700; }
+
+/* ---------- Temporary input log ---------- */
+.input-log {
+  position: fixed;
+  left: 16px; bottom: 16px;
+  width: 300px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow);
+  font: 13px/1.5 ui-monospace, monospace;
+}
+.input-log h2 { margin: 0 0 6px; font: 900 14px 'Nunito', sans-serif; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.log-pointer { margin: 0 0 6px; font-weight: 700; }
+.input-log ul { margin: 0; padding: 0; list-style: none; max-height: 220px; overflow: hidden; }
+
+/* ---------- Cursors ---------- */
+.cursors { position: fixed; inset: 0; pointer-events: none; z-index: 100; overflow: hidden; }
+.cursor {
+  position: absolute;
+  left: 0; top: 0;
+  color: var(--player);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
+  transition: opacity 0.3s;
+  will-change: transform;
+}
+.cursor svg { display: block; margin: -4px 0 0 -4px; } /* tip of the arrow = the point */
+.cursor-label {
+  position: absolute;
+  left: 30px; top: 30px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--player);
+  color: #fff;
+  font: 900 14px 'Nunito', sans-serif;
+}
+.cursor.idle { opacity: 0; }
+
+.debug {
+  position: fixed;
+  right: 12px; top: 12px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #9f9;
+  font: 13px/1.4 ui-monospace, monospace;
+  z-index: 200;
+}

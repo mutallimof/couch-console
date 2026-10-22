@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#f7f9fc">
   <title>Couch Console Remote</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232F80ED'/%3E%3Ccircle cx='32' cy='32' r='12' fill='white'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
@@ -14,24 +15,55 @@
   <header class="top">
     <div id="badge" class="badge">–</div>
     <div class="conn"><span id="dot" class="dot"></span><span id="conn-text">Connecting…</span></div>
+    <button id="recenter" class="recenter" type="button">Recenter</button>
   </header>
 
-  <main class="center">
-    <!-- Shown while joining / when connected -->
-    <section id="joined" class="panel" hidden>
-      <p class="big">You're <span id="player-name">P1</span></p>
-      <p class="muted">Look at the laptop screen.</p>
-    </section>
+  <!-- The controller, shown once joined -->
+  <main id="controller" class="controller" hidden>
+    <!-- Fallback pointer control when motion isn't available (or in ?debug=1) -->
+    <div id="touchpad" class="touchpad" hidden>Drag here to move the pointer</div>
 
-    <!-- Shown when there's no room in the link, or the room is gone -->
-    <form id="join-form" class="panel" hidden>
-      <p id="message" class="message"></p>
-      <label for="room-input" class="muted">Enter the room code from the laptop</label>
-      <input id="room-input" class="room-input" maxlength="4" autocomplete="off"
-             autocapitalize="characters" spellcheck="false" inputmode="text" placeholder="ABCD">
-      <button class="join-btn" type="submit">Join</button>
-    </form>
+    <div class="dpad">
+      <button class="btn dir d-up" data-button="UP" aria-label="Up">▲</button>
+      <button class="btn dir d-left" data-button="LEFT" aria-label="Left">◀</button>
+      <button class="btn dir d-right" data-button="RIGHT" aria-label="Right">▶</button>
+      <button class="btn dir d-down" data-button="DOWN" aria-label="Down">▼</button>
+    </div>
+
+    <button class="btn round a" data-button="A">A</button>
+
+    <div class="row">
+      <button class="btn small" data-button="MINUS" aria-label="Minus">−</button>
+      <button class="btn small home" data-button="HOME" aria-label="Home">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+          <path d="M3 11 12 3l9 8v10h-6v-6H9v6H3z" fill="currentColor"/>
+        </svg>
+      </button>
+      <button class="btn small" data-button="PLUS" aria-label="Plus">+</button>
+    </div>
+
+    <button class="btn round b" data-button="B">B</button>
   </main>
+
+  <!-- Shown when there's no room in the link, or the room is gone -->
+  <form id="join-form" class="panel" hidden>
+    <p id="message" class="message"></p>
+    <label for="room-input" class="muted">Enter the room code from the laptop</label>
+    <input id="room-input" class="room-input" maxlength="4" autocomplete="off"
+           autocapitalize="characters" spellcheck="false" inputmode="text" placeholder="ABCD">
+    <button class="join-btn" type="submit">Join</button>
+  </form>
+
+  <!-- "Tap to start": a tap is needed to ask for motion permission (iPhone) -->
+  <div id="start" class="overlay" hidden>
+    <button id="start-btn" class="start-btn" type="button">Tap to start</button>
+    <p class="muted">Hold the phone like a TV remote, with its top edge pointing at the laptop screen.</p>
+  </div>
+
+  <!-- Shown when motion is unavailable or permission was denied -->
+  <p id="motion-msg" class="motion-msg" hidden></p>
+
+  <pre id="debug" class="debug" hidden></pre>
 
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="/js/remote/main.js"></script>

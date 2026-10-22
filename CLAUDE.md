@@ -4,7 +4,7 @@ This project is a phone-controlled, Wii-style console that runs in the browser.
 **The full spec is in `PLAN.md`. Read it before doing anything.**
 
 ## How we work
-1. **One phase at a time.** Build only the current phase from `PLAN.md`. Do not start the next phase until I confirm the current one works on my real phone.
+1. **Phases in test groups.** Build only the current test group from `PLAN.md`. Do not start the next group until I confirm the current one works on my real phone. Groups: Phase 0 · Phase 1 · Phases 2+3 · Phases 4+5 · Phase 6 · Phase 7 · Phase 8 · Phase 9. Commit each phase separately (`Phase N: <name>`).
 2. **Ask before:**
    - installing any dependency that isn't listed in `PLAN.md`
    - deleting or renaming files
