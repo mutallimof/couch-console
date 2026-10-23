@@ -6,7 +6,7 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started: **Turbo Karts**, **Table Tennis**, **Target Range**, **Air Hockey**, **Gem Dungeon**, a boot animation, local HTTPS, and the **Photos**, **Weather** and **Video** channels are in. See `PLAN.md` for the roadmap.
+> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started: **Turbo Karts**, **Table Tennis**, **Target Range**, **Air Hockey**, **Gem Dungeon**, a boot animation, local HTTPS, and the **Photos**, **Weather**, **Video**, **Timer** and **On This Day** channels are in. See `PLAN.md` for the roadmap.
 >
 > **After pulling new code, run `npm install` again.** Turbo Karts uses the `three` 3D library, which needs to be downloaded once.
 >
@@ -110,6 +110,8 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 - **Photos:** put pictures (.jpg, .png, .gif, .webp) in the `photos` folder inside `couch-console`. Point or use the D-pad to choose one and press A to open it. ◀ ▶ flips through them, A starts or stops a slideshow, and B goes back. Your photos are never uploaded to GitHub.
 - **Weather:** today's weather and the next days (needs internet). ◀ ▶ changes the city. "My location" asks the laptop's browser for permission once. + / − switches between °C and °F, and A refreshes.
 - **Video:** plays YouTube videos (needs internet). The list comes from `videos.txt` in the `couch-console` folder. Copy `videos.example.txt` to `videos.txt` and put one `Title | YouTube link` per line. While watching: A = play/pause, ◀ ▶ = back/forward 10 s, + / − = volume, ▲ ▼ = previous/next video, B = back to the list. If a video doesn't start, click the laptop page once (browsers block autoplay with sound) and press A.
+- **Timer:** works without internet. ◀ ▶ switches between a big **Clock**, a **Timer** and a **Stopwatch**. Timer: ▲ ▼ = ±1 minute, + / − = ±10 seconds, A = start/pause, − = reset once started. When time is up the screen flashes, it chimes and every phone buzzes (A stops it). Stopwatch: A = start/pause, + = lap, − = reset. The timer keeps running if you go back to the menu.
+- **On This Day:** what happened on today's date in history, from Wikipedia (needs internet, no account). ◀ ▶ = Highlights / Events / Born today / Holidays, ▲ ▼ = browse, A = a random one, + / − = next/previous day.
 - **Settings:** pointer speed (1 to 10), sound on/off, phone sounds on/off, and **Show QR code** to connect a phone again.
 
 If the phone can't use motion sensors, or you tapped "Don't Allow", it shows a **touchpad** instead. Drag on it to move the cursor.
@@ -131,7 +133,7 @@ No camera handy? Open `https://…trycloudflare.com/remote.html` on the phone an
 
 When a phone joins, it takes over as P1.
 
-**Boot animation:** a short intro plays when the console page opens. Click, press any key or press any phone button to skip it. To turn it off completely, add `?noboot=1` to the laptop link.
+**Boot animation:** a short intro (about 3 seconds) plays when the console page opens: the Couch Console logo, a TV with a couch inside whose four cushions are the player colors, draws itself and lights up. Click, press any key or press any phone button to skip it. To turn it off completely, add `?noboot=1` to the laptop link.
 
 **Debug mode:** add `?debug=1` to the end of the laptop link (for example `https://…trycloudflare.com/console.html?debug=1`).
 On the phone, add `&debug=1` to the end of its link. You'll see live sensor numbers, messages per second and ping times.

@@ -326,6 +326,10 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 ### Phase 28: Glide-ramp track
 - 6th track **Cloud Gardens** (theme `sky`): one full-width glide ramp down a hill plus two **shortcut ramps** (`glides: [{ at, to }]`): narrow, on one side of the road; the flight goes straight across a gap (hoops mark the way, an invisible arc keeps the glider up) and lands further along the lap. Lap counting and race places follow the flight (`flightAt` in kart-path.js). CPUs take shortcuts about 45 % of the time. Tests for launch side, landing, time saved and lap counting.
 
+### Phase 29: Boot animation + 2 channels
+- New boot: original logo (a TV with a couch inside, one cushion per player color) draws in, lights up, name rises; 2.7 s, skippable (click / key / phone button), reduced-motion version, `?noboot=1` still turns it off.
+- **Timer** channel (Clock / Timer / Stopwatch, offline; rules in `channels/timer-logic.js` with tests in `tests/channels.test.mjs`) and **On This Day** channel (Wikipedia's free "On this day" feed, no key).
+
 ### Later
 - 4-player split screen for Turbo Karts.
 
