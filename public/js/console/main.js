@@ -2,6 +2,7 @@
 import { EV, colorFor } from '../shared/protocol.js';
 import { players } from './players.js';
 import { createPointers } from './pointer.js';
+import { createGyroPointers } from './pointer/engine.js';
 import { createMenu } from './menu.js';
 import { createSettings } from './settings.js';
 import { sound } from './sound.js';
@@ -23,6 +24,7 @@ const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const pointers = createPointers($('cursors'));
+const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
 // Boot animation (skip it with ?noboot=1)
 const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoot({ sound });
 const ZOOM_MS = 300;
@@ -32,22 +34,18 @@ const MODE_LABELS = { solo: 'Solo', versus: 'Versus', coop: 'Co-op' };
 const driverId = () => players.list().reduce((min, p) => Math.min(min, p.playerId), Infinity);
 
 // ---------- Pointer sensitivity (1 = slow ... 10 = fast) ----------
-// Sent to the phones as the tilt (in degrees) needed to sweep the whole screen.
+// How far you turn the phone to cross the screen (applied here, in pointer/engine.js).
 
 let sensitivity = 5;
 try { sensitivity = Number(localStorage.getItem('couch.sensitivity')) || 5; } catch { /* ignore */ }
-
-function sendSettings() {
-  const f = 1.2 ** (5 - sensitivity); // level 5 = PLAN defaults (25° x 18°)
-  socket.emit(EV.FEEDBACK_SETTINGS, { rangeX: 25 * f, rangeY: 18 * f });
-}
+gyro.setSpeed(sensitivity);
 
 const prefs = {
   getSensitivity: () => sensitivity,
   setSensitivity(n) {
     sensitivity = n;
     try { localStorage.setItem('couch.sensitivity', String(n)); } catch { /* ignore */ }
-    sendSettings();
+    gyro.setSpeed(n);
   },
   showQR: () => setPairing(true),
 };
@@ -88,7 +86,6 @@ socket.on('disconnect', () => {
 
 socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
   players.join(playerId, color);
-  sendSettings(); // so the new phone uses the current pointer speed
   socket.emit(EV.FEEDBACK_MODE, { mode: controllerMode, prompt: controllerPrompt }); // and the right controller layout
   playerReturned(playerId);
   // A new phone joining a running multi-player game (not solo) gets let in, if there's room.
@@ -99,6 +96,7 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
 socket.on(EV.PLAYER_LEFT, ({ playerId }) => {
   players.leave(playerId);
   pointers.remove(playerId);
+  gyro.remove(playerId);
   playerLost(playerId);
 });
 
@@ -301,6 +299,22 @@ socket.on(EV.INPUT_POINTER, (e) => {
   if (gameGets(e.playerId)) current.handlers.pointer.forEach((fn) => fn(e));
 });
 
+// Raw phone sensors: the gyro pointer turns them into a cursor (drawn every frame below)
+const finite = (v) => Number.isFinite(v);
+socket.on(EV.INPUT_MOTION, (e) => {
+  count(e.playerId);
+  if (!finite(e.alpha) || !finite(e.beta) || !finite(e.gamma)) return;
+  const m = e.motion;
+  const motion = m && finite(m.rx) && finite(m.ry) && finite(m.rz) ? { rx: m.rx, ry: m.ry, rz: m.rz } : null;
+  gyro.feed(e.playerId, { alpha: e.alpha, beta: e.beta, gamma: e.gamma, motion });
+});
+(function gyroLoop(now) {
+  for (const { playerId, x, y } of gyro.frame(now)) {
+    pointers.move(playerId, x * 2 - 1, y * 2 - 1, colorFor(playerId), true);
+  }
+  requestAnimationFrame(gyroLoop);
+})(performance.now());
+
 socket.on(EV.INPUT_SWING, (e) => {
   count(e.playerId);
   if (gameGets(e.playerId)) current.handlers.swing.forEach((fn) => fn(e));
@@ -317,7 +331,7 @@ socket.on(EV.INPUT_TEXT, (e) => {
   if (gameGets(e.playerId)) current.handlers.text.forEach((fn) => fn({ playerId: e.playerId, text: e.text.slice(0, 100) }));
 });
 
-socket.on(EV.INPUT_RECENTER, (e) => count(e.playerId));
+socket.on(EV.INPUT_RECENTER, (e) => { count(e.playerId); gyro.recenter(e.playerId); });
 
 socket.on(EV.INPUT_BUTTON, (e) => {
   count(e.playerId);
@@ -412,6 +426,9 @@ if (DEBUG) {
   setInterval(() => {
     const rates = players.list().map((p) => `P${p.playerId} ${msgCount.get(p.playerId) || 0} msgs/s`);
     msgCount.clear();
-    box.textContent = `latency (ping) ${pingMs} ms\n${rates.join('\n') || 'no players'}`;
+    box.textContent = `latency (ping) ${pingMs} ms\n${rates.join('\n') || 'no players'}\n`
+      + `${gyro.describe().join('\n')}\nL = cursor prediction on/off (for comparing)`;
   }, 1000);
+  // A/B test the cursor prediction ("display lead") with the L key
+  addEventListener('keydown', (e) => { if (e.key === 'l' || e.key === 'L') gyro.toggleLead(); });
 }

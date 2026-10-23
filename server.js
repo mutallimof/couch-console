@@ -234,8 +234,9 @@ io.on('connection', (socket) => {
       const room = rooms.get(socket.data.room);
       if (!room) return;
       const data = { ...(payload && typeof payload === 'object' ? payload : {}), playerId: socket.data.playerId };
-      // Pointer/wheel updates are frequent; it's fine to drop one if the network is busy.
-      const target = event === EV.INPUT_POINTER || event === EV.INPUT_WHEEL ? io.volatile : io;
+      // Pointer/wheel/motion updates are frequent; it's fine to drop one if the network is busy.
+      const frequent = event === EV.INPUT_POINTER || event === EV.INPUT_WHEEL || event === EV.INPUT_MOTION;
+      const target = frequent ? io.volatile : io;
       target.to(room.consoleId).emit(event, data);
     });
   }

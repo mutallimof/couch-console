@@ -63,8 +63,8 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 2. Scan the QR code on the laptop screen with your phone's camera.
 3. The phone shows a big **P1** badge, and the laptop shows **P1 Connected**.
 4. On the phone, tap **Tap to start**. On iPhone, tap **Allow** when it asks about motion.
-5. Hold the phone like a TV remote, with its top edge pointing at the laptop screen. Turn and tilt it to move your cursor on the laptop.
-6. Press **Recenter** any time to make the current direction the middle of the screen.
+5. Point the phone at the laptop screen and turn and tilt it to move your cursor. Hold it however feels natural (flat, upright like a TV remote, or sideways): there's no calibration, the console learns how your phone's sensors work during the first few seconds of moving it.
+6. Press **Recenter** any time to put the cursor back in the middle. Small drift fixes itself whenever you hold the phone still for a moment.
 
 7. **Click the laptop page once** with your mouse or touchpad. Browsers block sound until you do. Press **F11** for full screen.
 
@@ -111,6 +111,7 @@ No camera handy? Open `https://…trycloudflare.com/remote.html` on the phone an
 
 **Debug mode:** add `?debug=1` to the end of the laptop link (for example `https://…trycloudflare.com/console.html?debug=1`).
 On the phone, add `&debug=1` to the end of its link. You'll see live sensor numbers, messages per second and ping times.
+On the laptop, the debug box also shows each phone's motion messages per second and what the pointer has learned about the phone (`learning…` at first, then a line like `x←x+1.00 y←y+1.00 z←z+1.00` once it trusts the gyroscope). Press **L** on the laptop keyboard to switch the cursor prediction off and on, to compare how it feels.
 
 **Good to know**
 - Refreshing the phone page keeps you as P1.

@@ -33,7 +33,11 @@ export const EV = {
   FEEDBACK_MODE: 'feedback:mode',   // { mode: 'pointer' | 'wheel' | 'keyboard', prompt? }
   INPUT_WHEEL: 'input:wheel',       // { steer: -1..1 }
   INPUT_TEXT: 'input:text',         // { text } typed on the phone ('' = cancelled)
+  // Raw phone sensors, ~60 per second: { alpha, beta, gamma, motion: { rx, ry, rz } }.
+  // The console turns these into a cursor (pointer/gyro-pointer.js). input:pointer is
+  // still used by the touchpad on phones without motion sensors.
+  INPUT_MOTION: 'input:motion',
 };
 
 // The remote -> console input events the server relays (with playerId added).
-export const INPUT_EVENTS = [EV.INPUT_POINTER, EV.INPUT_BUTTON, EV.INPUT_SWING, EV.INPUT_RECENTER, EV.INPUT_WHEEL, EV.INPUT_TEXT];
+export const INPUT_EVENTS = [EV.INPUT_POINTER, EV.INPUT_BUTTON, EV.INPUT_SWING, EV.INPUT_RECENTER, EV.INPUT_WHEEL, EV.INPUT_TEXT, EV.INPUT_MOTION];

@@ -131,12 +131,20 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 // ---------- Motion pointer ----------
 
 const motion = createMotion({
-  onPointer: (x, y) => {
+  // Raw sensors -> the console turns them into this player's cursor
+  onSample: (sample) => {
     if (!joined || mode === 'wheel') return; // no cursor while driving
+    sentCount++;
+    socket.volatile.emit(EV.INPUT_MOTION, sample);
+  },
+  // Touchpad (phones without motion sensors)
+  onPointer: (x, y) => {
+    if (!joined || mode === 'wheel') return;
     sentCount++;
     socket.volatile.emit(EV.INPUT_POINTER, { x, y });
   },
 });
+let touchpad = null;
 let started = false;
 
 // Swings (for Bowling): sent to the console, which decides what to do with them.
@@ -188,7 +196,7 @@ function showTouchpad(message) {
     $('motion-msg').textContent = message;
     $('motion-msg').hidden = false;
   }
-  motion.attachTouchpad($('touchpad'));
+  touchpad = motion.attachTouchpad($('touchpad'));
 }
 
 $('start-btn').addEventListener('click', async () => {
@@ -211,12 +219,11 @@ $('start-btn').addEventListener('click', async () => {
 });
 
 $('recenter').addEventListener('click', () => {
-  motion.recenter();
+  touchpad?.recenter();
   wheel.recenter();
   emit(EV.INPUT_RECENTER);
 });
 
-socket.on(EV.FEEDBACK_SETTINGS, (s) => motion.setRanges(s));
 socket.on(EV.FEEDBACK_RUMBLE, ({ ms }) => navigator.vibrate?.(Math.min(Number(ms) || 0, 1000)));
 
 // ---------- Keep the screen awake ----------
@@ -255,7 +262,7 @@ if (DEBUG) {
     const s = motion.stats;
     const w = swing.stats;
     box.textContent = `alpha ${fmt(s.alpha)}  beta ${fmt(s.beta)}  gamma ${fmt(s.gamma)}\n`
-      + `mag ${fmt(w.mag ?? s.mag)}  msgs/s ${rate}  ping ${pingMs} ms\n`
+      + `gyro ${s.gyro ? 'yes' : 'no'}  mag ${fmt(w.mag ?? s.mag)}  msgs/s ${rate}  ping ${pingMs} ms\n`
       + `swings ${w.swings}  last power ${w.lastPower == null ? '–' : w.lastPower.toFixed(2)}\n`
       + `mode ${mode}  steer ${wheel.stats.steer.toFixed(2)}`;
   }, 100);

@@ -1,5 +1,6 @@
 // On-screen cursors: one per player, in the player's color, labeled "P1", "P2", ...
-// Phones send x, y in -1..1; we smooth toward that target every frame.
+// Positions are x, y in -1..1. Touchpad positions are smoothed every frame; gyro positions
+// (pointer/engine.js) arrive every frame already filtered, so they're drawn as they are.
 
 const SMOOTHING = 0.5;   // pos += (target - pos) * SMOOTHING each frame (PLAN says 0.35; raised for a snappier feel)
 const HIDE_AFTER_MS = 3000;
@@ -20,7 +21,7 @@ export function createPointers(layer) {
         <span class="cursor-label">P${playerId}</span>`;
       layer.append(el);
       const cx = innerWidth / 2, cy = innerHeight / 2;
-      c = { el, x: cx, y: cy, tx: cx, ty: cy, lastMove: 0 };
+      c = { el, x: cx, y: cy, tx: cx, ty: cy, lastMove: 0, direct: false };
       cursors.set(playerId, c);
     }
     if (color) c.el.style.setProperty('--player', color);
@@ -30,8 +31,9 @@ export function createPointers(layer) {
   function loop() {
     const now = performance.now();
     for (const c of cursors.values()) {
-      c.x += (c.tx - c.x) * SMOOTHING;
-      c.y += (c.ty - c.y) * SMOOTHING;
+      const k = c.direct ? 1 : SMOOTHING;
+      c.x += (c.tx - c.x) * k;
+      c.y += (c.ty - c.y) * k;
       c.el.style.transform = `translate(${c.x}px, ${c.y}px)`;
       c.el.classList.toggle('idle', now - c.lastMove > HIDE_AFTER_MS);
     }
@@ -40,12 +42,14 @@ export function createPointers(layer) {
   frame = requestAnimationFrame(loop);
 
   return {
-    // x, y in -1..1 (from the phone) -> screen pixels.
-    move(playerId, x, y, color) {
+    // x, y in -1..1 -> screen pixels. direct = no extra smoothing (already filtered).
+    move(playerId, x, y, color, direct = false) {
       const c = get(playerId, color);
-      c.tx = ((x + 1) / 2) * innerWidth;
-      c.ty = ((y + 1) / 2) * innerHeight;
-      c.lastMove = performance.now();
+      const tx = ((x + 1) / 2) * innerWidth, ty = ((y + 1) / 2) * innerHeight;
+      if (Math.abs(tx - c.tx) > 0.5 || Math.abs(ty - c.ty) > 0.5) c.lastMove = performance.now();
+      c.tx = tx;
+      c.ty = ty;
+      c.direct = direct;
     },
     remove(playerId) {
       cursors.get(playerId)?.el.remove();

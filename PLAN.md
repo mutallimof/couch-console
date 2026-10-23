@@ -288,6 +288,25 @@ Still original: no Nintendo characters, tracks, items or names.
 - 14 characters (6 pirates + 8 code-built animals), 8 cars, and a 5th track: **Pirate Cove** (an island in the sea).
 - Pirates are animated: idle while driving, a hit reaction when spun out, waving at the finish.
 
+# 🟫 MILESTONE 5: OpenWii-inspired upgrades + kart controller
+
+OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from it keeps its notice in `THIRD_PARTY_NOTICES.md`. Nothing from its Nintendo-themed folders is used.
+
+### Phase 21: OpenWii-inspired upgrades (one step at a time; 21a is tested on a real phone first)
+- **21a New pointer:** phones stream raw sensors (`input:motion` `{alpha, beta, gamma, motion:{rx, ry, rz}}`), the console runs OpenWii's gyro pointer per player: learns each phone's gyro axes (no calibration), heals drift when the hand is still, draws slightly ahead to hide lag. Touchpad still uses `input:pointer`. Tests: `npm test`.
+- **21b Feel and polish:** menu aim assist, cursor trail, menu/transition/sound polish (original look).
+- **21c Up to 4 players** (colors P3 green, P4 yellow), 4-player Balloon Pop / Draw / Target Range, per-player phone sounds.
+- **21d Mouse and keyboard fallback** when no phone is connected.
+- **21e Games from manifests** (`<name>.game.json`), each loaded on its own; a broken game shows a "couldn't load" tile.
+- **21f Game rules separate from rendering**, with `node:test` tests (kart physics, Air Hockey, pointer).
+- **21g Reliability:** always-fresh files, phone diagnostics screen, more `?debug=1` info.
+
+### Phase 22: Kart controller
+- Buttons-only controller: steering strip (10% dead zone, visible thumb marker), GAS, separate DRIFT button (new button `R`), ITEM; DRIFT and ITEM keep accelerating; thumb can slide between buttons; tilt steering as an option.
+
+### Later
+- 4-player split screen for Turbo Karts.
+
 ---
 
 ## 8. Later (not now)
