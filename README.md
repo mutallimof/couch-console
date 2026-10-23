@@ -109,6 +109,20 @@ On iPhone, to get the motion question again: Settings → Apps → Safari → Cl
 
 No camera handy? Open `https://…trycloudflare.com/remote.html` on the phone and type the 4-letter room code shown on the laptop.
 
+**No phone at all?** Click **No phone? Use mouse & keyboard** on the QR screen. You play as P1:
+
+| Mouse / key | Does |
+|---|---|
+| Move the mouse | pointer |
+| Left click, Enter or Space | **A** |
+| Right click, Esc or Backspace | **B** |
+| Arrow keys | D-pad (in Turbo Karts ◀ ▶ steer) |
+| H | HOME (back to the menu) |
+| + / − | PLUS / MINUS |
+| U | ITEM in Turbo Karts |
+
+When a phone joins, it takes over as P1.
+
 **Boot animation:** a short intro plays when the console page opens. Click, press any key or press any phone button to skip it. To turn it off completely, add `?noboot=1` to the laptop link.
 
 **Debug mode:** add `?debug=1` to the end of the laptop link (for example `https://…trycloudflare.com/console.html?debug=1`).

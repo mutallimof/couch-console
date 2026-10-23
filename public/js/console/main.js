@@ -91,6 +91,7 @@ function setPairing(forced = pairingForced) {
 socket.on('connect', () => {
   $('status').textContent = '';
   players.clear();
+  if (desk.active) players.join(desk.id, colorFor(desk.id)); // still playing with the mouse
   socket.emit(EV.CONSOLE_CREATE, ({ room }) => showRoom(room));
 });
 
@@ -100,6 +101,7 @@ socket.on('disconnect', () => {
 });
 
 socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
+  if (desk.active) desk.stop(); // a real phone takes over from the mouse
   const isNew = !players.isConnected(playerId);
   players.join(playerId, color);
   if (isNew) sound.play('join');
@@ -168,6 +170,10 @@ function setController(mode, prompt = '') {
   controllerMode = mode;
   controllerPrompt = prompt;
   socket.emit(EV.FEEDBACK_MODE, { mode, prompt });
+  // No phone to type on? Ask on the laptop instead.
+  if (mode === 'keyboard' && desk.active) {
+    setTimeout(() => onInputText({ playerId: desk.id, text: (window.prompt(prompt || 'Type here') || '').trim() }), 50);
+  }
 }
 let busy = false;    // true during the zoom animation
 let picker = null;   // { modes, index } while the mode picker is showing
@@ -322,12 +328,13 @@ const count = (playerId) => msgCount.set(playerId, (msgCount.get(playerId) || 0)
 // Only players in the current game get its input (and not while it's paused).
 const gameGets = (playerId) => current?.mounted && current.missing.size === 0 && current.allowed.has(playerId);
 
-socket.on(EV.INPUT_POINTER, (e) => {
+function onInputPointer(e) {
   count(e.playerId);
   if (!Number.isFinite(e.x) || !Number.isFinite(e.y)) return;
   pointers.move(e.playerId, e.x, e.y, colorFor(e.playerId));
   if (gameGets(e.playerId)) current.handlers.pointer.forEach((fn) => fn(e));
-});
+}
+socket.on(EV.INPUT_POINTER, onInputPointer);
 
 // Raw phone sensors: the gyro pointer turns them into a cursor (drawn every frame below)
 const finite = (v) => Number.isFinite(v);
@@ -356,14 +363,15 @@ socket.on(EV.INPUT_WHEEL, (e) => {
   if (gameGets(e.playerId)) current.handlers.wheel.forEach((fn) => fn(e));
 });
 
-socket.on(EV.INPUT_TEXT, (e) => {
+function onInputText(e) {
   if (typeof e.text !== 'string') return;
   if (gameGets(e.playerId)) current.handlers.text.forEach((fn) => fn({ playerId: e.playerId, text: e.text.slice(0, 100) }));
-});
+}
+socket.on(EV.INPUT_TEXT, onInputText);
 
 socket.on(EV.INPUT_RECENTER, (e) => { count(e.playerId); gyro.recenter(e.playerId); });
 
-socket.on(EV.INPUT_BUTTON, (e) => {
+function onInputButton(e) {
   count(e.playerId);
   if (boot?.playing) { boot.skip(); return; } // any phone button skips the boot animation
   const { playerId, button, state } = e;
@@ -399,7 +407,8 @@ socket.on(EV.INPUT_BUTTON, (e) => {
   if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(button)) menu.move(button);
   // Open the focused tile (moving the cursor over a tile focuses it, see below).
   else if (button === 'A') openApp(menu.focusedApp());
-});
+}
+socket.on(EV.INPUT_BUTTON, onInputButton);
 
 // Aim assist: only on menu tiles and the mode picker, never inside a game.
 pointers.setAssist((x, y) => {
@@ -433,6 +442,48 @@ let lastHover = null;
   }
   requestAnimationFrame(hoverLoop);
 })();
+
+// ---------- Mouse & keyboard (no phone) ----------
+// "Use mouse & keyboard" on the pairing screen adds a stand-in P1 that sends exactly what a
+// phone would: mouse = pointer, click = A, right-click = B, arrows = D-pad, Enter/Space = A,
+// Esc/Backspace = B, H = HOME, + / - = PLUS / MINUS, U = ITEM (UP) for karts.
+const KEYS = {
+  ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT', Enter: 'A', ' ': 'A',
+  Escape: 'B', Backspace: 'B', h: 'HOME', H: 'HOME', '+': 'PLUS', '=': 'PLUS', '-': 'MINUS', u: 'UP', U: 'UP',
+};
+const desk = {
+  active: false,
+  id: 1,
+  start() {
+    this.active = true;
+    this.id = 1;
+    document.body.classList.add('desk-mode');
+    players.join(this.id, colorFor(this.id));
+    sound.play('join');
+  },
+  stop() {
+    this.active = false;
+    document.body.classList.remove('desk-mode');
+    players.leave(this.id);
+    pointers.remove(this.id);
+  },
+};
+const deskButton = (button, state) => desk.active && onInputButton({ playerId: desk.id, button, state });
+$('use-mouse').addEventListener('click', (e) => { e.stopPropagation(); unlockSound(); desk.start(); });
+addEventListener('mousemove', (e) => {
+  if (!desk.active) return;
+  onInputPointer({ playerId: desk.id, x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 });
+});
+addEventListener('mousedown', (e) => { if (e.button === 0) deskButton('A', 'down'); else if (e.button === 2) deskButton('B', 'down'); });
+addEventListener('mouseup', (e) => { if (e.button === 0) deskButton('A', 'up'); else if (e.button === 2) deskButton('B', 'up'); });
+addEventListener('contextmenu', (e) => { if (desk.active) e.preventDefault(); });
+addEventListener('keydown', (e) => {
+  const button = KEYS[e.key];
+  if (!desk.active || !button) return;
+  e.preventDefault();
+  if (!e.repeat) deskButton(button, 'down');
+});
+addEventListener('keyup', (e) => { const button = KEYS[e.key]; if (button) deskButton(button, 'up'); });
 
 renderSlots();
 setPairing();

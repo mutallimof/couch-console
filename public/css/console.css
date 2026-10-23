@@ -605,3 +605,9 @@ html, body {
 
 /* Cursor trail (drawn on a canvas under the cursors) */
 .cursor-trail { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Mouse & keyboard mode (no phone): our own cursor replaces the system one */
+.use-mouse { font: 700 18px 'Nunito', sans-serif; color: #2F80ED; background: none; border: 2px solid currentColor;
+  border-radius: 12px; padding: 8px 16px; cursor: pointer; transition: transform 120ms var(--ease-out); }
+.use-mouse:active { transform: scale(0.97); }
+body.desk-mode, body.desk-mode * { cursor: none !important; }

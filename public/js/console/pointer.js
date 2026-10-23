@@ -83,7 +83,8 @@ export function createPointers(layer) {
       c.path.push({ x, y, t: now });
       while (c.path.length && now - c.path[0].t > TRAIL_MS) c.path.shift();
       if (trailOn && !idle && c.path.length > 2) {
-        tctx.lineCap = 'round';
+        tctx.lineCap = 'butt';
+        tctx.lineJoin = 'round';
         tctx.strokeStyle = c.color;
         for (let i = 1; i < c.path.length; i++) {
           const f = i / c.path.length; // 0 = oldest ... 1 = newest
