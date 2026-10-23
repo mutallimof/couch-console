@@ -190,10 +190,12 @@ $('keyboard-pad').addEventListener('submit', (e) => {
 });
 $('keyboard-cancel').addEventListener('click', () => emit(EV.INPUT_TEXT, { text: '' }));
 
+$('motion-msg').addEventListener('click', () => { $('motion-msg').hidden = true; });
+
 function showTouchpad(message) {
   $('touchpad').hidden = false;
   if (message) {
-    $('motion-msg').textContent = message;
+    $('motion-text').textContent = message;
     $('motion-msg').hidden = false;
   }
   touchpad = motion.attachTouchpad($('touchpad'));
@@ -209,11 +211,20 @@ $('start-btn').addEventListener('click', async () => {
   if (result.ok) swing.start();
   applyMode(); // a wheel game may already be running
   requestWakeLock();
-  if (result.reason === 'denied') {
-    showTouchpad('Motion access was denied. To fix it: Settings → Apps → Safari → '
-      + 'Clear History and Website Data, then reload this page. For now, use the touchpad.');
-  } else if (result.reason === 'unsupported') {
-    showTouchpad('This phone/browser has no motion sensors here. Use the touchpad instead.');
+  // No motion: say exactly why and how to fix it, and give a touchpad meanwhile
+  const WHY = {
+    insecure: `Motion needs a secure page, and this one is ${location.protocol}//${location.host}. `
+      + 'On the laptop, open the https:// address that `npm start` prints (see "Local setup" in README.md), '
+      + 'or use the cloudflared tunnel link, then scan the new QR code. For now, use the touchpad.',
+    denied: 'Motion access was denied. To fix it on iPhone: Settings → Apps → Safari → '
+      + 'Clear History and Website Data, then reload this page. On Android: Chrome → ⋮ → Settings → '
+      + 'Site settings → Motion sensors → Allow. For now, use the touchpad.',
+    unsupported: 'This browser has no motion sensors. Use the touchpad instead.',
+    silent: 'Motion is allowed, but the sensors send nothing (a computer, or sensors blocked in the browser settings). '
+      + 'On Android: Chrome → ⋮ → Settings → Site settings → Motion sensors → Allow. For now, use the touchpad.',
+  };
+  if (WHY[result.reason]) {
+    showTouchpad(WHY[result.reason]);
   } else if (DEBUG) {
     showTouchpad(); // handy for testing even when motion works
   }

@@ -44,7 +44,12 @@ const io = new Server(server);
 const httpsServer = httpsReady ? createHttpsServer({ cert: readFileSync(CERT), key: readFileSync(KEY) }, app) : null;
 if (httpsServer) io.attach(httpsServer); // same rooms on both
 
-app.use(express.static(fileURLToPath(new URL('./public', import.meta.url))));
+// Browsers must check for a newer version of every file on each load (unchanged files come
+// back as a tiny "not modified"), so a plain refresh after `git pull` always runs the new code.
+// The big 3D model files rarely change, so the browser may keep those for a day.
+app.use(express.static(fileURLToPath(new URL('./public', import.meta.url)), {
+  setHeaders: (res, path) => res.set('Cache-Control', /[\\/]assets[\\/]/.test(path) ? 'public, max-age=86400' : 'no-cache'),
+}));
 // Three.js (3D games) is served from node_modules, so it works without internet.
 app.get('/vendor/three.module.js', (req, res) =>
   res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));

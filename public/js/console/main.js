@@ -506,10 +506,15 @@ if (DEBUG) {
       pingMs = Math.round(performance.now() - t0);
     } catch { pingMs = 'err'; }
   }, 2000);
+  // Frames per second the laptop actually draws (below ~50 = the laptop is struggling)
+  let frames = 0, fps = 0;
+  (function countFrames() { frames++; requestAnimationFrame(countFrames); })();
   setInterval(() => {
+    fps = frames; frames = 0;
     const rates = players.list().map((p) => `P${p.playerId} ${msgCount.get(p.playerId) || 0} msgs/s`);
     msgCount.clear();
-    box.textContent = `latency (ping) ${pingMs} ms\n${rates.join('\n') || 'no players'}\n`
+    box.textContent = `latency (ping) ${pingMs} ms   screen ${fps} fps${current ? `   in ${current.app.title}` : ''}\n`
+      + `${rates.join('\n') || 'no players'}\n`
       + `${gyro.describe().join('\n')}\nL = cursor prediction on/off (for comparing)`;
   }, 1000);
   // A/B test the cursor prediction ("display lead") with the L key

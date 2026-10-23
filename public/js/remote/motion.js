@@ -45,8 +45,11 @@ export function createMotion({ onSample, onPointer }) {
   }
 
   // Must be called from a tap (iPhone only shows the permission prompt then).
-  // Resolves to { ok: true } or { ok: false, reason: 'denied' | 'unsupported' }.
+  // Resolves to { ok: true } or { ok: false, reason: 'insecure' | 'denied' | 'unsupported' | 'silent' }.
   async function start() {
+    // Browsers only give motion sensors to secure (https) pages, and they don't say so:
+    // events just never arrive. So check first and say exactly what's wrong.
+    if (!window.isSecureContext) return { ok: false, reason: 'insecure' };
     // Both requests are made right away, inside the tap, before any await.
     const asks = [globalThis.DeviceOrientationEvent, globalThis.DeviceMotionEvent]
       .filter((E) => typeof E?.requestPermission === 'function')
@@ -55,9 +58,7 @@ export function createMotion({ onSample, onPointer }) {
     if (answers.some((a) => a.status === 'rejected' || a.value !== 'granted')) {
       return { ok: false, reason: 'denied' };
     }
-    if (!('DeviceOrientationEvent' in window) || !window.isSecureContext) {
-      return { ok: false, reason: 'unsupported' };
-    }
+    if (!('DeviceOrientationEvent' in window)) return { ok: false, reason: 'unsupported' };
 
     window.addEventListener('deviceorientation', onOrientation);
     window.addEventListener('devicemotion', onMotion);
@@ -69,7 +70,7 @@ export function createMotion({ onSample, onPointer }) {
     }
     if (stats.alpha == null) {
       window.removeEventListener('deviceorientation', onOrientation);
-      return { ok: false, reason: 'unsupported' };
+      return { ok: false, reason: 'silent' }; // allowed, but no data (a desktop, or sensors blocked)
     }
     return { ok: true };
   }
