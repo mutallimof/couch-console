@@ -10,6 +10,7 @@ import { createLook } from './karts-look.js';
 import { CHARACTERS, KARTS, ITEM_ICONS, kartPhysics, rollItem } from './karts-data.js';
 import { setThree, makeRacer, makeItemMesh, makePortraits } from './karts-models.js';
 import { createSelect } from './karts-select.js';
+import { createShowroom, setShowroomThree } from './karts-showroom.js';
 import { HOP_TIME, TRICK_TIME, kartInput, stepKart as driveKart, giveBoost as boostKart, bumpKarts, progress as raceProgress, LAPS } from './karts-rules.js';
 import { CAR, PIRATE, loadAll } from './karts-assets.js';
 import { THEME_MODELS } from './karts-decor.js';
@@ -27,6 +28,7 @@ let THREE = null;
 let api, root, renderer, scene, sun, track, frame, lastT, resizeObserver, minimap, mctx, mapBox;
 let karts = [], humans = [], orbs = [], slicks = [], state, timer, raceTime, overAt, paused = false, alive = 0;
 let portraits, select, selection, lastCount, look;
+const showrooms = new Map(); // playerId -> 3D preview on the select screen (karts-showroom.js)
 const assets = new Map(); // loaded 3D models: path -> glTF (missing = use the code-built ones)
 const input = new Map(); // playerId -> { steer, gas, brake, left, right }
 
@@ -45,11 +47,13 @@ function showSelect() {
   root.querySelectorAll('.kart-hud, .kart-results').forEach((e) => e.remove());
   minimap.hidden = true;
   const ids = api.players.map((p) => p.playerId).slice(0, api.mode === 'solo' ? 1 : 2);
+  root.classList.add('selecting'); // the select screen's background (the 3D previews show through it)
   select = createSelect({
     root, portraits, previous: selection, sound: api.sound,
     players: ids.map((id) => ({ playerId: id, color: colorFor(id) })),
-    onDone: (sel) => { selection = sel; select = null; startRace(); },
+    onDone: (sel) => { selection = sel; select = null; root.classList.remove('selecting'); startRace(); },
     onExit: () => api.exit(),
+    onCelebrate: (playerId, kind) => showrooms.get(playerId)?.celebrate(kind),
   });
 }
 
@@ -367,10 +371,13 @@ function moveCamera(h, dt) {
 function render() {
   const W = root.clientWidth, H = root.clientHeight;
   if (state === 'select' || !humans.length) {
+    renderer.setClearColor(0x000000, 0); // see-through, so the select screen's background shows
     renderer.setViewport(0, 0, W, H); renderer.setScissor(0, 0, W, H);
     renderer.clear();
+    if (state === 'select' && select) renderShowrooms(W, H);
     return;
   }
+  renderer.setClearColor(0x000000, 1);
   humans.forEach((h, i) => {
     // Split screen: P1 on top, P2 at the bottom. The sun (and its shadows) follow each player,
     // always from the same direction as the sun drawn in the sky.
@@ -381,6 +388,25 @@ function render() {
     h.camera.aspect = W / vh;
     look.render(i, h.camera, 0, y, W, vh);
   });
+}
+
+// Each player's 3D preview, drawn into their panel's preview box
+function renderShowrooms(W, H) {
+  const box = root.getBoundingClientRect();
+  for (const s of select.seats()) {
+    if (!s.stage) continue;
+    let room = showrooms.get(s.playerId);
+    if (!room) showrooms.set(s.playerId, (room = createShowroom(assets)));
+    room.set(s.character, s.kartDef, s.color);
+    const r = s.stage.getBoundingClientRect();
+    const x = r.left - box.left, y = H - (r.top - box.top) - r.height;
+    if (r.width < 10 || r.height < 10) continue;
+    room.camera.aspect = r.width / r.height;
+    room.camera.updateProjectionMatrix();
+    renderer.setViewport(x, y, r.width, r.height);
+    renderer.setScissor(x, y, r.width, r.height);
+    renderer.render(room.scene, room.camera);
+  }
 }
 
 function drawMinimap() {
@@ -482,6 +508,7 @@ function loop(t) {
   const dt = Math.min(0.05, (t - (lastT ?? t)) / 1000);
   lastT = t;
   if (!paused) update(dt);
+  if (state === 'select') showrooms.forEach((room) => room.update(dt)); // idle animations, turntables
   if (karts.length) {
     syncMeshes(t, dt);
     humans.forEach((h) => moveCamera(h, dt));
@@ -528,12 +555,13 @@ async function init(token) {
   }
   if (token !== alive) return; // closed while loading
   setThree(THREE);
+  setShowroomThree(THREE);
   // The cars, pirates, item boxes and coins (the track scenery loads when a track is picked)
   root.querySelector('.kart-loading').remove();
   const ok = await loadModels([...KARTS.map((k) => CAR(k.model)), ...CHARACTERS.filter((c) => c.model).map((c) => PIRATE(c.model)),
     CAR('item-box'), CAR('item-coin-gold')]);
   if (!ok) return;
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // alpha: see-through select screen
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setScissorTest(true);
   renderer.shadowMap.enabled = true;
@@ -596,6 +624,8 @@ export default {
       scene.traverse((o) => { o.geometry?.dispose(); [].concat(o.material || []).forEach((m) => { m.map?.dispose(); m.dispose(); }); });
     }
     select?.destroy();
+    showrooms.forEach((room) => room.dispose());
+    showrooms.clear();
     look?.dispose();
     renderer?.dispose();
     root?.remove();

@@ -314,6 +314,9 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 - Tricks: tap DRIFT in the air (players only, once per jump; quick taps count) = barrel roll, boost on landing, "Trick!".
 - Rules in karts-rules.js with tests (52 in total).
 
+### Phase 25: Character select with animated poses
+- 3D showroom per player panel (`karts-showroom.js`): character on a podium (idle; wave when picked, cheer when ready), chosen kart on a turntable with the character driving, sliding stat bars. Compact layout for short screens.
+
 ### Later
 - 4-player split screen for Turbo Karts.
 

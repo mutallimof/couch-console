@@ -557,33 +557,38 @@ html, body {
 .kart-card td img { width: 30px; height: 30px; vertical-align: middle; margin-right: 8px; border-radius: 50%; background: #EEF2F7; }
 
 /* Turbo Karts select screen */
-.kart-select { position: absolute; inset: 0; z-index: 5; padding: 22px 32px; overflow: hidden; color: #fff;
-  background: radial-gradient(circle at 50% 0%, #4C6EF5, #1B1F3A 70%); display: flex; flex-direction: column; align-items: center; }
-.kart-select h1 { margin: 0 0 14px; font-size: 40px; font-weight: 900; }
-.ks-seats { display: flex; gap: 24px; width: 100%; justify-content: center; flex: 1; min-height: 0; }
-.ks-seat { flex: 1; min-width: 0; max-width: 640px; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; border-radius: 22px;
-  background: rgba(255, 255, 255, 0.08); border: 4px solid var(--c); }
-.ks-seat.ready { box-shadow: 0 0 30px var(--c); }
-.ks-top { display: flex; align-items: center; gap: 16px; }
-.ks-tag { padding: 4px 12px; border-radius: 10px; background: var(--c); font-weight: 900; font-size: 20px; }
-.ks-big { width: clamp(64px, 14vh, 140px); height: clamp(64px, 14vh, 140px); border-radius: 50%; background: rgba(255, 255, 255, 0.9); }
-.ks-name { font-size: 32px; }
-.ks-kart-name { opacity: 0.75; font-weight: 700; }
-.ks-chars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; opacity: 0.55; }
-.ks-chars img { width: 100%; aspect-ratio: 1; border-radius: 12px; background: rgba(255, 255, 255, 0.85); border: 3px solid transparent; box-sizing: border-box; }
-.ks-chars img.focused { border-color: var(--c); transform: scale(1.06); }
-.ks-karts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; opacity: 0.55; }
+.kart-select { position: absolute; inset: 0; z-index: 5; padding: 18px 28px; overflow: hidden; color: #fff;
+  display: flex; flex-direction: column; align-items: center; } /* background: on .kart.selecting (the 3D shows through) */
+.kart.selecting { background: radial-gradient(circle at 50% 0%, #4C6EF5, #1B1F3A 70%); }
+.kart-select h1 { margin: 0 0 12px; font-size: 38px; font-weight: 900; }
+.ks-seats { display: flex; gap: 22px; width: 100%; justify-content: center; flex: 1; min-height: 0; }
+.ks-seat { flex: 1; min-width: 0; max-width: 680px; display: flex; flex-direction: column; gap: 10px; padding: 14px 18px; border-radius: 22px;
+  background: rgba(255, 255, 255, 0.07); border: 3px solid color-mix(in srgb, var(--c) 55%, transparent);
+  transition: box-shadow 220ms cubic-bezier(0.23, 1, 0.32, 1), border-color 220ms cubic-bezier(0.23, 1, 0.32, 1); }
+.ks-seat.is-ready { border-color: var(--c); box-shadow: 0 0 0 3px var(--c), 0 0 36px color-mix(in srgb, var(--c) 60%, transparent); }
+.ks-top { display: flex; align-items: baseline; gap: 12px; }
+.ks-tag { align-self: center; padding: 3px 11px; border-radius: 10px; background: var(--c); font-weight: 900; font-size: 18px; }
+.ks-name { font-size: 30px; }
+.ks-kart-name { margin-left: auto; opacity: 0.75; font-weight: 800; font-size: 18px; }
+/* the 3D showroom is drawn behind this box (turbo-karts.js), so it stays see-through */
+.ks-stage { flex: 1; min-height: 120px; border-radius: 16px; background: radial-gradient(ellipse at 50% 85%, rgba(255, 255, 255, 0.10), transparent 65%); }
+.ks-chars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; opacity: 0.5; transition: opacity 160ms ease-out; }
+.ks-chars img { width: 100%; aspect-ratio: 1; max-height: 9vh; object-fit: contain; border-radius: 12px; background: rgba(255, 255, 255, 0.85);
+  border: 3px solid transparent; box-sizing: border-box; transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), border-color 140ms ease-out; }
+.ks-chars img.focused { border-color: var(--c); transform: scale(1.08); }
+.ks-karts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; opacity: 0.5; transition: opacity 160ms ease-out; }
 .ks-chars.active, .ks-karts.active { opacity: 1; }
-.ks-kart { padding: 6px 4px; text-align: center; border-radius: 12px; background: rgba(255, 255, 255, 0.1); border: 3px solid transparent; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ks-kart { padding: 5px 4px; text-align: center; border-radius: 12px; background: rgba(255, 255, 255, 0.1); border: 3px solid transparent; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: background 140ms ease-out, border-color 140ms ease-out; }
 .ks-kart b { font-size: 14px; }
 .ks-kart.focused { border-color: var(--c); background: rgba(255, 255, 255, 0.2); }
-/* the focused kart's stats */
-.ks-stats { display: grid; grid-template-columns: auto auto auto auto; justify-content: start; gap: 4px 10px; align-items: center; font-size: 14px; font-weight: 700; }
-.ks-stats em { display: flex; gap: 3px; }
-.ks-stats i { width: 12px; height: 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); }
-.ks-stats i.on { background: #FFE066; }
+/* stat bars slide to their new value when you change karts */
+.ks-stats { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 6px 12px; align-items: center; font-size: 14px; font-weight: 800; }
+.ks-bar { height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
+.ks-bar i { display: block; height: 100%; border-radius: 5px; background: #FFE066; transform-origin: left;
+  transform: scaleX(var(--v, 0)); transition: transform 260ms cubic-bezier(0.23, 1, 0.32, 1); }
 .ks-hint { margin: 0; font-weight: 900; opacity: 0.85; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .ks-bar i, .ks-chars img, .ks-seat { transition: none; } }
 .ks-tracks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; width: min(1100px, 100%); }
 .ks-track { min-height: 20vh; border-radius: 22px; padding: 20px 24px; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px;
   background: linear-gradient(180deg, var(--a) 0%, var(--a) 55%, var(--b) 56%); border: 5px solid transparent; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); }
@@ -630,3 +635,19 @@ body.desk-mode, body.desk-mode * { cursor: none !important; }
 .kart-hud.boosting::before { opacity: 1; animation: speed-lines 0.12s steps(2) infinite; }
 @keyframes speed-lines { to { transform: rotate(4deg) scale(1.03); } }
 @media (prefers-reduced-motion: reduce) { .kart-hud.boosting::before { animation: none; opacity: 0.5; } }
+/* Short screens (small laptops): tighter select screen so everything fits */
+@media (max-height: 640px) {
+  .kart-select { padding: 10px 20px; }
+  .kart-select h1 { font-size: 26px; margin-bottom: 6px; }
+  .ks-seats { gap: 14px; }
+  .ks-seat { gap: 6px; padding: 10px 14px; }
+  .ks-name { font-size: 22px; }
+  .ks-kart-name { font-size: 15px; }
+  .ks-stage { min-height: 90px; }
+  .ks-chars img { max-height: 7.5vh; border-width: 2px; }
+  .ks-chars { gap: 4px; }
+  .ks-kart { padding: 3px 4px; }
+  .ks-kart b { font-size: 12px; }
+  .ks-stats { font-size: 12px; gap: 3px 10px; }
+  .ks-hint { font-size: 13px; }
+}

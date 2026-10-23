@@ -173,6 +173,14 @@ function assetDriver(gltf) {
   return { object: obj, mixer, actions, play };
 }
 
+// A character standing on its own (select-screen showroom): a pirate with its animations,
+// or a code-built animal. Returns { object, anim } (anim = null for the animals).
+export function makeStandingCharacter(character, assets) {
+  const pirate = character.model && assets?.get(PIRATE(character.model));
+  const anim = pirate ? assetDriver(pirate) : null;
+  return { object: anim ? anim.object : makeCharacter(character), anim };
+}
+
 // Kart + driver + effects, ready to drive. `assets` = loaded models (Map path -> glTF), optional.
 export function makeRacer(character, kart, color, assets) {
   const carModel = kart.model && assets?.get(CAR(kart.model));
