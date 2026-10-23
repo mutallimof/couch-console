@@ -68,10 +68,12 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 
 7. **Click the laptop page once** with your mouse or touchpad. Browsers block sound until you do. Press **F11** for full screen.
 
-### Playing with 2 phones
-- Both phones scan the **same QR code**. The first phone is **P1 (blue)**, the second is **P2 (red)**.
-- While you're in the menu, a small QR code in the bottom-right corner lets the second phone join.
-- **P1 controls the menu.** P2's cursor shows, but only P1 can open and close things.
+### Playing with 2 to 4 phones
+- Every phone scans the **same QR code**. The first phone is **P1 (blue)**, then **P2 (red)**, **P3 (green)** and **P4 (yellow)**.
+- While you're in the menu, a small QR code in the bottom-right corner lets more phones join.
+- **P1 controls the menu** (the ring around the selected tile is in P1's color). Other players' cursors show, but only P1 can open and close things.
+- **Balloon Pop, Draw and Target Range** take up to 4 players. The other games take 2 (the first two players); the others can watch.
+- **Phone sounds:** when something happens to you in a game (a hit, a pop, a crash), your own phone plays a little sound, and vibrates on Android. Turn it off in Settings.
 - In **Draw**, both players paint at the same time, each with their own color and brush.
 - **Balloon Pop** asks for a mode when 2 phones are connected:
   - **Solo:** only P1 plays.
@@ -100,7 +102,7 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 - **Photos:** put pictures (.jpg, .png, .gif, .webp) in the `photos` folder inside `couch-console`. Point or use the D-pad to choose one and press A to open it. ◀ ▶ flips through them, A starts or stops a slideshow, and B goes back. Your photos are never uploaded to GitHub.
 - **Weather:** today's weather and the next days (needs internet). ◀ ▶ changes the city. "My location" asks the laptop's browser for permission once. + / − switches between °C and °F, and A refreshes.
 - **Video:** plays YouTube videos (needs internet). The list comes from `videos.txt` in the `couch-console` folder. Copy `videos.example.txt` to `videos.txt` and put one `Title | YouTube link` per line. While watching: A = play/pause, ◀ ▶ = back/forward 10 s, + / − = volume, ▲ ▼ = previous/next video, B = back to the list. If a video doesn't start, click the laptop page once (browsers block autoplay with sound) and press A.
-- **Settings:** pointer speed (1 to 10), sound on/off, and **Show QR code** to connect a phone again.
+- **Settings:** pointer speed (1 to 10), sound on/off, phone sounds on/off, and **Show QR code** to connect a phone again.
 
 If the phone can't use motion sensors, or you tapped "Don't Allow", it shows a **touchpad** instead. Drag on it to move the cursor.
 On iPhone, to get the motion question again: Settings → Apps → Safari → Clear History and Website Data, then reload the page.

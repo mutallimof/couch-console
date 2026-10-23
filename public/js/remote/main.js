@@ -200,6 +200,7 @@ function showTouchpad(message) {
 }
 
 $('start-btn').addEventListener('click', async () => {
+  unlockPhoneAudio(); // sound needs a tap to start, like motion
   $('start-btn').disabled = true;
   $('start-btn').textContent = 'Starting…';
   const result = await motion.start();
@@ -224,7 +225,41 @@ $('recenter').addEventListener('click', () => {
   emit(EV.INPUT_RECENTER);
 });
 
-socket.on(EV.FEEDBACK_RUMBLE, ({ ms }) => navigator.vibrate?.(Math.min(Number(ms) || 0, 1000)));
+// Game feedback for this player: vibrate (Android) and a small sound from the phone itself
+// (iPhones can't vibrate from a web page, so there the sound is the feedback).
+let phoneSounds = true;
+socket.on(EV.FEEDBACK_SETTINGS, (s) => { if (typeof s?.phoneSounds === 'boolean') phoneSounds = s.phoneSounds; });
+socket.on(EV.FEEDBACK_RUMBLE, ({ ms }) => {
+  ms = Math.min(Number(ms) || 0, 1000);
+  navigator.vibrate?.(ms);
+  if (phoneSounds) phoneSound(ms);
+});
+
+// ---------- Phone sounds (Web Audio, no files) ----------
+// The size of the rumble picks the sound: a tap for small things, a hit, or a thud.
+
+let actx = null;
+function unlockPhoneAudio() {
+  try {
+    actx ??= new (window.AudioContext || window.webkitAudioContext)();
+    actx.resume();
+  } catch { /* no audio: fine */ }
+}
+function phoneSound(ms) {
+  if (!actx || actx.state !== 'running') return;
+  const t = actx.currentTime, osc = actx.createOscillator(), gain = actx.createGain();
+  const [f0, f1, dur, vol, type] = ms <= 60 ? [1400, 900, 0.05, 0.08, 'triangle']
+    : ms <= 150 ? [520, 260, 0.1, 0.14, 'square']
+      : [160, 50, 0.28, 0.22, 'sine'];
+  osc.type = type;
+  osc.frequency.setValueAtTime(f0, t);
+  osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  gain.gain.setValueAtTime(vol, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(gain).connect(actx.destination);
+  osc.start(t);
+  osc.stop(t + dur + 0.02);
+}
 
 // ---------- Keep the screen awake ----------
 

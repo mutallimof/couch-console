@@ -42,12 +42,23 @@ let sensitivity = 5;
 try { sensitivity = Number(localStorage.getItem('couch.sensitivity')) || 5; } catch { /* ignore */ }
 gyro.setSpeed(sensitivity);
 
+// Phone sounds: each phone plays a small sound when its own game feedback (rumble) arrives
+let phoneSounds = true;
+try { phoneSounds = localStorage.getItem('couch.phoneSounds') !== '0'; } catch { /* ignore */ }
+const sendSettings = () => socket.emit(EV.FEEDBACK_SETTINGS, { phoneSounds });
+
 const prefs = {
   getSensitivity: () => sensitivity,
   setSensitivity(n) {
     sensitivity = n;
     try { localStorage.setItem('couch.sensitivity', String(n)); } catch { /* ignore */ }
     gyro.setSpeed(n);
+  },
+  getPhoneSounds: () => phoneSounds,
+  setPhoneSounds(on) {
+    phoneSounds = on;
+    try { localStorage.setItem('couch.phoneSounds', on ? '1' : '0'); } catch { /* ignore */ }
+    sendSettings();
   },
   showQR: () => setPairing(true),
 };
@@ -92,6 +103,7 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
   const isNew = !players.isConnected(playerId);
   players.join(playerId, color);
   if (isNew) sound.play('join');
+  sendSettings(); // so the new phone knows whether to play sounds
   socket.emit(EV.FEEDBACK_MODE, { mode: controllerMode, prompt: controllerPrompt }); // and the right controller layout
   playerReturned(playerId);
   // A new phone joining a running multi-player game (not solo) gets let in, if there's room.

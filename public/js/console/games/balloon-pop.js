@@ -240,10 +240,13 @@ function drawHud() {
   const timeColor = timeLeft <= 10 ? '#E03131' : '#2b3445';
   const top = 44 * scale, edge = 32 * scale;
   if (mode() === 'versus') {
-    // Split scoreboard: P1 on the left, P2 on the right, timer in the middle.
-    const [a, b] = [...scores.keys()];
-    if (a) text(`P${a}  ${scores.get(a)}`, edge, top, 44, colorFor(a), 'left');
-    if (b) text(`${scores.get(b)}  P${b}`, W - edge, top, 44, colorFor(b), 'right');
+    // Split scoreboard, timer in the middle: P1 (and P3) on the left, P2 (and P4) on the right.
+    const ids = [...scores.keys()], step = 200 * scale;
+    ids.forEach((id, n) => {
+      const right = n % 2 === 1, inward = Math.floor(n / 2) * step;
+      text(right ? `${scores.get(id)}  P${id}` : `P${id}  ${scores.get(id)}`,
+        right ? W - edge - inward : edge + inward, top, 44, colorFor(id), right ? 'right' : 'left');
+    });
     text(`${Math.ceil(timeLeft)}`, W / 2, top, 48, timeColor);
   } else if (mode() === 'coop') {
     text(`Team ${score} / ${COOP_TARGET}`, edge, top, 40, '#2b3445', 'left');
@@ -262,7 +265,7 @@ function drawHud() {
 function drawReady() {
   const goal = {
     solo: 'Point and press A to pop!',
-    versus: 'Versus: pop more than your rival!',
+    versus: 'Versus: pop the most balloons!',
     coop: `Co-op: pop ${COOP_TARGET} together in ${ROUND_SECONDS} s!`,
   }[mode()];
   const tip = mode() === 'coop' ? 'Pop at the same time for a combo' : 'Golden +3 · Spiky −2';
@@ -272,12 +275,12 @@ function drawReady() {
 function drawOver() {
   const again = ['A = play again   ·   B = menu', 28];
   if (mode() === 'versus') {
-    const [a, b] = [...scores.keys()];
-    const sa = scores.get(a) ?? 0, sb = scores.get(b) ?? 0;
-    const winner = sa === sb ? null : sa > sb ? a : b;
+    // Highest score wins; a shared top score is a tie
+    const ranked = [...scores].sort((x, y) => y[1] - x[1]);
+    const winner = ranked.length > 1 && ranked[0][1] === ranked[1][1] ? null : ranked[0]?.[0];
     const title = winner ? `P${winner} wins!` : 'It\'s a tie!';
     // The winner screen is in the winner's color.
-    panel([[title, 56, '#fff'], [`P${a} ${sa}   ·   P${b ?? '?'} ${sb}`, 36, '#fff'], ['', 10, '#fff'], [...again, '#fff']],
+    panel([[title, 56, '#fff'], [ranked.map(([id, s]) => `P${id} ${s}`).join('   ·   '), 36, '#fff'], ['', 10, '#fff'], [...again, '#fff']],
       winner ? colorFor(winner) : '#8A94A6');
   } else if (mode() === 'coop') {
     const won = score >= COOP_TARGET;
@@ -319,7 +322,7 @@ export default {
   color: '#E0548F',
   icon: ICON,
   minPlayers: 1,
-  maxPlayers: 2,
+  maxPlayers: 4,
   modes: ['solo', 'versus', 'coop'],
   mount(container, gameApi) {
     api = gameApi;

@@ -7,7 +7,9 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
   <circle cx="30" cy="14" r="4.5" fill="#fff"/><circle cx="16" cy="24" r="4.5" fill="#fff"/><circle cx="26" cy="34" r="4.5" fill="#fff"/>
 </svg>`;
 
-// prefs: { getSensitivity(), setSensitivity(n), showQR() } supplied by main.js
+// prefs: { getSensitivity(), setSensitivity(n), getPhoneSounds(), setPhoneSounds(on), showQR() } from main.js
+const ROWS = 4;
+
 export function createSettings(prefs) {
   let root, api, row = 0;
 
@@ -28,6 +30,10 @@ export function createSettings(prefs) {
           <button class="set-btn wide" data-action="mute">${api.sound.muted ? 'Off' : 'On'}</button>
         </div>
         <div class="set-row" data-row="2">
+          <span class="set-label">Phone sounds</span>
+          <button class="set-btn wide" data-action="phone-sounds">${prefs.getPhoneSounds() ? 'On' : 'Off'}</button>
+        </div>
+        <div class="set-row" data-row="3">
           <span class="set-label">Add a phone</span>
           <button class="set-btn wide" data-action="qr">Show QR code</button>
         </div>
@@ -45,6 +51,9 @@ export function createSettings(prefs) {
     } else if (action === 'mute') {
       api.sound.setMuted(!api.sound.muted);
       api.sound.play('select');
+    } else if (action === 'phone-sounds') {
+      prefs.setPhoneSounds(!prefs.getPhoneSounds());
+      api.sound.play('select');
     } else if (action === 'qr') {
       api.sound.play('select');
       prefs.showQR();
@@ -56,7 +65,7 @@ export function createSettings(prefs) {
     if (state !== 'down') return;
     if (button === 'B') return api.exit();
     if (button === 'UP' || button === 'DOWN') {
-      row = (row + (button === 'DOWN' ? 1 : 2)) % 3;
+      row = (row + (button === 'DOWN' ? 1 : ROWS - 1)) % ROWS;
       api.sound.play('hover');
       return render();
     }
@@ -69,7 +78,7 @@ export function createSettings(prefs) {
       const p = api.pointer(playerId);
       const hit = p && document.elementFromPoint(p.x, p.y)?.closest('[data-action]');
       if (hit && root.contains(hit)) return act(hit.dataset.action);
-      act(['sens-up', 'mute', 'qr'][row]);
+      act(['sens-up', 'mute', 'phone-sounds', 'qr'][row]);
     }
   }
 

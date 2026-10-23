@@ -238,14 +238,15 @@ function renderHud() {
     html += `<div class="score"><span style="--c:#2B3445">${api.mode === 'coop' ? 'Team' : 'Score'} ${team}${goal}</span><small>${Math.ceil(timeLeft)}s</small></div>`;
   }
   if (state === 'ready') {
-    const goal = { versus: 'Hit more than your rival!', coop: `Team goal: ${COOP_GOAL} points`, solo: `Best: ${getBest()}` }[api.mode];
+    const goal = { versus: 'Hit the most targets!', coop: `Team goal: ${COOP_GOAL} points`, solo: `Best: ${getBest()}` }[api.mode];
     html += `<div class="panel" style="--c:#9C6B3C"><h1>Target Range</h1><p>Aim and press A to shoot</p>
       <p>Center 3 · Middle 2 · Edge 1 · Gold +5 · Red X −5</p><p>${goal}</p><p>A = start · B = menu</p></div>`;
   } else if (state === 'over') {
     let title, c = '#5B6577', line;
     if (api.mode === 'versus') {
-      const [[a, sa], [b, sb] = [null, -1]] = [...scores];
-      const w = sa === sb ? null : sa > sb ? a : b;
+      // Highest score wins; a shared top score is a tie
+      const ranked = [...scores].sort((x, y) => y[1] - x[1]);
+      const w = ranked.length > 1 && ranked[0][1] === ranked[1][1] ? null : ranked[0]?.[0];
       title = w ? `${name(w)} wins!` : 'It\'s a tie!';
       if (w) c = colorFor(w);
       line = [...scores].map(([id, s]) => `${name(id)} ${s}`).join(' · ');
@@ -306,7 +307,7 @@ export default {
   color: '#9C6B3C',
   icon: ICON,
   minPlayers: 1,
-  maxPlayers: 2,
+  maxPlayers: 4,
   modes: ['versus', 'coop', 'solo'],
   mount(container, gameApi) {
     api = gameApi;

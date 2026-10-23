@@ -1,10 +1,10 @@
 // Shared constants used by the server, the console (laptop) and the remote (phone).
 
-// Milestone 2 = 2 players. The code supports up to 4 (one color each).
-export const MAX_PLAYERS = 2;
+// Up to 4 phones (Phase 21c). Most games take 2; Balloon Pop, Draw and Target Range take 4.
+export const MAX_PLAYERS = 4;
 
-// Index 0 = P1, index 1 = P2, ...
-export const PLAYER_COLORS = ['#2F80ED', '#EB5757', '#27AE60', '#F2C94C'];
+// Index 0 = P1, index 1 = P2, ... (P4's yellow is darkened so white text on it stays readable)
+export const PLAYER_COLORS = ['#2F80ED', '#EB5757', '#27AE60', '#D99A00'];
 
 export const colorFor = (playerId) => PLAYER_COLORS[playerId - 1];
 
