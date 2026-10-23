@@ -304,6 +304,14 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 ### Phase 22: Kart controller (built)
 - Buttons-only controller (`remote/kart-pad.js`, steering via `input:wheel`, DRIFT = new button `R`): steering strip (10% dead zone, visible thumb marker), GAS, separate DRIFT button (new button `R`), ITEM; DRIFT and ITEM keep accelerating; thumb can slide between buttons; tilt steering as an option.
 
+### Phase 23: Kart visual upgrade (procedural, no downloads)
+- Per-track reflections (environment made from the track's sky/ground colors), a sky with a sun that matches the shadow light, asphalt and grass noise textures, racing-line wear.
+- Screen effects (`karts-look.js`): bloom on very bright things only (boost flame, sparks, neon), vignette, one effect chain per split-screen view; switch off automatically under ~40 fps; `?fx=on|off` to force.
+- Speed lines at the screen edges while boosting.
+
+### Phase 24: Kart features
+- Gliders off big jumps, tricks in the air (DRIFT while airborne = trick, boost on landing).
+
 ### Later
 - 4-player split screen for Turbo Karts.
 

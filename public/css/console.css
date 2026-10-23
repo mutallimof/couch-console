@@ -618,3 +618,15 @@ body.desk-mode, body.desk-mode * { cursor: none !important; }
 .broken-app h1 { margin: 0; font-size: 44px; }
 .broken-app p { margin: 0; font-size: 20px; font-weight: 700; color: var(--muted); max-width: 640px; }
 .broken-app code { max-width: 760px; padding: 10px 14px; border-radius: 10px; background: #fff; color: #c0392b; font-size: 15px; white-space: pre-wrap; }
+
+/* Turbo Karts speed lines: thin white streaks rushing in from the screen edges while boosting */
+.kart-hud::before {
+  content: ''; position: absolute; inset: 0; opacity: 0; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg at 50% 55%, rgba(255, 255, 255, 0.55) 0deg 0.6deg, transparent 0.6deg 9deg);
+  -webkit-mask: radial-gradient(ellipse at 50% 55%, transparent 42%, #000 78%);
+  mask: radial-gradient(ellipse at 50% 55%, transparent 42%, #000 78%);
+  transition: opacity 200ms ease-out;
+}
+.kart-hud.boosting::before { opacity: 1; animation: speed-lines 0.12s steps(2) infinite; }
+@keyframes speed-lines { to { transform: rotate(4deg) scale(1.03); } }
+@media (prefers-reduced-motion: reduce) { .kart-hud.boosting::before { animation: none; opacity: 0.5; } }

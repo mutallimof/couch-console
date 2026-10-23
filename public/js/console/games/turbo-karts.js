@@ -5,7 +5,8 @@
 // Flow: pick characters & karts → P1 picks a track → 3 laps with items and coins → results.
 // Modes: solo (you + 7 CPU) · versus (2 players, split screen) · co-op (team points vs the best 2 CPUs)
 import { colorFor } from '../../shared/protocol.js';
-import { buildTrack, TRACKS } from './kart-track.js';
+import { buildTrack, TRACKS, SUN_DIR } from './kart-track.js';
+import { createLook } from './karts-look.js';
 import { CHARACTERS, KARTS, ITEM_ICONS, kartPhysics, rollItem } from './karts-data.js';
 import { setThree, makeRacer, makeItemMesh, makePortraits } from './karts-models.js';
 import { createSelect } from './karts-select.js';
@@ -25,7 +26,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 let THREE = null;
 let api, root, renderer, scene, sun, track, frame, lastT, resizeObserver, minimap, mctx, mapBox;
 let karts = [], humans = [], orbs = [], slicks = [], state, timer, raceTime, overAt, paused = false, alive = 0;
-let portraits, select, selection, lastCount;
+let portraits, select, selection, lastCount, look;
 const assets = new Map(); // loaded 3D models: path -> glTF (missing = use the code-built ones)
 const input = new Map(); // playerId -> { steer, gas, brake, left, right }
 
@@ -92,8 +93,10 @@ async function startRace() {
     track = buildTrack(THREE, def, assets);
     scene.add(track.group);
     scene.fog = new THREE.Fog(def.sky[1], def.fog[0], def.fog[1]);
+    look.setTrack(def); // (also sets the reflections, which add soft light: hence the dimmer hemi light)
     sun.intensity = def.night ? 0.6 : 2.2;
-    scene.userData.hemi.intensity = def.night ? 0.7 : 1.1;
+    // With reflections on, the environment already adds soft light from all around
+    scene.userData.hemi.intensity = (def.night ? 0.7 : 1.1) * 0.6;
     mapBox = null;
   }
   // Humans use their picks; CPUs take the other characters and random karts
@@ -322,7 +325,8 @@ function syncMeshes(t, dt) {
     m.driver.rotation.y = -((input.get(k.playerId)?.steer) || 0) * 0.3;
     const sparks = k.drifting && k.charge > 0.3;
     m.sparks.forEach((s) => { s.visible = sparks; s.scale.setScalar(0.5 + Math.random() * 0.9); s.rotation.set(Math.random() * 6, Math.random() * 6, 0); });
-    m.sparkMat.color.set(k.charge > 2.2 ? '#FF922B' : k.charge > 1.0 ? '#56CCF2' : '#F4F7FB');
+    // (brighter than white on purpose: only very bright things glow with the screen effects on)
+    m.sparkMat.color.set(k.charge > 2.2 ? '#FF922B' : k.charge > 1.0 ? '#56CCF2' : '#F4F7FB').multiplyScalar(5);
     m.flame.visible = k.boost > 0;
     m.flame.scale.set(1, 0.7 + Math.sin(t * 0.05) * 0.3, 1);
     m.shield.visible = k.shield > 0;
@@ -355,15 +359,14 @@ function render() {
     return;
   }
   humans.forEach((h, i) => {
-    // Split screen: P1 on top, P2 at the bottom. The sun's shadows follow each player.
+    // Split screen: P1 on top, P2 at the bottom. The sun (and its shadows) follow each player,
+    // always from the same direction as the sun drawn in the sky.
     const vh = H / humans.length, y = H - vh * (i + 1);
-    sun.position.set(h.x + 30, h.y + 60, h.z + 20);
+    sun.position.set(h.x + SUN_DIR[0] * 80, h.y + SUN_DIR[1] * 80, h.z + SUN_DIR[2] * 80);
     sun.target.position.set(h.x, h.y, h.z);
     sun.target.updateMatrixWorld();
-    renderer.setViewport(0, y, W, vh);
-    renderer.setScissor(0, y, W, vh);
     h.camera.aspect = W / vh;
-    renderer.render(scene, h.camera);
+    look.render(i, h.camera, 0, y, W, vh);
   });
 }
 
@@ -422,6 +425,7 @@ function updateHud() {
     const icon = h.roulette > 0 ? ITEM_ICONS[names[Math.floor(performance.now() / 90) % names.length]] : h.item ? ITEM_ICONS[h.item] : '';
     set('.kart-item', icon);
     q('.kart-itembox').classList.toggle('ready', !!h.item && h.roulette <= 0);
+    h.hud.classList.toggle('boosting', h.boost > 0); // speed lines at the screen edges
     set('.kart-drift', h.spin > 0 ? 'Spin out!' : h.drifting ? (h.charge > 2.2 ? 'TURBO!' : h.charge > 1 ? 'Boost ready' : 'Drift…') : h.shield > 0 ? 'Shield' : '');
     let msg = '';
     if (state === 'countdown') msg = timer < 3 ? String(3 - Math.floor(timer)) : '';
@@ -469,6 +473,7 @@ function loop(t) {
     humans.forEach((h) => moveCamera(h, dt));
   }
   render();
+  if (state === 'race' || state === 'countdown') look.tick(dt); // turns effects off if the laptop is too slow
   updateHud();
   drawMinimap();
   frame = requestAnimationFrame(loop);
@@ -531,7 +536,11 @@ async function init(token) {
   sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 160 });
   sun.shadow.bias = -0.0005;
+  sun.shadow.camera.far = 220;
   scene.add(sun, sun.target);
+  // reflections + glow + vignette (see karts-look.js); ?fx=on / ?fx=off on the console link
+  look = await createLook(THREE, renderer, scene, new URLSearchParams(location.search).get('fx'));
+  if (token !== alive) return;
   portraits = makePortraits(renderer, CHARACTERS, assets);
   resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(root);
@@ -573,9 +582,10 @@ export default {
       scene.traverse((o) => { o.geometry?.dispose(); [].concat(o.material || []).forEach((m) => { m.map?.dispose(); m.dispose(); }); });
     }
     select?.destroy();
+    look?.dispose();
     renderer?.dispose();
     root?.remove();
-    api = root = renderer = scene = track = resizeObserver = select = null;
+    api = root = renderer = look = scene = track = resizeObserver = select = null;
     karts = []; humans = [];
     overAt = null;
     input.clear();

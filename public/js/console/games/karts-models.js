@@ -186,7 +186,7 @@ export function makeRacer(character, kart, color, assets) {
   // drift sparks, boost flame, shield bubble, blob shadow
   const sparkMat = new THREE.MeshBasicMaterial({ color: '#56CCF2' });
   const sparks = [-0.9, 0.9].map((x) => { const sp = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 0), sparkMat); sp.position.set(x, 0.2, -1.5); k.group.add(sp); return sp; });
-  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.6, 12), new THREE.MeshBasicMaterial({ color: '#FF922B', transparent: true, opacity: 0.9 }));
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.6, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color('#FF922B').multiplyScalar(5), transparent: true, opacity: 0.9 }));
   flame.rotation.x = -Math.PI / 2; flame.position.set(0, 0.75, -2.3); k.group.add(flame);
   const shield = new THREE.Mesh(new THREE.SphereGeometry(2.1, 24, 16), new THREE.MeshStandardMaterial({ color: '#94D82D', transparent: true, opacity: 0.25, emissive: '#94D82D', emissiveIntensity: 0.4 }));
   shield.position.y = 0.9; k.group.add(shield);
