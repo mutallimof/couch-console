@@ -11,6 +11,7 @@ import { CHARACTERS, KARTS, ITEM_ICONS, kartPhysics, rollItem } from './karts-da
 import { setThree, makeRacer, makeItemMesh, makePortraits } from './karts-models.js';
 import { createSelect } from './karts-select.js';
 import { createShowroom, setShowroomThree } from './karts-showroom.js';
+import { strikeLightning, takeItem, coinReach, magnetPull, MAGNET_TIME, SLICK_CHARGES } from './karts-items.js';
 import { HOP_TIME, TRICK_TIME, kartInput, stepKart as driveKart, giveBoost as boostKart, bumpKarts, progress as raceProgress, LAPS } from './karts-rules.js';
 import { CAR, PIRATE, loadAll } from './karts-assets.js';
 import { THEME_MODELS } from './karts-decor.js';
@@ -173,7 +174,9 @@ function cpuControls(k) {
 // The driving rules are in karts-rules.js; here we feed them input and react to their events.
 function stepKart(k, dt) {
   const input = state === 'countdown' ? { steer: 0, gas: false, brake: false } : controls(k);
-  driveKart(k, dt, input, { track, raceTime, topScale: k.playerId ? 1 : k.skill + rubberBand(k), onEvent: kartEvent });
+  let ahead = null;
+  if (k.magnet > 0) { const order = standings(); ahead = order[order.indexOf(k) - 1]; }
+  driveKart(k, dt, input, { track, raceTime, topScale: k.playerId ? 1 : k.skill + rubberBand(k), bonus: magnetPull(k, ahead), onEvent: kartEvent });
 }
 
 // Rule events -> sounds, rumble and driver animations
@@ -210,10 +213,11 @@ function spinOut(k) {
 }
 
 function useItem(k) {
-  const item = k.item;
-  if (!item || k.roulette > 0 || k.spin > 0) return;
-  k.item = null;
+  if (!k.item || k.roulette > 0 || k.spin > 0) return;
+  const item = takeItem(k); // (Triple Slick stays in hand until all three are down)
   if (item === 'turbo') boostKart(k, 1.5, kartEvent);
+  else if (item === 'bolt') lightning(k);
+  else if (item === 'magnet') { k.magnet = MAGNET_TIME; if (k.playerId) { api.sound.play('select'); api.rumble(k.playerId, 60); } }
   else if (item === 'shield') { k.shield = 8; if (k.playerId) api.sound.play('select'); }
   else if (item === 'slick') {
     const s = { x: k.x - Math.sin(k.heading) * 3.5, z: k.z - Math.cos(k.heading) * 3.5, mesh: makeItemMesh('slick'), owner: k, age: 0 };
@@ -229,6 +233,19 @@ function useItem(k) {
     scene.add(o.mesh); orbs.push(o);
     if (k.playerId) api.sound.play('shot');
   }
+}
+
+// Lightning Bolt: a white flash, and everyone ahead of the user shrinks (unless shielded)
+function lightning(user) {
+  const { hit, blocked } = strikeLightning(user, standings());
+  api.sound.play('bomb');
+  root.classList.remove('lightning'); void root.offsetWidth; root.classList.add('lightning');
+  setTimeout(() => root?.classList.remove('lightning'), 500);
+  for (const k of hit) {
+    k.mesh.anim?.play('HitReact');
+    if (k.playerId) api.rumble(k.playerId, 250);
+  }
+  for (const k of blocked) if (k.playerId) api.sound.play('pop');
 }
 
 function stepItems(dt) {
@@ -271,7 +288,7 @@ function stepItems(dt) {
   }
   for (const c of track.coins) {
     if (c.respawn > 0) { c.respawn -= dt; c.mesh.visible = c.respawn <= 0; continue; }
-    const k = karts.find((x) => Math.hypot(x.x - c.p.x, x.z - c.p.z) < 1.9 && Math.abs(x.y + 1 - c.p.y) < 2);
+    const k = karts.find((x) => Math.hypot(x.x - c.p.x, x.z - c.p.z) < coinReach(x) && Math.abs(x.y + 1 - c.p.y) < (x.magnet > 0 ? 6 : 2));
     if (k) {
       c.respawn = 6; c.mesh.visible = false;
       k.coins = Math.min(10, k.coins + 1);
@@ -281,10 +298,13 @@ function stepItems(dt) {
   for (const k of karts) {
     if (k.roulette > 0) {
       k.roulette -= dt;
-      if (k.roulette <= 0) { k.item = k.pending; k.useItemAt = 1 + Math.random() * 4; }
+      if (k.roulette <= 0) {
+        k.item = k.pending; k.useItemAt = 1 + Math.random() * 4;
+        if (k.item === 'slick3') k.charges = SLICK_CHARGES;
+      }
     } else if (!k.playerId && k.item && state === 'race') {
       k.useItemAt -= dt;
-      if (k.useItemAt <= 0) useItem(k);
+      if (k.useItemAt <= 0) { useItem(k); k.useItemAt = 0.7; } // (a Triple Slick: the next one soon after)
     }
   }
 }
@@ -320,6 +340,20 @@ function syncMeshes(t, dt) {
     const m = k.mesh;
     if (!paused) m.anim?.mixer.update(dt);
     m.root.position.set(k.x, k.y, k.z);
+    // Lightning shrinks a kart (it pops back to size when the strike wears off)
+    const size = k.shrink > 0 ? 0.55 : 1;
+    m.root.scale.setScalar(m.root.scale.x + (size - m.root.scale.x) * Math.min(1, dt * 10));
+    // Magnet: a red ring pulsing around the kart while it pulls in coins
+    if (k.magnet > 0 && !m.magnetRing) {
+      m.magnetRing = new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.08, 8, 40),
+        new THREE.MeshBasicMaterial({ color: new THREE.Color('#F03E3E').multiplyScalar(3), transparent: true, opacity: 0.8 }));
+      m.magnetRing.rotation.x = Math.PI / 2; m.magnetRing.position.y = 0.4;
+      m.root.add(m.magnetRing);
+    }
+    if (m.magnetRing) {
+      m.magnetRing.visible = k.magnet > 0;
+      m.magnetRing.scale.setScalar(1 + Math.sin(t * 0.012) * 0.12);
+    }
     m.root.rotation.set(0, k.heading + (k.drifting ? k.driftDir * -0.35 : 0), 0);
     // tilt with the road slope, lean into turns, bob a little in the air
     const ahead = track.pts[track.at(k.idx + 3)], behind = track.pts[track.at(k.idx - 3)];
@@ -462,7 +496,7 @@ function updateHud() {
     set('.kart-coins', `<span class="coin"></span>${h.coins}`);
     // item roulette: flick through icons until the item lands
     const icon = h.roulette > 0 ? ITEM_ICONS[names[Math.floor(performance.now() / 90) % names.length]] : h.item ? ITEM_ICONS[h.item] : '';
-    set('.kart-item', icon);
+    set('.kart-item', icon + (h.item === 'slick3' && h.roulette <= 0 ? `<b class="kart-charges">×${h.charges}</b>` : ''));
     q('.kart-itembox').classList.toggle('ready', !!h.item && h.roulette <= 0);
     h.hud.classList.toggle('boosting', h.boost > 0); // speed lines at the screen edges
     set('.kart-drift', h.spin > 0 ? 'Spin out!' : h.gliding ? 'Gliding! (DRIFT = trick)' : h.drifting ? (h.charge > 2.2 ? 'TURBO!' : h.charge > 1 ? 'Boost ready' : 'Drift…') : h.shield > 0 ? 'Shield' : '');

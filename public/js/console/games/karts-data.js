@@ -40,11 +40,16 @@ export const ITEMS = {
   orb: { name: 'Homing Orb', color: '#E64980' },  // flies ahead and spins out the kart in front
   slick: { name: 'Slick', color: '#4DABF7' },     // dropped behind you; karts that hit it spin
   shield: { name: 'Shield', color: '#94D82D' },   // blocks one hit for a few seconds
+  // Phase 27 (rules in karts-items.js)
+  bolt: { name: 'Lightning Bolt', color: '#FFD43B' }, // everyone ahead of you shrinks for a few seconds
+  slick3: { name: 'Triple Slick', color: '#339AF0' }, // three slicks, one per ITEM press
+  magnet: { name: 'Magnet', color: '#F03E3E' },       // pulls in coins from far away + slipstream
 };
+// Further back = better items. The Lightning Bolt only comes to the karts at the very back.
 export const ITEM_ODDS = {
-  front: { slick: 50, shield: 30, orb: 20 },
-  middle: { orb: 40, turbo: 30, slick: 15, shield: 15 },
-  back: { turbo: 60, orb: 30, shield: 10 },
+  front: { slick: 40, shield: 25, orb: 15, slick3: 15, magnet: 5 },
+  middle: { orb: 30, turbo: 25, slick: 10, shield: 10, slick3: 10, magnet: 15 },
+  back: { turbo: 45, orb: 20, magnet: 15, shield: 5, bolt: 15 },
 };
 
 // Small flat icons for the HUD (original drawings)
@@ -52,6 +57,9 @@ export const ITEM_ICONS = {
   turbo: '<svg viewBox="0 0 40 40"><path d="M14 6h12l-2 6h-8z" fill="#ADB5BD"/><rect x="13" y="12" width="14" height="18" rx="4" fill="#FF922B"/><path d="M15 30l5 8 5-8z" fill="#FFD43B"/></svg>',
   orb: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="13" fill="#E64980"/><circle cx="15" cy="15" r="4" fill="#fff" opacity=".7"/><circle cx="20" cy="20" r="17" fill="none" stroke="#F783AC" stroke-width="2" stroke-dasharray="4 4"/></svg>',
   slick: '<svg viewBox="0 0 40 40"><ellipse cx="20" cy="26" rx="16" ry="8" fill="#4DABF7"/><ellipse cx="15" cy="24" rx="5" ry="2" fill="#fff" opacity=".6"/><path d="M20 4c5 7 7 10 7 13a7 7 0 0 1-14 0c0-3 2-6 7-13z" fill="#339AF0"/></svg>',
+  bolt: '<svg viewBox="0 0 40 40"><path d="M23 3 8 23h10l-4 14 18-22H21l5-12z" fill="#FFD43B" stroke="#E8A317" stroke-width="2" stroke-linejoin="round"/></svg>',
+  slick3: '<svg viewBox="0 0 40 40">' + [[11, 24], [20, 13], [29, 24]].map(([x, y]) => `<path d="M${x} ${y - 9}c3.5 5 5 7 5 9a5 5 0 0 1-10 0c0-2 1.5-4 5-9z" fill="#339AF0"/>`).join('') + '</svg>',
+  magnet: '<svg viewBox="0 0 40 40"><path d="M9 8v13a11 11 0 0 0 22 0V8h-8v13a3 3 0 0 1-6 0V8z" fill="#F03E3E"/><path d="M9 8h8v6H9zM23 8h8v6h-8z" fill="#DEE2E6"/></svg>',
   shield: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="#94D82D" opacity=".35"/><circle cx="20" cy="20" r="15" fill="none" stroke="#94D82D" stroke-width="3"/><path d="M14 13a9 9 0 0 1 8-3" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
 };
 

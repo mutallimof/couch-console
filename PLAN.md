@@ -317,6 +317,12 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 ### Phase 25: Character select with animated poses
 - 3D showroom per player panel (`karts-showroom.js`): character on a podium (idle; wave when picked, cheer when ready), chosen kart on a turntable with the character driving, sliding stat bars. Compact layout for short screens.
 
+### Phase 26: Design pass on all games
+- impeccable audit → polish + Emil's animation review: contrast fixes, panel/message entrances, layout-free animations, consistent HUD pills. Details in DECISIONS.md.
+
+### Phase 27: More kart items
+- Lightning Bolt (shrinks everyone ahead; Shield blocks), Triple Slick (3 charges), Magnet (original: coin reach + slipstream). Rules in `karts-items.js` with tests.
+
 ### Later
 - 4-player split screen for Turbo Karts.
 

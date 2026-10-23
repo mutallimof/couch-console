@@ -4,6 +4,7 @@
 //   events (onEvent(type, kart)): 'boost' · 'wall' · 'land' (hard landing) · 'final-lap' · 'finish'
 //   · 'glide' (a glide ramp launched the kart) · 'trick' (landed a trick: a boost follows)
 import { ROAD_HALF, WALL } from './kart-path.js';
+import { SHRINK_TOP, SHRINK_WEIGHT, tickItemEffects } from './karts-items.js';
 
 export const LAPS = 3;
 export const HOP_TIME = 0.25; // seconds of the little hop that starts a drift (just for show)
@@ -32,7 +33,8 @@ export function kartInput(held) {
 
 // One physics step for one kart.
 //   input: { steer: -1..1, gas, brake, drift }
-//   world: { track, raceTime, topScale (CPU skill and catch-up; 1 for players), onEvent(type, kart) }
+//   world: { track, raceTime, topScale (CPU skill and catch-up; 1 for players), bonus (extra top
+//   speed in m/s, e.g. the Magnet's slipstream), onEvent(type, kart) }
 // Only karts with a playerId can drift (the computer karts don't).
 export function stepKart(k, dt, input, world) {
   const { track, onEvent } = world;
@@ -51,6 +53,9 @@ export function stepKart(k, dt, input, world) {
   if (k.boost > 0) top += BOOST_BONUS;
   if (offroad && k.boost <= 0) top *= OFFROAD;
   top *= world.topScale ?? 1;
+  if (k.shrink > 0) top *= SHRINK_TOP; // struck by lightning: small and slower
+  top += world.bonus ?? 0;
+  tickItemEffects(k, dt);
 
   if (!k.air) {
     if (gas) k.v = Math.min(k.v + ph.accel * dt * (k.v < top * 0.4 ? 1.3 : 1), Math.max(top, k.v - 25 * dt));
@@ -175,7 +180,7 @@ export function bumpKarts(karts) {
       const dx = B.x - A.x, dz = B.z - A.z, d = Math.hypot(dx, dz);
       if (d > 0 && d < KART_SIZE && Math.abs(A.y - B.y) < 2) {
         // heavier karts push lighter ones more
-        const wa = A.phys.weight, wb = B.phys.weight, push = KART_SIZE - d, nx = dx / d, nz = dz / d;
+        const wa = A.phys.weight * (A.shrink > 0 ? SHRINK_WEIGHT : 1), wb = B.phys.weight * (B.shrink > 0 ? SHRINK_WEIGHT : 1), push = KART_SIZE - d, nx = dx / d, nz = dz / d;
         A.x -= nx * push * (wb / (wa + wb)); A.z -= nz * push * (wb / (wa + wb));
         B.x += nx * push * (wa / (wa + wb)); B.z += nz * push * (wa / (wa + wb));
         const avg = (A.v + B.v) / 2;

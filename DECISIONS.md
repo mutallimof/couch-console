@@ -15,3 +15,9 @@ not to stop for questions). Each entry says what was decided and why. Newest at 
 - **Kept on purpose (detector flags):** the red-and-white stripes (track curbs on the phone's steering strip) and the speed lines come from the racing world, so they stay. The "glow" flag on the neutral elevation shadow is a false positive for a light page. The "image without src" flags are the QR codes, now hidden until loaded.
 - **Motion:** panels at rare, important moments (ready / game over / results / pause / mode picker) now arrive in 240 ms from 96 % scale; short messages ("Goal!", "GO!", "Trick!") punch in over 180 ms. Frequent things (hovering, D-pad moves) stay instant or near-instant. Reduced motion = a short fade only.
 - **Balloon Pop HUD:** score and timer now sit on white pills like the 3D games' scoreboards, for one consistent HUD language.
+
+## Phase 27: New kart items
+- **My original item is the Magnet:** for 6 seconds you pick up coins from 10 m away instead of 2 m, and you get a slipstream (up to +4 m/s) toward the kart just ahead when it's within 30 m. Chosen because coins already raise top speed in our game, so the Magnet feeds an existing system instead of adding a new one, and it rewards chasing rather than attacking.
+- **Lightning Bolt:** shrinks every kart *ahead* of the user for 3.5 s (top speed ×0.72, much lighter in bumps, speed ×0.6 at the strike), with no spin-out, so it's strong but not cruel. A Shield blocks it and is used up. Karts that already finished aren't touched. Only karts near the back can get it (15 % at the back, never at the front).
+- **Triple Slick:** stays in your item box with a "×3" counter; each ITEM press drops one slick. The computer drops its three about 0.7 s apart.
+- **Odds** were rebalanced so the new items appear without crowding out the old ones (see `ITEM_ODDS` in karts-data.js).

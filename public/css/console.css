@@ -673,3 +673,13 @@ img.qr-img:not([src]) { visibility: hidden; }
 /* Panels in the 3D games: the lines read as one block, never one orphaned word */
 .hud3d .panel { max-width: min(640px, 90vw); }
 .hud3d .panel p { text-wrap: balance; }
+
+/* Turbo Karts: the Lightning Bolt's flash (over the race, under the HUD), and the Triple Slick count */
+.kart.lightning::after { content: ''; position: absolute; inset: 0; background: #fff; pointer-events: none; z-index: 1;
+  animation: bolt-flash 450ms var(--ease-out) forwards; }
+@keyframes bolt-flash { from { opacity: 0.85; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .kart.lightning::after { animation-duration: 200ms; opacity: 0.4; } }
+/* (the HUD stays above the flash) */
+.kart-hud { z-index: 2; }
+.kart-charges { position: absolute; right: -8px; bottom: -8px; padding: 1px 7px; border-radius: 10px; background: #339AF0;
+  color: #fff; font-size: 18px; font-weight: 900; text-shadow: none; }

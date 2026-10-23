@@ -272,3 +272,61 @@ test('a very quick DRIFT tap in the air still counts as a trick', () => {
   stepKart(k, DT, kartInput({ gas: true, tapped: true }), world);
   assert.ok(k.trick > 0);
 });
+
+// ---- Phase 27: Lightning Bolt, Triple Slick, Magnet ----
+import { strikeLightning, takeItem, coinReach, magnetPull, MAGNET_REACH, COIN_REACH, SHRINK_TIME } from '../public/js/console/games/karts-items.js';
+import { rollItem } from '../public/js/console/games/karts-data.js';
+
+test('Lightning Bolt shrinks only the karts ahead, and a Shield blocks it', () => {
+  const order = [1, 2, 3, 4, 5].map((n) => ({ name: `k${n}`, v: 30, shield: 0, finished: null }));
+  order[1].shield = 5; // 2nd place is shielded
+  const user = order[3]; // 4th place uses it
+  const { hit, blocked } = strikeLightning(user, order);
+  assert.deepEqual(hit.map((k) => k.name), ['k1', 'k3']);
+  assert.deepEqual(blocked.map((k) => k.name), ['k2']);
+  assert.equal(order[1].shield, 0, 'the shield is used up');
+  assert.ok(order[0].shrink === SHRINK_TIME && order[0].v < 30, 'shrunk and slowed');
+  assert.ok(!order[3].shrink && !order[4].shrink, 'the user and karts behind are untouched');
+});
+
+test('a shrunk kart is slower until it grows back', () => {
+  const small = kart(park, { kartId: 'racer' }), normal = kart(park, { i: 6, kartId: 'racer' });
+  small.shrink = SHRINK_TIME;
+  drive(park, small, 3, { steer: () => 0 });
+  drive(park, normal, 3, { steer: () => 0 });
+  assert.ok(small.v < normal.v * 0.85, `small ${small.v.toFixed(1)} vs normal ${normal.v.toFixed(1)}`);
+  drive(park, small, 2, { steer: () => 0 });
+  assert.equal(small.shrink, 0, 'grown back after a few seconds');
+});
+
+test('a shrunk kart gets shoved much further in a bump', () => {
+  const a = kart(park, { kartId: 'racer' }), b = kart(park, { kartId: 'racer' });
+  a.x = 0; a.z = 0; b.x = 2; b.z = 0; b.shrink = 1;
+  bumpKarts([a, b]);
+  assert.ok(b.x - 2 > -a.x * 2, `small moved ${(b.x - 2).toFixed(2)}, big moved ${(-a.x).toFixed(2)}`);
+});
+
+test('Triple Slick drops three slicks, then it is gone', () => {
+  const k = { item: 'slick3', charges: 3 };
+  assert.equal(takeItem(k), 'slick'); assert.equal(k.item, 'slick3');
+  assert.equal(takeItem(k), 'slick'); assert.equal(k.item, 'slick3');
+  assert.equal(takeItem(k), 'slick'); assert.equal(k.item, null);
+  assert.equal(takeItem(k), null);
+});
+
+test('Magnet: far-reaching coin pickup and a slipstream pull toward the kart ahead', () => {
+  const k = { x: 0, z: 0, magnet: 3 }, ahead = { x: 0, z: 10 };
+  assert.equal(coinReach(k), MAGNET_REACH);
+  assert.equal(coinReach({ magnet: 0 }), COIN_REACH);
+  assert.ok(magnetPull(k, ahead) > 0);
+  assert.equal(magnetPull(k, { x: 0, z: 50 }), 0, 'too far ahead: no pull');
+  assert.equal(magnetPull({ ...k, magnet: 0 }, ahead), 0, 'no magnet: no pull');
+});
+
+test('new items come from item boxes, and the Lightning Bolt only to the karts at the back', () => {
+  const seen = (place) => { const s = new Set(); for (let i = 0; i < 4000; i++) s.add(rollItem(place, 8)); return s; };
+  const front = seen(1), back = seen(8);
+  assert.ok(front.has('slick3') && front.has('magnet'), 'front gets Triple Slick and Magnet');
+  assert.ok(!front.has('bolt'), 'no Lightning for the leader');
+  assert.ok(back.has('bolt') && back.has('magnet'), 'back gets Lightning and Magnet');
+});
