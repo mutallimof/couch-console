@@ -323,7 +323,7 @@ const gameGets = (playerId) => current?.mounted && current.missing.size === 0 &&
 function onInputPointer(e) {
   count(e.playerId);
   if (!Number.isFinite(e.x) || !Number.isFinite(e.y)) return;
-  pointers.move(e.playerId, e.x, e.y, colorFor(e.playerId));
+  pointers.move(e.playerId, e.x, e.y, colorFor(e.playerId), e.direct === true);
   if (gameGets(e.playerId)) current.handlers.pointer.forEach((fn) => fn(e));
 }
 socket.on(EV.INPUT_POINTER, onInputPointer);
@@ -464,7 +464,8 @@ const deskButton = (button, state) => desk.active && onInputButton({ playerId: d
 $('use-mouse').addEventListener('click', (e) => { e.stopPropagation(); unlockSound(); desk.start(); });
 addEventListener('mousemove', (e) => {
   if (!desk.active) return;
-  onInputPointer({ playerId: desk.id, x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1 });
+  // direct: a mouse is already precise, so it's drawn without the touchpad smoothing
+  onInputPointer({ playerId: desk.id, x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1, direct: true });
 });
 addEventListener('mousedown', (e) => { if (e.button === 0) deskButton('A', 'down'); else if (e.button === 2) deskButton('B', 'down'); });
 addEventListener('mouseup', (e) => { if (e.button === 0) deskButton('A', 'up'); else if (e.button === 2) deskButton('B', 'up'); });
