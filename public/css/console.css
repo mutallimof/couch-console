@@ -611,3 +611,10 @@ html, body {
   border-radius: 12px; padding: 8px 16px; cursor: pointer; transition: transform 120ms var(--ease-out); }
 .use-mouse:active { transform: scale(0.97); }
 body.desk-mode, body.desk-mode * { cursor: none !important; }
+
+/* A game that failed to load */
+.broken-app { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 24px; text-align: center; background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom)); }
+.broken-app h1 { margin: 0; font-size: 44px; }
+.broken-app p { margin: 0; font-size: 20px; font-weight: 700; color: var(--muted); max-width: 640px; }
+.broken-app code { max-width: 760px; padding: 10px 14px; border-radius: 10px; background: #fff; color: #c0392b; font-size: 15px; white-space: pre-wrap; }

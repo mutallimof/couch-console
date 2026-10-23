@@ -194,3 +194,19 @@ public/            everything the browser loads
 PLAN.md            the full spec and phase list
 CLAUDE.md          working rules for the AI assistant
 ```
+
+### Adding, hiding or reordering games
+Every game and channel lives in `public/js/console/games/` or `public/js/console/channels/` and has a small settings file next to it with the same name, ending in `.game.json`. For example, `balloon-pop.js` has `balloon-pop.game.json`:
+
+```json
+{ "title": "Balloon Pop", "color": "#E0548F", "order": 6, "players": 4, "hidden": false }
+```
+
+- **Reorder the menu:** change `order` (lower numbers come first).
+- **Hide a game:** set `"hidden": true` (its files stay; it just isn't on the menu).
+- **Add a game:** put `my-game.js` and `my-game.game.json` in the `games` folder and refresh the laptop page.
+
+If a game has a bug and can't load, only its tile shows **Couldn't load…**; the rest of the console keeps working.
+
+### Tests
+`npm test` runs the automatic tests (no phone needed).

@@ -7,26 +7,18 @@ import { createMenu } from './menu.js';
 import { createSettings } from './settings.js';
 import { sound } from './sound.js';
 import { playBoot } from './boot.js';
-import balloonPop from './games/balloon-pop.js';
-import draw from './games/draw.js';
-import paddleDuel from './games/paddle-duel.js';
-import bowling from './games/bowling.js';
-import turboKarts from './games/turbo-karts.js';
-import tableTennis from './games/table-tennis.js';
-import targetRange from './games/target-range.js';
-import airHockey from './games/air-hockey.js';
-import dungeon from './games/dungeon.js';
-import photos from './channels/photos.js';
-import weather from './channels/weather.js';
-import video from './channels/video.js';
+import { loadApps } from './apps.js';
 
 const $ = (id) => document.getElementById(id);
-const socket = io(); // global from /socket.io/socket.io.js
 const DEBUG = new URLSearchParams(location.search).has('debug');
-const pointers = createPointers($('cursors'));
-const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
 // Boot animation (skip it with ?noboot=1)
 const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoot({ sound });
+// Games and channels, from their .game.json files (each loads on its own; see apps.js).
+// Loaded before connecting, so no server message can arrive before we're listening.
+const gameApps = await loadApps();
+const socket = io(); // global from /socket.io/socket.io.js
+const pointers = createPointers($('cursors'));
+const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
 const ZOOM_MS = 320;       // opening a game: the one big motion in the menu
 const ZOOM_BACK_MS = 220;  // going back is quicker than opening
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -65,7 +57,7 @@ const prefs = {
 
 // ---------- Menu ----------
 
-const apps = [turboKarts, tableTennis, targetRange, airHockey, dungeon, balloonPop, draw, paddleDuel, bowling, photos, weather, video, createSettings(prefs)];
+const apps = [...gameApps, createSettings(prefs)]; // Settings is built in, always last
 const menu = createMenu({
   grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
   onFocusChange: (column) => sound.play('hover', { step: column }),

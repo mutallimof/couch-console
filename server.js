@@ -51,6 +51,27 @@ app.get('/vendor/three.module.js', (req, res) =>
 // Three.js add-ons (model loader etc.), imported as "three/addons/..."
 app.use('/vendor/three-addons', express.static(file('./node_modules/three/examples/jsm')));
 
+// ---------- Games and channels on the menu (Phase 21e) ----------
+// Any games/<name>.js or channels/<name>.js with a <name>.game.json next to it is on the menu.
+// game.json: { title, color, order (lower = first), players, hidden (true = not on the menu) }
+const APP_DIRS = ['games', 'channels'];
+app.get('/api/apps', (req, res) => {
+  const list = [];
+  for (const dir of APP_DIRS) {
+    const folder = file(`./public/js/console/${dir}`);
+    for (const f of existsSync(folder) ? readdirSync(folder) : []) {
+      if (!f.endsWith('.game.json')) continue;
+      const name = f.slice(0, -'.game.json'.length);
+      let meta = {};
+      try { meta = JSON.parse(readFileSync(`${folder}/${f}`, 'utf8')); } catch { meta = { broken: 'game.json is not valid JSON' }; }
+      if (meta.hidden) continue;
+      list.push({ title: name, color: '#8A94A6', order: 99, ...meta, id: name, module: `/js/console/${dir}/${name}.js` });
+    }
+  }
+  list.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
+  res.json(list);
+});
+
 // ---------- Channels (Phase 17) ----------
 // Photos: any pictures you put in the photos/ folder.
 const PHOTOS = file('./photos');
