@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { trackPath, TRACKS, WALL } from '../public/js/console/games/kart-path.js';
-import { stepKart, bumpKarts, LAPS } from '../public/js/console/games/karts-rules.js';
+import { stepKart, bumpKarts, kartInput, LAPS } from '../public/js/console/games/karts-rules.js';
 import { KARTS, kartPhysics } from '../public/js/console/games/karts-data.js';
 
 const DT = 1 / 180; // the game runs 3 physics steps per 60 Hz frame
@@ -21,13 +21,13 @@ function kart(track, { i = 0, side = 0, kartId = 'racer', playerId = 1 } = {}) {
 }
 
 // Drive for `secs` seconds. steerFn(k) -> -1..1 (default: follow the road like a CPU)
-function drive(track, k, secs, { gas = true, brake = false, steer = null, events = [], raceTime = { t: 0 } } = {}) {
+function drive(track, k, secs, { gas = true, brake = false, drift = false, steer = null, events = [], raceTime = { t: 0 } } = {}) {
   const world = { track, topScale: 1, onEvent: (type) => events.push(type) };
   for (let t = 0; t < secs; t += DT) {
     raceTime.t += DT;
     world.raceTime = raceTime.t;
     const s = steer ? steer(k) : followRoad(track, k);
-    stepKart(k, DT, { steer: s, gas, brake: typeof brake === 'function' ? brake(k) : brake }, world);
+    stepKart(k, DT, { steer: s, gas, brake: typeof brake === 'function' ? brake(k) : brake, drift }, world);
   }
   return events;
 }
@@ -71,23 +71,61 @@ test('grass is slow', () => {
   assert.ok(grass.v < road.v * 0.7, `grass ${grass.v.toFixed(1)} vs road ${road.v.toFixed(1)}`);
 });
 
-test('a long drift gives a turbo when you let go of brake', () => {
+test('a long drift gives a turbo when you let go of DRIFT', () => {
   const k = kart(park, { i: 300 });
   drive(park, k, 3);
   const events = [];
-  // hold brake + steer for ~2 s (orange charge), then release
-  drive(park, k, 2, { brake: true, steer: () => 0.8, events });
-  assert.ok(k.drifting, 'drifting while brake is held');
-  drive(park, k, DT * 2, { brake: false, events });
+  // hold DRIFT + steer for ~2 s (orange charge), then let go
+  drive(park, k, 2, { drift: true, steer: () => 0.8, events });
+  assert.ok(k.drifting, 'drifting while DRIFT is held');
+  drive(park, k, DT * 2, { drift: false, events });
   assert.ok(!k.drifting && k.boost > 0, 'boost after letting go');
   assert.ok(events.includes('boost'));
+});
+
+test('a drift starts with a little hop', () => {
+  const k = kart(park, { i: 300 });
+  drive(park, k, 3);
+  drive(park, k, DT * 3, { drift: true, steer: () => 0.8 });
+  assert.ok(k.drifting && k.hop > 0);
+});
+
+test('braking ends a drift without a turbo', () => {
+  const k = kart(park, { i: 300 });
+  drive(park, k, 3);
+  drive(park, k, 1, { drift: true, steer: () => 0.5 });
+  assert.ok(k.drifting && k.charge > 1, 'a charged drift');
+  const events = [];
+  drive(park, k, DT * 2, { drift: true, brake: true, events });
+  drive(park, k, DT * 2, { drift: false, events }); // and letting go of DRIFT afterwards
+  assert.ok(!k.drifting);
+  assert.ok(!events.includes('boost'), 'no turbo');
+});
+
+test('BRAKE alone does not drift any more (DRIFT does)', () => {
+  const k = kart(park, { i: 300 });
+  drive(park, k, 3);
+  drive(park, k, 0.5, { brake: true, steer: () => 0.8 });
+  assert.ok(!k.drifting);
 });
 
 test('computer karts do not drift', () => {
   const k = kart(park, { i: 300, playerId: null });
   drive(park, k, 3);
-  drive(park, k, 1, { brake: true, steer: () => 0.8 });
+  drive(park, k, 1, { drift: true, steer: () => 0.8 });
   assert.ok(!k.drifting);
+});
+
+test('holding DRIFT or ITEM keeps accelerating; BRAKE wins over everything', () => {
+  assert.equal(kartInput({ gas: true }).gas, true);
+  assert.equal(kartInput({ drift: true }).gas, true, 'thumb slid from GAS to DRIFT');
+  assert.equal(kartInput({ item: true }).gas, true, 'thumb on ITEM');
+  assert.equal(kartInput({ gas: true, brake: true }).gas, false);
+  assert.equal(kartInput({}).gas, false);
+  // and on the track: DRIFT held without GAS still reaches speed
+  const k = kart(park);
+  drive(park, k, 4, { gas: kartInput({ drift: true }).gas, steer: () => 0 });
+  assert.ok(k.v > 25, `speed ${k.v.toFixed(1)}`);
 });
 
 test(`${LAPS} laps around the park finishes the race, with a final-lap warning`, () => {

@@ -5,20 +5,34 @@
 import { ROAD_HALF, WALL } from './kart-path.js';
 
 export const LAPS = 3;
+export const HOP_TIME = 0.25; // seconds of the little hop that starts a drift (just for show)
 export const COAST = 6, BRAKE = 30, OFFROAD = 0.5, BOOST_BONUS = 12, GRAVITY = 26, KART_SIZE = 3.2;
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const angleDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
+// What the buttons a player holds mean for the kart. DRIFT and ITEM keep accelerating
+// (your thumb has moved off GAS to press them); BRAKE always wins over gas.
+//   held: { steer, gas, brake, drift, item } -> input for stepKart
+export function kartInput(held) {
+  return {
+    steer: held.steer || 0,
+    gas: !!(held.gas || held.drift || held.item) && !held.brake,
+    brake: !!held.brake,
+    drift: !!held.drift,
+  };
+}
+
 // One physics step for one kart.
-//   input: { steer: -1..1, gas, brake }
+//   input: { steer: -1..1, gas, brake, drift }
 //   world: { track, raceTime, topScale (CPU skill and catch-up; 1 for players), onEvent(type, kart) }
 // Only karts with a playerId can drift (the computer karts don't).
 export function stepKart(k, dt, input, world) {
   const { track, onEvent } = world;
   const ph = k.phys, grip = track.def.grip;
-  let { steer, gas, brake } = input;
-  if (k.spin > 0) { k.spin -= dt; steer = 0; gas = false; brake = false; k.drifting = false; }
+  let { steer, gas, brake, drift = false } = input;
+  if (k.spin > 0) { k.spin -= dt; steer = 0; gas = false; brake = false; drift = false; k.drifting = false; }
+  k.hop = Math.max(0, (k.hop || 0) - dt);
   const offroad = Math.abs(k.lateral) > ROAD_HALF + 1.6;
   // top speed: kart stat · coins · boost · grass · CPU skill (and a little catch-up help)
   let top = ph.top * (1 + Math.min(10, k.coins) * 0.012);
@@ -31,10 +45,14 @@ export function stepKart(k, dt, input, world) {
     else k.v -= Math.sign(k.v) * Math.min(Math.abs(k.v), COAST * dt);
     if (k.v > top) k.v = Math.max(top, k.v - 25 * dt);
   }
-  // Drift: hold brake while turning fast. Charge builds; letting go gives a mini-turbo.
+  // Drift: hold DRIFT while turning fast (a little hop starts it). The charge builds; letting
+  // go gives a mini-turbo (blue sparks = small, orange = big). Braking ends it with no turbo.
   if (k.playerId) {
-    if (!k.drifting && brake && Math.abs(steer) > 0.3 && k.v > 15 && !k.air) { k.drifting = true; k.driftDir = Math.sign(steer); k.charge = 0; }
-    if (k.drifting && (!brake || k.v < 10)) {
+    if (!k.drifting && drift && Math.abs(steer) > 0.3 && k.v > 15 && !k.air) {
+      k.drifting = true; k.driftDir = Math.sign(steer); k.charge = 0; k.hop = HOP_TIME;
+    }
+    if (k.drifting && brake) k.drifting = false;
+    if (k.drifting && (!drift || k.v < 10)) {
       if (k.charge > 2.2) giveBoost(k, 1.6, onEvent); else if (k.charge > 1.0) giveBoost(k, 1.0, onEvent);
       k.drifting = false;
     }

@@ -3,6 +3,7 @@ import { EV, ROOM_LETTERS, ROOM_CODE_LENGTH } from '../shared/protocol.js';
 import { createMotion } from './motion.js';
 import { createSwing } from './swing.js';
 import { createWheel } from './wheel.js';
+import { createKartPad } from './kart-pad.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
@@ -40,13 +41,14 @@ function setConnected(on, text) {
 function setPlayer(playerId, color) {
   document.documentElement.style.setProperty('--player', color || '');
   $('badge').textContent = playerId ? `P${playerId}` : '–';
+  $('kp-badge').textContent = $('badge').textContent;
 }
 
 function showJoinForm(message = '') {
   joined = false;
   setPlayer(null, '');
   $('controller').hidden = true;
-  $('wheel-pad').hidden = true;
+  $('kart-pad').hidden = true;
   $('keyboard-pad').hidden = true;
   $('start').hidden = true;
   $('join-form').hidden = false;
@@ -153,26 +155,37 @@ const swing = createSwing({
   getGamma: () => motion.stats.gamma,
 });
 
-// ---------- Steering wheel (kart racer) ----------
-// The console switches us between the normal remote ('pointer') and the wheel layout.
+// ---------- Kart pad (Turbo Karts) ----------
+// The console switches us between the normal remote ('pointer'), the kart pad ('wheel')
+// and a text box ('keyboard'). The kart pad steers with its strip, or by tilting (wheel.js).
 
 let mode = 'pointer';
-const wheel = createWheel({
-  onSteer: (steer) => {
-    if (!joined) return;
-    sentCount++;
-    socket.volatile.emit(EV.INPUT_WHEEL, { steer });
-  },
+const sendSteer = (steer) => {
+  if (!joined) return;
+  sentCount++;
+  socket.volatile.emit(EV.INPUT_WHEEL, { steer });
+};
+const wheel = createWheel({ onSteer: (steer) => { if (kartPad.tilt) sendSteer(steer); } });
+const kartPad = createKartPad({
+  root: $('kart-pad'),
+  onButton: (button, state) => emit(EV.INPUT_BUTTON, { button, state }),
+  onSteer: (steer) => { if (!kartPad.tilt) sendSteer(steer); },
+  onTilt: (on) => { sendSteer(0); if (on && started) wheel.start(); else wheel.stop(); },
+  onRecenter: () => { wheel.recenter(); emit(EV.INPUT_RECENTER); },
 });
 
 function applyMode() {
   if (!joined) return;
-  const isWheel = mode === 'wheel', isKeys = mode === 'keyboard';
-  $('controller').hidden = isWheel || isKeys;
-  $('wheel-pad').hidden = !isWheel;
+  const isKart = mode === 'wheel', isKeys = mode === 'keyboard';
+  const wasKart = !$('kart-pad').hidden;
+  $('controller').hidden = isKart || isKeys;
+  $('kart-pad').hidden = !isKart;
+  document.body.classList.toggle('kart-mode', isKart); // hides the top bar: the pad has its own
   $('keyboard-pad').hidden = !isKeys;
   if (isKeys) { $('keyboard-input').value = ''; $('keyboard-input').focus(); }
-  if (isWheel && started) wheel.start();
+  if (isKart && !wasKart) kartPad.show();
+  if (!isKart && wasKart) kartPad.hide();
+  if (isKart && started && kartPad.tilt) wheel.start();
   else wheel.stop();
 }
 
@@ -310,6 +323,6 @@ if (DEBUG) {
     box.textContent = `alpha ${fmt(s.alpha)}  beta ${fmt(s.beta)}  gamma ${fmt(s.gamma)}\n`
       + `gyro ${s.gyro ? 'yes' : 'no'}  mag ${fmt(w.mag ?? s.mag)}  msgs/s ${rate}  ping ${pingMs} ms\n`
       + `swings ${w.swings}  last power ${w.lastPower == null ? '–' : w.lastPower.toFixed(2)}\n`
-      + `mode ${mode}  steer ${wheel.stats.steer.toFixed(2)}`;
+      + `mode ${mode}  steer ${(kartPad.tilt ? wheel.stats.steer : kartPad.steer).toFixed(2)}${kartPad.tilt ? ' (tilt)' : ''}`;
   }, 100);
 }

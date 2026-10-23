@@ -301,8 +301,8 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 - **21f Game rules separate from rendering**, with `node:test` tests (kart physics, Air Hockey, pointer).
 - **21g Reliability:** always-fresh files (`Cache-Control: no-cache`, models cached a day), phone diagnostics (insecure page / denied / no sensors), laptop fps in `?debug=1`.
 
-### Phase 22: Kart controller
-- Buttons-only controller: steering strip (10% dead zone, visible thumb marker), GAS, separate DRIFT button (new button `R`), ITEM; DRIFT and ITEM keep accelerating; thumb can slide between buttons; tilt steering as an option.
+### Phase 22: Kart controller (built)
+- Buttons-only controller (`remote/kart-pad.js`, steering via `input:wheel`, DRIFT = new button `R`): steering strip (10% dead zone, visible thumb marker), GAS, separate DRIFT button (new button `R`), ITEM; DRIFT and ITEM keep accelerating; thumb can slide between buttons; tilt steering as an option.
 
 ### Later
 - 4-player split screen for Turbo Karts.

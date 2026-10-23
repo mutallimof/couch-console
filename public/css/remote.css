@@ -213,42 +213,65 @@ body {
   pointer-events: none;
 }
 
-/* ---------- Steering-wheel layout ----------
-   Held sideways with the top of the phone to the LEFT: the top half is under your
-   left thumb (brake), the bottom half under your right thumb (gas).
-   If the page rotates to landscape by itself, the halves sit left/right instead. */
-.wheel-pad {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-bottom: 8px;
-}
-.wheel-btn {
-  flex: 1;
-  width: 100%;
-  border-radius: 24px;
-  color: #fff;
-  font-size: 34px;
-}
-.wheel-btn span { display: inline-block; transform: rotate(90deg); text-align: center; line-height: 1.1; }
-.wheel-btn small { font-size: 16px; font-weight: 700; opacity: 0.85; }
-.wheel-btn.gas { background: #27AE60; }
-.wheel-btn.brake { background: #5B6577; }
-.wheel-btn.pressed { filter: brightness(0.85); }
-.wheel-mid { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.wheel-hint { color: var(--muted); font-weight: 700; font-size: 14px; }
+/* ---------- Kart pad (Turbo Karts), held sideways ----------
+   Built from the game's own world: dark kart trim for the body, grass-green GAS,
+   spark-orange DRIFT, item-box purple ITEM, curb-red BRAKE, and a track-white steering
+   strip with red-and-white curb stripes. Buttons are solid keycaps that sink when pressed. */
+body.kart-mode { background: #2B3445; padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(12px, env(safe-area-inset-left)); }
+body.kart-mode .top { display: none; }
+.kart-pad { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 8px 0 10px; color: #fff; }
+.kp-bar { display: flex; align-items: center; gap: 8px; }
+.kp-badge { min-width: 44px; height: 36px; padding: 0 10px; border-radius: 18px; display: grid; place-items: center;
+  font-weight: 900; font-size: 17px; background: var(--player); }
+.kp-home { width: 52px; height: 36px; border: none; border-radius: 18px; display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.12); color: #fff; }
+.kp-home.pressed { background: rgba(255, 255, 255, 0.3); }
+.kp-switch { height: 36px; padding: 0 12px; border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 18px;
+  background: none; color: rgba(255, 255, 255, 0.75); font: 800 14px 'Nunito', sans-serif; }
+.kp-switch[aria-pressed="true"] { background: #fff; border-color: #fff; color: #2B3445; }
+.kp-switch:active { transform: scale(0.97); }
+#kp-recenter { margin-left: auto; }
 
-@media (orientation: landscape) {
-  .wheel-pad { flex-direction: row; }
-  .wheel-btn span { transform: none; }
-  .wheel-mid { flex-direction: column; justify-content: center; }
-}
+.kp-main { flex: 1; min-height: 0; display: flex; gap: 14px; }
 
-.wheel-item { width: 96px; height: 56px; border-radius: 16px; font-size: 18px; font-weight: 900; color: #fff; background: #BB6BD9; }
-.wheel-item span { display: inline-block; transform: rotate(90deg); }
-@media (orientation: landscape) { .wheel-item span { transform: none; } }
+/* Left thumb: steering strip with a dead zone in the middle and a marker under the thumb */
+.kp-strip { position: relative; flex: 1.15; border-radius: 22px; background: #F4F7FB; overflow: hidden; touch-action: none;
+  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.08); }
+.kp-strip::before, .kp-strip::after { /* curb stripes along the top and bottom edges */
+  content: ''; position: absolute; left: 0; right: 0; height: 10px;
+  background: repeating-linear-gradient(90deg, #E03131 0 22px, #fff 22px 44px); }
+.kp-strip::before { top: 0; }
+.kp-strip::after { bottom: 0; }
+.kp-dead { position: absolute; top: 10px; bottom: 10px; left: 45%; width: 10%; background: rgba(43, 52, 69, 0.07);
+  border-left: 2px dashed rgba(43, 52, 69, 0.18); border-right: 2px dashed rgba(43, 52, 69, 0.18); }
+.kp-thumb { position: absolute; top: 50%; left: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%;
+  background: var(--player); opacity: 0.35; box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.7);
+  transition: opacity 120ms ease-out, left 160ms cubic-bezier(0.23, 1, 0.32, 1); }
+.kp-strip.active .kp-thumb { opacity: 1; transition: opacity 80ms ease-out; } /* follows the thumb exactly while touched */
+.kp-strip-hint { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; color: #8A94A6; font-weight: 800; font-size: 14px; pointer-events: none; }
+.kp-strip.tilt { background: #DCE3EC; }
+.kp-strip.tilt .kp-thumb { display: none; }
+
+/* Right thumb: four keycaps; GAS (bottom right) is where the thumb rests, DRIFT next to it */
+.kp-buttons { flex: 1; display: grid; grid-template: 1fr 1.35fr / 1fr 1.2fr; gap: 10px; touch-action: none; }
+.kp-btn { display: grid; place-items: center; border-radius: 20px; font: 900 clamp(17px, 4.6vh, 26px) 'Nunito', sans-serif;
+  letter-spacing: 0.02em; color: #fff; background: var(--c); box-shadow: 0 6px 0 var(--edge), 0 10px 18px rgba(0, 0, 0, 0.25);
+  transition: transform 90ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 90ms cubic-bezier(0.23, 1, 0.32, 1); }
+.kp-btn.pressed { transform: translateY(5px); box-shadow: 0 1px 0 var(--edge), 0 3px 8px rgba(0, 0, 0, 0.2); }
+.kp-btn.item { --c: #BB6BD9; --edge: #8E44AD; }
+.kp-btn.brake { --c: #E03131; --edge: #A61E1E; }
+.kp-btn.drift { --c: #F2994A; --edge: #C4701F; }
+.kp-btn.gas { --c: #27AE60; --edge: #1B7A43; font-size: clamp(22px, 6vh, 34px); }
+
+/* Held upright: ask to turn the phone (the pad needs two thumbs side by side) */
+.kp-rotate { display: none; }
+@media (orientation: portrait) {
+  .kart-pad > :not(.kp-rotate) { display: none; }
+  .kp-rotate { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+  .kp-rotate b { font-size: 28px; }
+  .kp-rotate span { color: rgba(255, 255, 255, 0.7); font-weight: 700; }
+}
+@media (prefers-reduced-motion: reduce) { .kp-btn, .kp-thumb { transition: none; } }
 
 /* Keyboard layout */
 .keyboard-pad { margin-top: 24px; }

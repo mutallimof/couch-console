@@ -1,6 +1,7 @@
-// Turbo Karts: a 3D kart race. Phones become steering wheels (hold sideways, turn to steer).
-//   GAS (A) · BRAKE (B; hold while turning fast = drift → let go for a mini-turbo) · ITEM (UP)
-//   D-pad ◀ ▶ also steers (for phones without motion sensors).
+// Turbo Karts: a 3D kart race. Phones become a kart pad (remote/kart-pad.js), held sideways:
+//   steering strip (input:wheel steer) or tilt · GAS (A) · DRIFT (R; hold while turning fast,
+//   let go for a mini-turbo) · ITEM (UP) · BRAKE (B). DRIFT and ITEM keep accelerating.
+//   D-pad ◀ ▶ also steers (keyboard mode, and phones in the normal remote layout).
 // Flow: pick characters & karts → P1 picks a track → 3 laps with items and coins → results.
 // Modes: solo (you + 7 CPU) · versus (2 players, split screen) · co-op (team points vs the best 2 CPUs)
 import { colorFor } from '../../shared/protocol.js';
@@ -8,7 +9,7 @@ import { buildTrack, TRACKS } from './kart-track.js';
 import { CHARACTERS, KARTS, ITEM_ICONS, kartPhysics, rollItem } from './karts-data.js';
 import { setThree, makeRacer, makeItemMesh, makePortraits } from './karts-models.js';
 import { createSelect } from './karts-select.js';
-import { stepKart as driveKart, giveBoost as boostKart, bumpKarts, progress as raceProgress, LAPS } from './karts-rules.js';
+import { HOP_TIME, kartInput, stepKart as driveKart, giveBoost as boostKart, bumpKarts, progress as raceProgress, LAPS } from './karts-rules.js';
 import { CAR, PIRATE, loadAll } from './karts-assets.js';
 import { THEME_MODELS } from './karts-decor.js';
 
@@ -143,7 +144,7 @@ function controls(k) {
   if (!k.playerId || k.finished != null) return cpuControls(k);
   const c = input.get(k.playerId) || {};
   const digital = (c.right ? 1 : 0) - (c.left ? 1 : 0);
-  return { steer: digital || c.steer || 0, gas: !!c.gas, brake: !!c.brake };
+  return kartInput({ ...c, steer: digital || c.steer || 0 });
 }
 
 // CPUs aim at a point further down the track, in their own lane, and dodge slicks a little
@@ -313,6 +314,7 @@ function syncMeshes(t, dt) {
     const ahead = track.pts[track.at(k.idx + 3)], behind = track.pts[track.at(k.idx - 3)];
     const slope = Math.atan2(ahead.y - behind.y, Math.hypot(ahead.x - behind.x, ahead.z - behind.z));
     m.body.rotation.x = k.air ? -k.vy * 0.02 : -slope;
+    m.body.position.y = k.hop > 0 ? Math.sin((k.hop / HOP_TIME) * Math.PI) * 0.45 : 0; // the drift hop
     m.body.rotation.z = k.roll;
     // (model cars are turned around, so their wheels spin the other way)
     m.wheels.forEach((w) => { w.rotation.x += (m.flipWheels ? -1 : 1) * k.v * 0.016; });
@@ -483,6 +485,8 @@ function onButton(e) {
   const c = inputFor(playerId), down = s === 'down';
   if (button === 'A') c.gas = down;
   if (button === 'B') c.brake = down;
+  if (button === 'R') c.drift = down;          // DRIFT (also keeps accelerating)
+  if (button === 'UP') c.item = down;          // ITEM held also keeps accelerating
   if (button === 'LEFT') c.left = down;
   if (button === 'RIGHT') c.right = down;
   if (button === 'UP' && down && state === 'race') { const k = humans.find((h) => h.playerId === playerId); if (k) useItem(k); }

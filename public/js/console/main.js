@@ -438,10 +438,11 @@ let lastHover = null;
 // ---------- Mouse & keyboard (no phone) ----------
 // "Use mouse & keyboard" on the pairing screen adds a stand-in P1 that sends exactly what a
 // phone would: mouse = pointer, click = A, right-click = B, arrows = D-pad, Enter/Space = A,
-// Esc/Backspace = B, H = HOME, + / - = PLUS / MINUS, U = ITEM (UP) for karts.
+// Esc/Backspace = B, H = HOME, + / - = PLUS / MINUS, U = ITEM (UP) and R/Shift = DRIFT for karts.
 const KEYS = {
   ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT', Enter: 'A', ' ': 'A',
   Escape: 'B', Backspace: 'B', h: 'HOME', H: 'HOME', '+': 'PLUS', '=': 'PLUS', '-': 'MINUS', u: 'UP', U: 'UP',
+  r: 'R', R: 'R', Shift: 'R', // DRIFT in Turbo Karts
 };
 const desk = {
   active: false,
