@@ -296,6 +296,18 @@ export function makeScenery(theme, spots) {
     add(new THREE.ConeGeometry(2, 5.5, 8), lam('#2F6B4F'), spots, ([x, z, s]) => ({ pos: V(x, 2.75 * s, z), scale: S(s) }));
     add(new THREE.ConeGeometry(1.3, 2.2, 8), lam('#F8F9FA'), spots, ([x, z, s]) => ({ pos: V(x, 4.7 * s, z), scale: S(s) }));
     add(new THREE.SphereGeometry(2, 10, 6), lam('#F1F3F5'), spots.filter((_, i) => i % 4 === 0), ([x, z, s]) => ({ pos: V(x + 4, 0, z + 3), scale: V(s * 1.5, s * 0.5, s) }));
+  } else if (theme === 'sky') {
+    // Cloud Gardens: puffy clouds on the ground and floating rock islands with a lawn on top
+    const puff = new THREE.IcosahedronGeometry(1, 2), white = new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 1 });
+    const clouds = spots.filter((_, i) => i % 3 === 1);
+    for (const [dx, dy, k] of [[0, 0, 1], [2.6, -0.4, 0.75], [-2.4, -0.5, 0.7]]) {
+      add(puff, white, clouds, ([x, z, s]) => ({ pos: V(x + dx * s * 1.6, 1 + dy * s, z), scale: V(4 * s * k, 2.6 * s * k, 4 * s * k) }));
+    }
+    const isles = spots.filter((_, i) => i % 7 === 2);
+    const lift = ([x, z, s]) => 14 + (Math.abs(x * 13 + z * 7) % 22) * s;
+    add(new THREE.ConeGeometry(6, 9, 7), lam('#B49FC4', { side: THREE.DoubleSide }), isles, (p) => ({ pos: V(p[0], lift(p) - 4.5 * p[2], p[1]), scale: V(p[2], -p[2], p[2]) })); // upside down
+    add(new THREE.CylinderGeometry(6.2, 6.2, 1.2, 7), lam('#7CC36B'), isles, (p) => ({ pos: V(p[0], lift(p) + 0.6 * p[2], p[1]), scale: S(p[2]) }));
+    add(new THREE.SphereGeometry(1.8, 10, 8), lam('#F783AC'), isles, (p) => ({ pos: V(p[0] + 2 * p[2], lift(p) + 2.4 * p[2], p[1]), scale: S(p[2]) }));
   } else if (theme === 'city') {
     // Buildings with glowing windows
     const c = document.createElement('canvas'); c.width = 64; c.height = 128;

@@ -1,4 +1,4 @@
-// Turbo Karts track data and geometry, with no graphics: the five track definitions, the
+// Turbo Karts track data and geometry, with no graphics: the six track definitions, the
 // center line (sampled points, directions, sideways normals) and "where on the track am I?".
 // Used by kart-track.js (which builds the 3D track around it) and by karts-rules.js, and
 // tested in Node (tests/karts.test.mjs).
@@ -6,9 +6,16 @@
 export const ROAD_HALF = 8;          // half the road width (meters)
 export const WALL = ROAD_HALF + 4.5; // barriers this far from the center line
 export const SAMPLES = 1000;
+// Shortcut glide ramps sit on one side of the road (this far from the center, this wide each way)
+export const SHORTCUT_SIDE = 4.6, SHORTCUT_HALF = 3.2;
+// ...and their flight keeps the glider at least this high (meters) over the middle of the gap
+export const SHORTCUT_ARC = 6;
 
 // Each track: a closed loop of [x, height, z] points (the start line is at the first point),
 // a theme, where the extras go (0..1 along the lap), and how grippy the road is.
+// glides: a number = a glide ramp across the whole road at that point of the lap;
+// { at, to } = a shortcut ramp on one side of the road: glide from it straight across a gap
+// and land at `to` (the road itself goes the long way round).
 export const TRACKS = [
   {
     id: 'park', name: 'Sunny Park', theme: 'park', blurb: 'Gentle hills and a big jump. Great for starters.',
@@ -51,6 +58,16 @@ export const TRACKS = [
       [-45, 0, 122], [-95, 4, 102], [-122, 0, 58], [-102, 0, 12], [-55, 0, -8]],
     pads: [0.2, 0.6], boxes: [0.1, 0.4, 0.74], coins: [0.28, 0.52, 0.9], glides: [0.44], tunnel: [0.8, 0.87],
   },
+  {
+    id: 'sky', name: 'Cloud Gardens', theme: 'sky', blurb: 'Gardens above the clouds. Take a side ramp and glide across the gaps!',
+    sky: ['#5C9CEB', '#FBD9EA'], fog: [190, 620], ground: '#B7C3F2', road: '#5B6094', curb: ['#F06595', '#FFFFFF'], wall: ['#9775FA', '#F8F0FC'],
+    grip: 1, scale: 1.4,
+    // two big loops the road goes round, and a hill with a glide down the far side
+    points: [[0, 0, 0], [50, 0, 0], [85, 2, 25], [95, 5, 60], [130, 5, 70], [150, 2, 40], [150, 0, 5], [175, 4, -30], [150, 14, -80],
+      [100, 16, -95], [50, 4, -90], [20, 0, -120], [12, 0, -195], [-25, 2, -228], [-62, 2, -195], [-55, 0, -110], [-45, 0, -50], [-25, 0, -10]],
+    pads: [0.35, 0.9], boxes: [0.05, 0.38, 0.86], coins: [0.16, 0.52, 0.7], tunnel: null,
+    glides: [0.43, { at: 0.09, to: 0.28 }, { at: 0.61, to: 0.81 }],
+  },
 ];
 
 // THREE is passed in (it's only used for its vector and curve math)
@@ -71,7 +88,15 @@ export function trackPath(THREE, def) {
   const at = (i) => ((Math.round(i) % SAMPLES) + SAMPLES) % SAMPLES;
   // Boost pads: two side by side at each spot. Glide ramps: across the whole road.
   const pads = def.pads.flatMap((t) => [-3.5, 3.5].map((side) => ({ i: at(t * SAMPLES), side })));
-  const glides = (def.glides || []).map((t) => ({ i: at(t * SAMPLES) }));
+  const glides = (def.glides || []).map((g) => {
+    if (typeof g === 'number') return { i: at(g * SAMPLES) };
+    // a shortcut: the ramp goes on the side of the road that faces where you'll land
+    const i = at(g.at * SAMPLES), to = at(g.to * SAMPLES);
+    const toward = (pts[to].x - pts[i].x) * nor[i].x + (pts[to].z - pts[i].z) * nor[i].z;
+    const side = Math.sign(toward) * SHORTCUT_SIDE;
+    return { i, to, side, from: pts[i].clone().addScaledVector(nor[i], side), land: pts[to] };
+  });
+  const span = (g) => (g.to - g.i + SAMPLES) % SAMPLES;
 
   // Nearest center-line sample to (x, z), searching near the last known one.
   // Uses the height too, so the two levels of a bridge never get mixed up.
@@ -92,5 +117,13 @@ export function trackPath(THREE, def) {
     return { i: best, lateral, height };
   }
 
-  return { pts, tan, nor, SAMPLES, length, at, locate, pads, glides, def };
+  // During a shortcut flight: how far across the gap you are (0..1), the lap position that
+  // matches it (so laps and race places keep working), and the lowest the glider may sink.
+  function flightAt(g, x, z) {
+    const A = g.from, B = g.land, dx = B.x - A.x, dz = B.z - A.z;
+    const f = Math.min(1, Math.max(0, ((x - A.x) * dx + (z - A.z) * dz) / (dx * dx + dz * dz)));
+    return { f, i: at(g.i + f * span(g)), lateral: 0, height: A.y + (B.y - A.y) * f + SHORTCUT_ARC * Math.sin(Math.PI * f) };
+  }
+
+  return { pts, tan, nor, SAMPLES, length, at, locate, flightAt, pads, glides, def };
 }

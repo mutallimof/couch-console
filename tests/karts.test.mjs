@@ -330,3 +330,79 @@ test('new items come from item boxes, and the Lightning Bolt only to the karts a
   assert.ok(!front.has('bolt'), 'no Lightning for the leader');
   assert.ok(back.has('bolt') && back.has('magnet'), 'back gets Lightning and Magnet');
 });
+
+// ---- Phase 28: Cloud Gardens, shortcut glide ramps ----
+const sky = trackPath(THREE, TRACKS.find((t) => t.id === 'sky'));
+const shortcuts = sky.glides.filter((g) => g.to != null);
+
+// Steer toward the shortcut ramp's side of the road until it launches, then let the glider fly
+function laneSteer(track, lane) {
+  return (k) => {
+    if (k.gliding) return 0;
+    const i = track.at(k.idx + 16), p = track.pts[i], n = track.nor[i];
+    const want = Math.atan2(p.x + n.x * lane - k.x, p.z + n.z * lane - k.z);
+    return Math.max(-1, Math.min(1, Math.atan2(Math.sin(want - k.heading), Math.cos(want - k.heading)) * -2.2));
+  };
+}
+
+test('Cloud Gardens has a glide ramp across the road and two shortcut ramps', () => {
+  assert.ok(sky.glides.length >= 3);
+  assert.ok(sky.glides.some((g) => g.side == null), 'one full-width ramp');
+  assert.equal(shortcuts.length, 2);
+  for (const g of shortcuts) {
+    const fly = Math.hypot(g.land.x - g.from.x, g.land.z - g.from.z);
+    const road = (((g.to - g.i + sky.SAMPLES) % sky.SAMPLES) / sky.SAMPLES) * sky.length;
+    assert.ok(fly < road * 0.6, `the shortcut (${fly.toFixed(0)} m) is much shorter than the road (${road.toFixed(0)} m)`);
+  }
+});
+
+test('the shortcut ramp launches only karts on its side of the road', () => {
+  for (const g of shortcuts) {
+    const middle = kart(sky, { i: sky.at(g.i - 40), side: -g.side, kartId: 'speedster' });
+    const events = drive(sky, middle, 2, { steer: laneSteer(sky, -g.side) });
+    assert.ok(!middle.flight, 'the other side drives past');
+    const bold = kart(sky, { i: sky.at(g.i - 40), side: g.side, kartId: 'speedster' });
+    bold.v = 30;
+    drive(sky, bold, 2, { steer: laneSteer(sky, g.side), events });
+    assert.ok(events.includes('glide'), 'launched from the ramp');
+  }
+});
+
+test('a shortcut flight crosses the gap, lands on the road at the far side, and saves time', () => {
+  for (const g of shortcuts) {
+    const time = (lane) => {
+      const k = kart(sky, { i: sky.at(g.i - 40), side: lane, kartId: 'speedster' });
+      k.v = 32;
+      const goal = sky.at(g.to + 40);
+      let t = 0, flew = false;
+      for (; t < 30; t += DT) {
+        stepKart(k, DT, { steer: laneSteer(sky, lane)(k), gas: true, brake: false }, { track: sky, topScale: 1, raceTime: t, onEvent: () => {} });
+        if (k.flight) flew = true;
+        if (flew && !k.air) assert.ok(Math.abs(k.lateral) < WALL, `landed inside the barriers (lateral ${k.lateral.toFixed(1)})`);
+        if (Math.abs(k.idx - goal) < 3 && !k.air) break;
+      }
+      return { t, flew };
+    };
+    const short = time(g.side), long = time(-g.side);
+    assert.ok(short.flew && !long.flew);
+    assert.ok(short.t < long.t - 1, `shortcut ${short.t.toFixed(1)} s vs road ${long.t.toFixed(1)} s`);
+  }
+});
+
+test('laps still count when you take every shortcut', () => {
+  const k = kart(sky, { kartId: 'speedster' });
+  k.half = false;
+  const events = [];
+  const lane = (kk) => { // ride the shortcut side just before each ramp
+    const g = shortcuts.find((s) => ((s.i - kk.idx + sky.SAMPLES) % sky.SAMPLES) < 80);
+    return laneSteer(sky, g ? g.side : 0)(kk);
+  };
+  let flights = 0, was = false;
+  for (let t = 0; t < 200 && k.finished == null; t += DT) {
+    stepKart(k, DT, { steer: lane(k), gas: true, brake: false }, { track: sky, topScale: 1, raceTime: t, onEvent: (e) => events.push(e) });
+    if (k.flight && !was) flights++;
+    was = !!k.flight;
+  }
+  assert.ok(k.finished != null, `finished the race (lap ${k.lap})`);
+  assert.ok(flights >= LAPS * 2, `took both shortcuts every lap (${flights} flights)`);
+});

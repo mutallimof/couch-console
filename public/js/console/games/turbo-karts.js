@@ -167,6 +167,14 @@ function cpuControls(k) {
     const ahead = (s.idx - k.idx + track.SAMPLES) % track.SAMPLES; // samples between us and the slick
     if (ahead > 0 && ahead < 40 && Math.abs(s.lateral - lane) < 3) lane += lane > s.lateral ? 3 : -3;
   }
+  // Shortcut ramps: some computer karts dare to take them (decided once per ramp, per lap)
+  for (const g of track.glides) {
+    if (g.to == null) continue;
+    const ahead = (g.i - k.idx + track.SAMPLES) % track.SAMPLES;
+    if (ahead > 90) continue;
+    if (k.dareAt !== `${g.i}:${k.lap}`) { k.dareAt = `${g.i}:${k.lap}`; k.dare = Math.random() < 0.45; }
+    if (k.dare) lane = g.side;
+  }
   const want = Math.atan2(p.x + n.x * lane - k.x, p.z + n.z * lane - k.z);
   return { steer: clamp(angleDiff(want, k.heading) * -2.2, -1, 1), gas: true, brake: false };
 }
@@ -458,6 +466,12 @@ function drawMinimap() {
   mctx.beginPath();
   track.pts.forEach((p, i) => { const [x, y] = map(p.x, p.z); i ? mctx.lineTo(x, y) : mctx.moveTo(x, y); });
   mctx.closePath(); mctx.stroke();
+  // shortcut flights: dashed lines across the gaps
+  mctx.strokeStyle = 'rgba(165,216,255,0.95)'; mctx.lineWidth = 3; mctx.setLineDash([5, 5]);
+  for (const g of track.glides) if (g.to != null) {
+    mctx.beginPath(); mctx.moveTo(...map(g.from.x, g.from.z)); mctx.lineTo(...map(g.land.x, g.land.z)); mctx.stroke();
+  }
+  mctx.setLineDash([]);
   for (const k of [...karts].reverse()) {
     const [x, y] = map(k.x, k.z);
     mctx.fillStyle = k.color;

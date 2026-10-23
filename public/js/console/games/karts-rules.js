@@ -3,7 +3,7 @@
 // turbo-karts.js calls these and turns the events into sounds, rumble and animations.
 //   events (onEvent(type, kart)): 'boost' · 'wall' · 'land' (hard landing) · 'final-lap' · 'finish'
 //   · 'glide' (a glide ramp launched the kart) · 'trick' (landed a trick: a boost follows)
-import { ROAD_HALF, WALL } from './kart-path.js';
+import { ROAD_HALF, WALL, SHORTCUT_HALF } from './kart-path.js';
 import { SHRINK_TOP, SHRINK_WEIGHT, tickItemEffects } from './karts-items.js';
 
 export const LAPS = 3;
@@ -93,8 +93,9 @@ export function stepKart(k, dt, input, world) {
   k.roll += (turn * 0.05 - k.roll) * Math.min(1, dt * 8);
 
   // Where are we on the track, and how high is the road here?
-  const prev = k.idx;
-  const loc = track.locate(k.x, k.z, k.idx, k.y);
+  // (Flying a shortcut, the "road" is the gap below: see flightAt in kart-path.js.)
+  const prev = k.idx, fly = k.flight;
+  const loc = fly ? track.flightAt(fly, k.x, k.z) : track.locate(k.x, k.z, k.idx, k.y);
   k.idx = loc.i; k.lateral = loc.lateral;
   lapCheck(k, prev, track.SAMPLES, world.raceTime, onEvent);
   // Height: follow the road, but fly off crests when the road drops away faster than gravity
@@ -102,7 +103,13 @@ export function stepKart(k, dt, input, world) {
     k.vy -= GRAVITY * (k.gliding ? GLIDE_GRAVITY : 1) * dt;
     if (k.gliding) k.vy = Math.max(k.vy, -GLIDE_SINK); // floats down gently
     k.y += k.vy * dt;
-    if (k.y <= loc.height) {
+    if (fly) {
+      // over the gap: never sink below the flight line, and keep moving (a hit can't strand you)
+      if (k.y < loc.height) { k.y = loc.height; k.vy = Math.max(k.vy, 0); }
+      k.v = Math.max(k.v, 20);
+      // across: an ordinary glide again, which lands on the road ahead
+      if (loc.f > 0.97) { k.flight = null; k.idx = fly.to; }
+    } else if (k.y <= loc.height) {
       k.y = loc.height; k.air = false; k.gliding = false;
       if (k.vy < -8) onEvent('land', k);
       k.vy = 0;
@@ -118,7 +125,8 @@ export function stepKart(k, dt, input, world) {
   // Gliding follows the road's bends by itself (your steering adds to it), so a long glide
   // lands on the track instead of across a bend on the grass.
   if (k.gliding) {
-    const ahead = track.pts[track.at(k.idx + 25)]; // aim at the middle of the road a little ahead
+    // aim at the middle of the road a little ahead (on a shortcut: a little past the landing)
+    const ahead = track.pts[track.at(fly ? fly.to + 15 : k.idx + 25)];
     k.heading += angleDiff(Math.atan2(ahead.x - k.x, ahead.z - k.z), k.heading) * Math.min(1, dt * 3);
   }
 
@@ -134,12 +142,14 @@ export function stepKart(k, dt, input, world) {
       onEvent('wall', k);
     } else k.v *= 1 - 1.5 * dt;
   }
-  // Glide ramps: full road width; you need a bit of speed to take off. A kart that the hill
-  // before the ramp has just lifted off the road (still low) is caught too.
+  // Glide ramps: full road width (shortcut ramps: one side only); you need a bit of speed to
+  // take off. A kart that the hill before the ramp has just lifted off the road (still low) is caught too.
   for (const g of track.glides || []) {
     const di = Math.abs(((k.idx - g.i + track.SAMPLES * 1.5) % track.SAMPLES) - track.SAMPLES / 2);
-    if (di < 3 && Math.abs(k.lateral) < ROAD_HALF && !k.gliding && k.y - loc.height < 2 && k.v > 15) {
+    const onRamp = g.side == null ? Math.abs(k.lateral) < ROAD_HALF : Math.abs(k.lateral - g.side) < SHORTCUT_HALF;
+    if (di < 3 && onRamp && !k.gliding && k.y - loc.height < 2 && k.v > 15) {
       k.air = true; k.gliding = true; k.vy = GLIDE_LAUNCH; k.drifting = false;
+      if (g.to != null) k.flight = g;
       onEvent('glide', k);
     }
   }

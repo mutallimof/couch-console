@@ -22,6 +22,7 @@ export const THEME_MODELS = {
   desert: [PIRATE('Environment_Rock_1'), PIRATE('Environment_Rock_2'), PIRATE('Environment_Rock_3'), RACE('tent')],
   snow: [CAR('tree-pine')],
   city: [],
+  sky: [CAR('tree')],
   pirate: [PIRATE('Environment_PalmTree_1'), PIRATE('Environment_PalmTree_2'), PIRATE('Environment_PalmTree_3'),
     PIRATE('Environment_Rock_1'), PIRATE('Environment_Rock_2'), PIRATE('Environment_House1'), PIRATE('Environment_House2'),
     PIRATE('Ship_Large'), PIRATE('Ship_Small'), PIRATE('Prop_Barrel'), PIRATE('Prop_Chest_Gold'), PIRATE('Characters_Tentacle'),
@@ -98,6 +99,9 @@ export function decorate(THREE, track, assets, spots) {
     add(CAR('tree'), spots.filter((_, i) => i % 9).map(sp));
     add(RACE('tentLong'), [beside(160, 22), beside(520, -22)]);
     add(RACE('tent'), [beside(170, 24), beside(530, -25), beside(780, 24)]);
+  } else if (def.theme === 'sky') {
+    add(CAR('tree'), spots.filter((_, i) => i % 3 === 0).map(sp));
+    add(RACE('tent'), [beside(150, 22), beside(560, -24)]);
   } else if (def.theme === 'snow') {
     add(CAR('tree-pine'), spots.map(sp));
   } else if (def.theme === 'desert') {

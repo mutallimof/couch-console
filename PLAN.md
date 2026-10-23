@@ -323,6 +323,9 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 ### Phase 27: More kart items
 - Lightning Bolt (shrinks everyone ahead; Shield blocks), Triple Slick (3 charges), Magnet (original: coin reach + slipstream). Rules in `karts-items.js` with tests.
 
+### Phase 28: Glide-ramp track
+- 6th track **Cloud Gardens** (theme `sky`): one full-width glide ramp down a hill plus two **shortcut ramps** (`glides: [{ at, to }]`): narrow, on one side of the road; the flight goes straight across a gap (hoops mark the way, an invisible arc keeps the glider up) and lands further along the lap. Lap counting and race places follow the flight (`flightAt` in kart-path.js). CPUs take shortcuts about 45 % of the time. Tests for launch side, landing, time saved and lap counting.
+
 ### Later
 - 4-player split screen for Turbo Karts.
 

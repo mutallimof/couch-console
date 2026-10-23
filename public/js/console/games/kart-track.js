@@ -3,7 +3,7 @@
 import { makeScenery, makeItemBox, makeCoin } from './karts-models.js';
 import { CAR, cloneOf, fit } from './karts-assets.js';
 import { decorate } from './karts-decor.js';
-import { trackPath, ROAD_HALF, WALL, SAMPLES } from './kart-path.js';
+import { trackPath, ROAD_HALF, WALL, SAMPLES, SHORTCUT_HALF, SHORTCUT_ARC } from './kart-path.js';
 
 // Track data and the center line live in kart-path.js (no graphics, testable)
 export { ROAD_HALF, WALL, TRACKS } from './kart-path.js';
@@ -210,21 +210,42 @@ export function buildTrack(THREE, def, assets = null) {
     const padMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, emissive: '#1C7ED6', emissiveIntensity: def.night ? 0.8 : 0.25 });
     const postMat = new THREE.MeshStandardMaterial({ color: '#E7F5FF', roughness: 0.3 });
     const ringMat = new THREE.MeshStandardMaterial({ color: '#4DABF7', emissive: '#4DABF7', emissiveIntensity: 3 });
-    for (const { i } of path.glides) {
+    const hoopMat = new THREE.MeshStandardMaterial({ color: '#FFD8A8', emissive: '#FFA94D', emissiveIntensity: 2.5 });
+    for (const glide of path.glides) {
+      const { i } = glide, half = glide.side == null ? ROAD_HALF : SHORTCUT_HALF, mid = glide.side ?? 0;
       const g = new THREE.Group();
-      const pad = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, 7), padMat);
-      pad.rotation.x = -Math.PI / 2; pad.position.y = 0.09; pad.receiveShadow = true;
+      const pad = new THREE.Mesh(new THREE.PlaneGeometry(half * 2, 7), padMat);
+      pad.rotation.x = -Math.PI / 2; pad.position.set(-mid, 0.09, 0); pad.receiveShadow = true;
       g.add(pad);
       for (const s of [-1, 1]) {
         const post = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 6, 12), postMat);
-        post.position.set(s * (ROAD_HALF + 0.8), 3, 0); post.castShadow = true;
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.16, 10, 24), ringMat);
-        ring.position.set(s * (ROAD_HALF + 0.8), 6.4, 0);
+        post.position.set(-mid + s * (half + 0.8), 3, 0); post.castShadow = true;
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.16, 10, 24), glide.to == null ? ringMat : hoopMat);
+        ring.position.set(-mid + s * (half + 0.8), 6.4, 0);
         g.add(post, ring);
       }
       g.position.copy(pts[i]);
       g.rotation.y = Math.atan2(tan[i].x, tan[i].z);
       group.add(g);
+      // A shortcut: glowing hoops show the way across the gap, over a bank of clouds
+      if (glide.to != null) {
+        const A = glide.from, B = glide.land, dir = Math.atan2(B.x - A.x, B.z - A.z);
+        for (const f of [0.25, 0.5, 0.75]) {
+          const hoop = new THREE.Mesh(new THREE.TorusGeometry(4.5, 0.35, 10, 36), hoopMat);
+          hoop.position.set(A.x + (B.x - A.x) * f, A.y + (B.y - A.y) * f + SHORTCUT_ARC * Math.sin(Math.PI * f) + 2.5, A.z + (B.z - A.z) * f);
+          hoop.rotation.y = dir;
+          group.add(hoop);
+        }
+        const puffs = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 1 }), 14);
+        const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+        for (let n = 0; n < 14; n++) {
+          const f = 0.15 + (n / 13) * 0.7, s = 4 + ((n * 7) % 5);
+          m4.compose(new THREE.Vector3(A.x + (B.x - A.x) * f + ((n % 3) - 1) * 6, -1 + (n % 2) * 1.5, A.z + (B.z - A.z) * f + ((n % 4) - 1.5) * 5),
+            q, new THREE.Vector3(s, s * 0.55, s));
+          puffs.setMatrixAt(n, m4);
+        }
+        group.add(puffs);
+      }
     }
   }
 
@@ -259,14 +280,14 @@ export function buildTrack(THREE, def, assets = null) {
     if (onIsland && minD > (WALL + (def.theme === 'city' ? 12 : 6)) ** 2) spots.push([x, z, 0.7 + Math.random() * 0.8]);
   }
   // Real models (grandstands, trees, palms...) when loaded; simple shapes otherwise.
-  // The city keeps its glowing code-built towers either way.
+  // The city keeps its glowing code-built towers and Cloud Gardens its clouds either way.
   let mixers = [];
   if (assets) {
     const decor = decorate(THREE, { pts, tan, nor, SAMPLES, def, island }, assets, spots);
     group.add(decor.group);
     mixers = decor.mixers;
   }
-  if (!assets || def.theme === 'city') group.add(makeScenery(def.theme === 'pirate' ? 'park' : def.theme, spots));
+  if (!assets || def.theme === 'city' || def.theme === 'sky') group.add(makeScenery(def.theme === 'pirate' ? 'park' : def.theme, spots));
 
   return { ...path, group, boxes, coins, mixers };
 }

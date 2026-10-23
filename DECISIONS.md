@@ -21,3 +21,10 @@ not to stop for questions). Each entry says what was decided and why. Newest at 
 - **Lightning Bolt:** shrinks every kart *ahead* of the user for 3.5 s (top speed ×0.72, much lighter in bumps, speed ×0.6 at the strike), with no spin-out, so it's strong but not cruel. A Shield blocks it and is used up. Karts that already finished aren't touched. Only karts near the back can get it (15 % at the back, never at the front).
 - **Triple Slick:** stays in your item box with a "×3" counter; each ITEM press drops one slick. The computer drops its three about 0.7 s apart.
 - **Odds** were rebalanced so the new items appear without crowding out the old ones (see `ITEM_ODDS` in karts-data.js).
+
+## Phase 28: Glide-ramp track (Cloud Gardens)
+- **Theme:** gardens above the clouds (pink-and-blue sky, puffy clouds, floating rock islands with lawns, trees). Original look, built from code plus the trees we already ship.
+- **What a "shortcut" is:** the road stays one closed loop (so lap counting, race places and the barriers keep working). A shortcut ramp is a narrow ramp on *one side* of the road, on the side facing the landing. Taking it is a choice: line up on that side or drive past. The flight goes straight across the gap and lands further along the same lap, skipping a long loop of road (~110 m of flight saves ~120 m of road, about 4 s).
+- **Flight rules:** during a shortcut flight the kart's lap position follows how far across the gap it is, so race places update smoothly and the finish line can't be skipped. An invisible arc (6 m high in the middle) keeps the glider from sinking into the gap, and it keeps at least 20 m/s, so a hit in mid-air can't leave anyone stuck. Glowing orange hoops show the line, and the minimap draws dashed lines.
+- **Ramps on this track:** three in total: one full-width glide down from the hilltop (blue posts) and two shortcut ramps (orange hoops on their posts).
+- **Computer racers** take a shortcut about 45 % of the time (decided once per ramp per lap), so they stay beatable but you'll see them use it.

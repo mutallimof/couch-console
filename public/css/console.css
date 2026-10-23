@@ -375,7 +375,7 @@ html, body {
 .kart-drift { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); font-size: 26px; font-weight: 900; color: #FFE066; }
 .kart-msg { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(56px, 12vh, 120px); font-weight: 900; }
 .kart-minimap { position: absolute; right: 14px; top: 14px; width: 150px; height: 150px; border-radius: 16px; background: rgba(30, 50, 80, 0.35); }
-.kart-results { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(20, 30, 50, 0.45); }
+.kart-results { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(20, 30, 50, 0.45); }
 .kart-card { background: #fff; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); min-width: 460px; text-align: center; }
 .kart-card h1 { margin: 0; padding: 22px 32px; color: #fff; font-size: 40px; font-weight: 900; }
 .kart-card table { width: 100%; border-collapse: collapse; font-size: 22px; font-weight: 700; }
