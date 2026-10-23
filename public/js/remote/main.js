@@ -69,6 +69,7 @@ function join() {
     setPlayer(res.playerId, res.color);
     setConnected(true, `Room ${room}`);
     $('join-form').hidden = true;
+    setLayout(res.layout, 'join'); // the layout the console wants right now (e.g. the kart pad mid-race)
     applyMode();
     if (!started) $('start').hidden = false;
     // Keep the room (and debug flag) in the URL so a refresh rejoins the same room.
@@ -157,13 +158,13 @@ const swing = createSwing({
 
 // ---------- Kart pad (Turbo Karts) ----------
 // The console switches us between the normal remote ('pointer'), the kart pad ('wheel')
-// and a text box ('keyboard'). The kart pad steers with its strip, or by tilting (wheel.js).
+// and a text box ('keyboard'). The kart pad steers with LEFT / RIGHT, or by tilting (wheel.js).
 
 let mode = 'pointer';
 const sendSteer = (steer) => {
   if (!joined) return;
   sentCount++;
-  socket.volatile.emit(EV.INPUT_WHEEL, { steer });
+  socket.emit(EV.INPUT_WHEEL, { steer }); // (not volatile: "straight again" must never get lost)
 };
 const wheel = createWheel({ onSteer: (steer) => { if (kartPad.tilt) sendSteer(steer); } });
 const kartPad = createKartPad({
@@ -183,17 +184,25 @@ function applyMode() {
   document.body.classList.toggle('kart-mode', isKart); // hides the top bar: the pad has its own
   $('keyboard-pad').hidden = !isKeys;
   if (isKeys) { $('keyboard-input').value = ''; $('keyboard-input').focus(); }
+  if (isKart) $('motion-msg').hidden = true; // (the kart pad needs no motion, and the note would cover GAS)
   if (isKart && !wasKart) kartPad.show();
   if (!isKart && wasKart) kartPad.hide();
   if (isKart && started && kartPad.tilt) wheel.start();
   else wheel.stop();
 }
 
-socket.on(EV.FEEDBACK_MODE, ({ mode: m, prompt } = {}) => {
-  mode = ['wheel', 'keyboard'].includes(m) ? m : 'pointer';
+// The console says which layout to show. It repeats this every 2 s during a race, so only a
+// real change does anything (repeating 'keyboard' must not wipe what you're typing).
+let layoutInfo = { from: 'none', at: 0 }; // for the ?debug=1 readout
+function setLayout({ mode: m, prompt } = {}, from = 'console') {
+  const next = ['wheel', 'keyboard'].includes(m) ? m : 'pointer';
+  layoutInfo = { from, at: Date.now() };
+  if (next === mode && (prompt || 'Type here') === $('keyboard-prompt').textContent) return;
+  mode = next;
   $('keyboard-prompt').textContent = prompt || 'Type here';
   applyMode();
-});
+}
+socket.on(EV.FEEDBACK_MODE, (layout) => setLayout(layout));
 
 // Keyboard layout: send the text (or '' to cancel)
 $('keyboard-pad').addEventListener('submit', (e) => {
@@ -209,7 +218,7 @@ function showTouchpad(message) {
   $('touchpad').hidden = false;
   if (message) {
     $('motion-text').textContent = message;
-    $('motion-msg').hidden = false;
+    $('motion-msg').hidden = mode === 'wheel'; // not over the kart pad
   }
   touchpad = motion.attachTouchpad($('touchpad'));
 }
@@ -323,6 +332,8 @@ if (DEBUG) {
     box.textContent = `alpha ${fmt(s.alpha)}  beta ${fmt(s.beta)}  gamma ${fmt(s.gamma)}\n`
       + `gyro ${s.gyro ? 'yes' : 'no'}  mag ${fmt(w.mag ?? s.mag)}  msgs/s ${rate}  ping ${pingMs} ms\n`
       + `swings ${w.swings}  last power ${w.lastPower == null ? '–' : w.lastPower.toFixed(2)}\n`
-      + `mode ${mode}  steer ${(kartPad.tilt ? wheel.stats.steer : kartPad.steer).toFixed(2)}${kartPad.tilt ? ' (tilt)' : ''}`;
+      + `mode ${mode}  steer ${(kartPad.tilt ? wheel.stats.steer : kartPad.steer).toFixed(2)}${kartPad.tilt ? ' (tilt)' : ''}\n`
+      + `layout from ${layoutInfo.from} ${layoutInfo.at ? `${((Date.now() - layoutInfo.at) / 1000).toFixed(0)} s ago` : '(never)'}  `
+      + `showing ${['controller', 'kart-pad', 'keyboard-pad'].filter((id) => $(id).offsetParent).join(',') || 'none'}  ${screen.orientation?.type || ''}`;
   }, 100);
 }

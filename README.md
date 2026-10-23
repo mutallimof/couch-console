@@ -91,10 +91,11 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 | **HOME** | return to the menu from anywhere |
 
 - **Turbo Karts:** a 3D kart race (3 laps, 8 racers). First each player picks a **character** and a **kart** (D-pad, A = confirm, B = back), watching them in a little 3D showroom: the character waves when picked and cheers when you're ready, and the kart turns on a turntable next to its stats, then P1 picks one of 6 **tracks** (Sunny Park, Dune Canyon, Frosty Peaks, Neon City, Pirate Cove, Cloud Gardens). Drive through **item boxes** and press **ITEM** to use what you got: *Turbo* (speed boost), *Homing Orb* (hits the kart ahead), *Slick* (dropped behind you), *Shield*, *Triple Slick* (three slicks, one per press), *Magnet* (grabs coins from far away and pulls you along behind the kart ahead) or, if you're near the back, the *Lightning Bolt* (everyone ahead of you shrinks and slows for a few seconds; a Shield blocks it). **Coins** raise your top speed; getting hit makes you drop some. Your phone turns into a **kart controller**: hold it sideways with both thumbs.
-  - **Left thumb, steering strip:** put your thumb on it and slide. The further from the middle, the harder you turn; the striped middle band means straight. The dot shows where your thumb is.
+  - **Left thumb, ◀ LEFT and ▶ RIGHT:** two big buttons. Hold one and the kart turns, smoothly building up to a full turn; a quick tap is a small correction. Let go and it drives straight. You can slide your thumb from one to the other without lifting it.
+  - **Rotation lock on?** No problem: if the page stays upright while you hold the phone sideways, the pad turns itself sideways. If it's upside down for you, press **Flip ↻**.
   - **Right thumb, four buttons:** **GAS** (bottom right), **DRIFT** next to it, **ITEM** and **BRAKE** above. Slide your thumb from one to the next without lifting it. Holding **DRIFT** or **ITEM** keeps accelerating, so you can move off GAS.
   - **Drift:** hold DRIFT while turning at speed (the kart does a little hop), then let go for a **mini-turbo** (blue sparks = small boost, orange = big boost). Braking ends a drift with no turbo.
-  - **Switches at the top:** **Tilt steering** (turn the phone like a wheel instead of using the strip, with a Recenter button) and **Auto-gas** (always accelerating). The phone remembers them.
+  - **Switches at the top:** **Tilt steering** (turn the phone like a wheel instead of using the LEFT / RIGHT buttons, with a Recenter button) and **Auto-gas** (always accelerating). The phone remembers them.
   - **Glide ramps:** a blue pad with white chevrons across the road, between two glowing posts. Drive over it at speed and a glider opens: you float down slowly, steering freely, and the glider follows the road's bends.
   - **Shortcuts (Cloud Gardens):** some glide ramps are narrow and sit on one side of the road, with orange posts. Steer onto one and you glide straight across a gap (follow the glowing hoops) and land further along the lap, skipping a long loop of road. The minimap shows shortcuts as dashed lines. Some computer racers dare to take them too.
   - **Tricks:** tap **DRIFT** while in the air (off a glide ramp or any jump) for a barrel roll. Land it for a short boost ("Trick!").
@@ -223,4 +224,4 @@ Every game and channel lives in `public/js/console/games/` or `public/js/console
 If a game has a bug and can't load, only its tile shows **Couldn't load…**; the rest of the console keeps working.
 
 ### Tests
-`npm test` runs the automatic tests (no phone needed).
+`npm test` runs the automatic tests (no phone needed). One of them plays a whole Turbo Karts start in a hidden browser and checks that the phones really switch to the kart pad; it only runs if Playwright is installed, otherwise it says "skipped". To run it too (optional, about 150 MB): `npm install --no-save playwright` then `npx playwright install chromium`, then `npm test`.

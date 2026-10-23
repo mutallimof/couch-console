@@ -45,7 +45,7 @@
     <button class="btn round b" data-button="B">B</button>
   </main>
 
-  <!-- Kart pad (Turbo Karts): hold the phone sideways. Left thumb steers on the strip,
+  <!-- Kart pad (Turbo Karts): hold the phone sideways. Left thumb: LEFT / RIGHT buttons,
        right thumb slides between the four buttons. "Tilt" switches to tilt steering. -->
   <main id="kart-pad" class="kart-pad" hidden>
     <div class="kp-bar">
@@ -56,12 +56,13 @@
       <button id="kp-tilt" class="kp-switch" type="button" aria-pressed="false">Tilt steering</button>
       <button id="kp-autogas" class="kp-switch" type="button" aria-pressed="false">Auto-gas</button>
       <button id="kp-recenter" class="kp-switch" type="button" hidden>Recenter</button>
+      <button id="kp-flip" class="kp-switch kp-flip" type="button">Flip ↻</button>
     </div>
     <div class="kp-main">
-      <div id="kp-strip" class="kp-strip">
-        <div class="kp-dead"></div>
-        <div id="kp-thumb" class="kp-thumb"></div>
-        <span id="kp-strip-hint" class="kp-strip-hint">◀ slide to steer ▶</span>
+      <div id="kp-steer" class="kp-steer">
+        <div class="kp-btn steer" data-steer="-1" aria-label="Left"><span>◀</span>LEFT</div>
+        <div class="kp-btn steer" data-steer="1" aria-label="Right"><span>▶</span>RIGHT</div>
+        <span class="kp-tilt-hint">Tilt the phone to steer</span>
       </div>
       <div id="kp-buttons" class="kp-buttons">
         <div class="kp-btn item" data-kart="UP">ITEM</div>
@@ -70,7 +71,6 @@
         <div class="kp-btn gas" data-kart="A">GAS</div>
       </div>
     </div>
-    <div class="kp-rotate"><b>Turn your phone sideways</b><span>Left thumb steers, right thumb drives</span></div>
   </main>
 
   <!-- Keyboard layout: type text for the console (e.g. a YouTube search) -->

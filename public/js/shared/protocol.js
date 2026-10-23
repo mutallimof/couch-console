@@ -31,7 +31,7 @@ export const EV = {
   INPUT_RECENTER: 'input:recenter',
   FEEDBACK_RUMBLE: 'feedback:rumble',
   FEEDBACK_SETTINGS: 'feedback:settings',
-  FEEDBACK_MODE: 'feedback:mode',   // { mode: 'pointer' | 'wheel' | 'keyboard', prompt? }
+  FEEDBACK_MODE: 'feedback:mode',   // { mode: 'pointer' | 'wheel' | 'keyboard', prompt? } (also in the join answer as `layout`)
   INPUT_WHEEL: 'input:wheel',       // { steer: -1..1 }
   INPUT_TEXT: 'input:text',         // { text } typed on the phone ('' = cancelled)
   // Raw phone sensors, ~60 per second: { alpha, beta, gamma, motion: { rx, ry, rz } }.

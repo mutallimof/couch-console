@@ -330,6 +330,11 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 - New boot: original logo (a TV with a couch inside, one cushion per player color) draws in, lights up, name rises; 2.7 s, skippable (click / key / phone button), reduced-motion version, `?noboot=1` still turns it off.
 - **Timer** channel (Clock / Timer / Stopwatch, offline; rules in `channels/timer-logic.js` with tests in `tests/channels.test.mjs`) and **On This Day** channel (Wikipedia's free "On this day" feed, no key).
 
+### Phase 30: Kart pad fixes + LEFT/RIGHT steering
+- Layout switching made self-healing: the server remembers the room's layout and sends it in every join answer (`layout` in the `remote:join` ack); the console repeats `feedback:mode` every 2 s while a game uses a special layout; the phone only acts on a real change; steering (`input:wheel`) is no longer "volatile" (the final "straight" must arrive). Rotation lock: in portrait the pad turns itself sideways (Flip button). `?debug=1` shows where the layout came from.
+- Steering strip replaced by big ◀ LEFT / ▶ RIGHT buttons (smooth ramp to full lock in 0.16 s, back in 0.08 s; slide between them).
+- Tests: `tests/layout.test.mjs` (server, always runs) and `tests/kart-pad.e2e.test.mjs` (browser, runs when Playwright is installed).
+
 ### Later
 - 4-player split screen for Turbo Karts.
 

@@ -167,6 +167,9 @@ function setController(mode, prompt = '') {
     setTimeout(() => onInputText({ playerId: desk.id, text: (window.prompt(prompt || 'Type here') || '').trim() }), 50);
   }
 }
+// Say it again every 2 s while a game uses a special layout: a phone that missed the message
+// (Wi-Fi hiccup, the browser paused the page for a moment) switches over by itself.
+setInterval(() => { if (controllerMode !== 'pointer') socket.emit(EV.FEEDBACK_MODE, { mode: controllerMode, prompt: controllerPrompt }); }, 2000);
 let busy = false;    // true during the zoom animation
 let picker = null;   // { modes, index } while the mode picker is showing
 
