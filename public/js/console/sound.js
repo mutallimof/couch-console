@@ -48,8 +48,14 @@ function noise({ dur = 0.1, freq = 2000, q = 1, vol = 0.3, delay = 0 }) {
   src.start(t);
 }
 
+// A major pentatonic scale, so neighbouring menu columns always sound good together
+const PENTA = [1047, 1175, 1319, 1568, 1760];
+
 const SOUNDS = {
-  hover: () => tone({ f0: 1200, dur: 0.04, type: 'triangle', vol: 0.06 }),
+  // hover is heard all the time in the menu: short and quiet. step = which column.
+  hover: ({ step = 0 } = {}) => tone({ f0: PENTA[step % PENTA.length], dur: 0.035, type: 'triangle', vol: 0.05 }),
+  join: () => [784, 1047, 1319].forEach((f, i) => tone({ f0: f, dur: 0.12, type: 'triangle', vol: 0.12, delay: i * 0.06 })),
+  leave: () => [1047, 784].forEach((f, i) => tone({ f0: f, dur: 0.12, type: 'triangle', vol: 0.1, delay: i * 0.08 })),
   select: () => {
     tone({ f0: 660, dur: 0.08, type: 'triangle', vol: 0.15 });
     tone({ f0: 990, dur: 0.12, type: 'triangle', vol: 0.15, delay: 0.07 });
@@ -85,9 +91,9 @@ const SOUNDS = {
 };
 
 export const sound = {
-  play(name) {
+  play(name, opts) {
     if (muted || !ctx || ctx.state !== 'running') return;
-    SOUNDS[name]?.();
+    SOUNDS[name]?.(opts);
   },
   // A continuous tone, e.g. an engine hum. Returns { set(freq, volume), stop() }.
   loop(type = 'sawtooth') {

@@ -27,7 +27,9 @@ const pointers = createPointers($('cursors'));
 const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
 // Boot animation (skip it with ?noboot=1)
 const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoot({ sound });
-const ZOOM_MS = 300;
+const ZOOM_MS = 320;       // opening a game: the one big motion in the menu
+const ZOOM_BACK_MS = 220;  // going back is quicker than opening
+const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const MODE_LABELS = { solo: 'Solo', versus: 'Versus', coop: 'Co-op' };
 
 // The "driver" controls the menu: P1, or the lowest-numbered player if P1 is away.
@@ -55,7 +57,7 @@ const prefs = {
 const apps = [turboKarts, tableTennis, targetRange, airHockey, dungeon, balloonPop, draw, paddleDuel, bowling, photos, weather, video, createSettings(prefs)];
 const menu = createMenu({
   grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
-  onFocusChange: () => sound.play('hover'),
+  onFocusChange: (column) => sound.play('hover', { step: column }),
 });
 
 // ---------- Pairing / lobby ----------
@@ -66,7 +68,9 @@ let pairingForced = false;
 function setPairing(forced = pairingForced) {
   pairingForced = forced;
   const none = players.list().length === 0;
+  const wasShown = !$('pairing').hidden;
   $('pairing').hidden = !(forced || (none && !current?.mounted)); // a running game shows its own pause screen
+  if (wasShown && $('pairing').hidden && !current) menu.enter(); // the menu appears: tiles rise in
   $('pairing-close').hidden = !(forced && !none);
   const full = players.slots().every((s) => s.connected);
   $('mini-join').hidden = full || none;
@@ -85,7 +89,9 @@ socket.on('disconnect', () => {
 });
 
 socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
+  const isNew = !players.isConnected(playerId);
   players.join(playerId, color);
+  if (isNew) sound.play('join');
   socket.emit(EV.FEEDBACK_MODE, { mode: controllerMode, prompt: controllerPrompt }); // and the right controller layout
   playerReturned(playerId);
   // A new phone joining a running multi-player game (not solo) gets let in, if there's room.
@@ -95,6 +101,7 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
 });
 socket.on(EV.PLAYER_LEFT, ({ playerId }) => {
   players.leave(playerId);
+  sound.play('leave');
   pointers.remove(playerId);
   gyro.remove(playerId);
   playerLost(playerId);
@@ -131,7 +138,13 @@ function renderSlots() {
     <span class="chip ${s.connected ? 'on' : ''}" style="--player:${s.color}">P${s.playerId}</span>`).join('');
 }
 
-players.onChange(() => { renderSlots(); setPairing(); });
+players.onChange(() => {
+  renderSlots();
+  setPairing();
+  // The focus ring shows who's driving the menu
+  const id = driverId();
+  document.documentElement.style.setProperty('--ring', Number.isFinite(id) ? colorFor(id) : '#2F80ED');
+});
 
 // ---------- Opening and closing apps (tile zoom) ----------
 // current = { app, handlers, allowed: Set<playerId>, missing: Set<playerId>, mounted }
@@ -160,11 +173,14 @@ function openApp(app) {
   const stage = $('stage');
   current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set(), text: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
   stage.style.setProperty('--tile', app.color);
+  menu.press();
   stage.hidden = false;
-  const anim = stage.animate(
-    [{ clipPath: tileClip(menu.focusedTile()) }, { clipPath: 'inset(0px 0px 0px 0px round 0px)' }],
-    { duration: ZOOM_MS, easing: 'cubic-bezier(.2,.8,.2,1)' },
-  );
+  const anim = REDUCED_MOTION
+    ? stage.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: 'ease' })
+    : stage.animate(
+      [{ clipPath: tileClip(menu.focusedTile()) }, { clipPath: 'inset(0px 0px 0px 0px round 0px)' }],
+      { duration: ZOOM_MS, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
+    );
   anim.onfinish = () => {
     busy = false;
     // A 2-player game with 2 phones connected: ask which mode first.
@@ -200,10 +216,12 @@ function closeApp() {
   $('stage-content').innerHTML = '';
   current = null;
   const stage = $('stage');
-  const anim = stage.animate(
-    [{ clipPath: 'inset(0px 0px 0px 0px round 0px)' }, { clipPath: tileClip(menu.focusedTile()) }],
-    { duration: ZOOM_MS, easing: 'cubic-bezier(.2,.8,.2,1)' },
-  );
+  const anim = REDUCED_MOTION
+    ? stage.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease' })
+    : stage.animate(
+      [{ clipPath: 'inset(0px 0px 0px 0px round 0px)' }, { clipPath: tileClip(menu.focusedTile()) }],
+      { duration: ZOOM_BACK_MS, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+    );
   anim.onfinish = () => { stage.hidden = true; busy = false; setPairing(); };
 }
 
@@ -369,6 +387,15 @@ socket.on(EV.INPUT_BUTTON, (e) => {
   if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(button)) menu.move(button);
   // Open the focused tile (moving the cursor over a tile focuses it, see below).
   else if (button === 'A') openApp(menu.focusedApp());
+});
+
+// Aim assist: only on menu tiles and the mode picker, never inside a game.
+pointers.setAssist((x, y) => {
+  if (busy || !$('pairing').hidden || (current && !picker)) return null;
+  const el = document.elementFromPoint(x, y)?.closest?.(picker ? '[data-mode]' : '[data-tile]');
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: Math.hypot(r.width, r.height) / 2 };
 });
 
 // The driver's cursor focuses whatever it hovers (menu tiles, picker modes).

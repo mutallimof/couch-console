@@ -316,7 +316,7 @@ function onButton({ playerId, button, state: s }) {
 export default {
   id: 'balloon-pop',
   title: 'Balloon Pop',
-  color: '#FF6B6B',
+  color: '#E0548F',
   icon: ICON,
   minPlayers: 1,
   maxPlayers: 2,

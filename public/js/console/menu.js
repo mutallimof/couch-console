@@ -16,6 +16,7 @@ export function createMenu({ grid, clock, date, apps, onFocusChange }) {
     const app = apps[i];
     const el = document.createElement('div');
     el.className = app ? 'tile' : 'tile empty';
+    el.style.setProperty('--i', i); // entrance stagger order
     if (app) {
       el.dataset.tile = i;
       el.style.setProperty('--tile', app.color);
@@ -29,7 +30,7 @@ export function createMenu({ grid, clock, date, apps, onFocusChange }) {
     if (i === focus || !apps[i]) return;
     focus = i;
     tiles.forEach((t, j) => t.classList.toggle('focused', j === i));
-    if (!silent) onFocusChange?.();
+    if (!silent) onFocusChange?.(i % COLUMNS); // the column, so each one can sound a bit different
   }
   tiles[0].classList.add('focused');
 
@@ -63,5 +64,17 @@ export function createMenu({ grid, clock, date, apps, onFocusChange }) {
     },
     focusedApp: () => apps[focus],
     focusedTile: () => tiles[focus],
+    // Feedback that A landed: the tile sinks in briefly (the game then zooms out of it)
+    press() {
+      const t = tiles[focus];
+      t.classList.add('pressed');
+      setTimeout(() => t.classList.remove('pressed'), 110);
+    },
+    // Play the tiles' entrance (when the menu appears after pairing)
+    enter() {
+      grid.classList.remove('enter');
+      void grid.offsetWidth; // restart the CSS animation
+      grid.classList.add('enter');
+    },
   };
 }

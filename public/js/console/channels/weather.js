@@ -139,7 +139,7 @@ function onButton({ button, state }) {
 export default {
   id: 'weather',
   title: 'Weather',
-  color: '#56A0D3',
+  color: '#3D8BC9',
   icon: ICON,
   minPlayers: 1,
   maxPlayers: 1,

@@ -264,7 +264,7 @@ async function init(token, container) {
 export default {
   id: 'air-hockey',
   title: 'Air Hockey',
-  color: '#56CCF2',
+  color: '#1C9BC8',
   icon: ICON,
   minPlayers: 1,
   maxPlayers: 2,

@@ -1,4 +1,8 @@
 :root {
+  /* Motion: strong ease-out for things responding to you, a drawer-like curve for zooms */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-zoom: cubic-bezier(0.32, 0.72, 0, 1);
+  --ring: #2F80ED; /* focus ring = the color of the player driving the menu (set by main.js) */
   --bg-top: #f7f9fc;
   --bg-bottom: #dfe8f3;
   --card: #ffffff;
@@ -41,28 +45,42 @@ html, body {
 
 .tile {
   aspect-ratio: 16 / 10;
-  border-radius: 16px;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--tile) 80%, #fff), var(--tile));
-  box-shadow: 0 8px 20px rgba(40, 60, 90, 0.14);
+  border-radius: 18px;
+  /* lit from above, like a backlit panel; the shadow takes the tile's own color */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%), var(--tile);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 22px color-mix(in srgb, var(--tile) 32%, transparent);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
   color: #fff;
-  transition: transform 0.15s, box-shadow 0.15s;
+  container-type: inline-size; /* lets the icon and title scale with the tile */
+  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
 }
 .tile.empty {
-  background: rgba(255, 255, 255, 0.45);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
 }
 .tile.focused {
-  transform: scale(1.06);
-  box-shadow: 0 0 0 5px #fff, 0 0 0 8px var(--tile), 0 16px 34px rgba(40, 60, 90, 0.25);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 4px #fff, 0 0 0 8px var(--ring),
+    0 20px 38px color-mix(in srgb, var(--tile) 45%, transparent);
 }
-.tile { container-type: inline-size; } /* lets the icon and title scale with the tile */
-.tile-icon svg { display: block; width: clamp(28px, 22cqw, 64px); height: auto; }
-.tile-title { font-weight: 900; font-size: clamp(13px, 10cqw, 24px); white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); }
+/* A pressed for real: sink in, then the game zooms out of it */
+.tile.pressed { transform: scale(0.97); transition-duration: 100ms; }
+.tile-icon svg { display: block; width: clamp(34px, 30cqw, 96px); height: auto; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15)); }
+.tile-title { font-weight: 900; font-size: clamp(13px, 11cqw, 26px); white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
+
+/* The menu's one entrance: tiles rise in, one after another, when the menu first appears */
+.tiles.enter .tile { animation: tile-in 420ms var(--ease-out) backwards; animation-delay: calc(var(--i) * 35ms); }
+@keyframes tile-in { from { opacity: 0; transform: translateY(14px) scale(0.96); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tile, .tile.focused, .tile.pressed { transform: none; transition: box-shadow 120ms ease; }
+  .tiles.enter .tile { animation: tile-fade 200ms ease backwards; }
+  @keyframes tile-fade { from { opacity: 0; } }
+}
 
 .bar {
   display: flex;
@@ -584,3 +602,6 @@ html, body {
 .kart-progress i { display: block; width: 0; height: 100%; background: #2F80ED; transition: width 0.2s; }
 .join-warning { margin-top: 10px !important; padding: 10px 14px; border-radius: 12px; background: #FFF3BF; color: #7A4D00; font-size: 14px; font-weight: 700; max-width: 380px; }
 .join-warning code { font-size: 12px; }
+
+/* Cursor trail (drawn on a canvas under the cursors) */
+.cursor-trail { position: absolute; inset: 0; width: 100%; height: 100%; }
