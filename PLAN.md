@@ -310,7 +310,9 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 - Speed lines at the screen edges while boosting.
 
 ### Phase 24: Kart features
-- Gliders off big jumps, tricks in the air (DRIFT while airborne = trick, boost on landing).
+- Glide ramps (one per track, before its biggest drop, outside tunnels): launch + glider (slow fall, free steering, follows the road's bends), glider wing on the kart, higher camera.
+- Tricks: tap DRIFT in the air (players only, once per jump; quick taps count) = barrel roll, boost on landing, "Trick!".
+- Rules in karts-rules.js with tests (52 in total).
 
 ### Later
 - 4-player split screen for Turbo Karts.

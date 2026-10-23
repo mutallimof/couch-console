@@ -194,11 +194,27 @@ export function makeRacer(character, kart, color, assets) {
   shadow.rotation.x = -Math.PI / 2; shadow.scale.set(0.8, 1.2, 1);
   const root = new THREE.Group();
   root.add(k.group);
+  // Glider: a wing that unfolds above the kart off glide ramps (scaled open by turbo-karts.js)
+  const glider = new THREE.Group();
+  const wingShape = new THREE.Shape();
+  wingShape.moveTo(0, 1.1); wingShape.lineTo(1.9, -0.55); wingShape.quadraticCurveTo(0, -0.15, -1.9, -0.55); wingShape.closePath();
+  const wing = new THREE.Mesh(new THREE.ShapeGeometry(wingShape), new THREE.MeshStandardMaterial({ color, roughness: 0.5, side: THREE.DoubleSide }));
+  wing.rotation.x = -Math.PI / 2 + 0.12; wing.castShadow = true;
+  const spine = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.6), new THREE.MeshStandardMaterial({ color: '#2B3445' }));
+  spine.position.set(0, 0.02, 0.2);
+  glider.add(wing, spine);
+  for (const s of [-1, 1]) {
+    const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.4, 6), spine.material);
+    strut.position.set(s * 0.45, -0.65, 0); strut.rotation.z = s * 0.35;
+    glider.add(strut);
+  }
+  glider.position.set(0, 2.6, -0.2); glider.visible = false;
+  k.group.add(glider);
   // A floating marker in the player's color (set visible for human players)
   const marker = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.6, 4), new THREE.MeshBasicMaterial({ color }));
   marker.rotation.x = Math.PI; marker.position.y = 3.1; marker.visible = false;
   k.group.add(marker);
-  return { root, body: k.group, wheels: k.wheels, flipWheels: !!k.flipWheels, driver, anim, marker, sparks, sparkMat, flame, shield, shadow };
+  return { root, body: k.group, wheels: k.wheels, flipWheels: !!k.flipWheels, driver, anim, marker, glider, sparks, sparkMat, flame, shield, shadow };
 }
 
 // ---------- Track objects ----------

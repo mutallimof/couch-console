@@ -10,7 +10,7 @@ import { createLook } from './karts-look.js';
 import { CHARACTERS, KARTS, ITEM_ICONS, kartPhysics, rollItem } from './karts-data.js';
 import { setThree, makeRacer, makeItemMesh, makePortraits } from './karts-models.js';
 import { createSelect } from './karts-select.js';
-import { HOP_TIME, kartInput, stepKart as driveKart, giveBoost as boostKart, bumpKarts, progress as raceProgress, LAPS } from './karts-rules.js';
+import { HOP_TIME, TRICK_TIME, kartInput, stepKart as driveKart, giveBoost as boostKart, bumpKarts, progress as raceProgress, LAPS } from './karts-rules.js';
 import { CAR, PIRATE, loadAll } from './karts-assets.js';
 import { THEME_MODELS } from './karts-decor.js';
 
@@ -147,7 +147,9 @@ function controls(k) {
   if (!k.playerId || k.finished != null) return cpuControls(k);
   const c = input.get(k.playerId) || {};
   const digital = (c.right ? 1 : 0) - (c.left ? 1 : 0);
-  return kartInput({ ...c, steer: digital || c.steer || 0 });
+  const held = kartInput({ ...c, steer: digital || c.steer || 0 });
+  c.tapped = false; // a quick DRIFT tap is used once
+  return held;
 }
 
 // CPUs aim at a point further down the track, in their own lane, and dodge slicks a little
@@ -178,6 +180,8 @@ function kartEvent(type, k) {
   else if (type === 'wall') { api.rumble(k.playerId, 120); api.sound.play('wall'); }
   else if (type === 'land') { api.sound.play('wall'); api.rumble(k.playerId, 60); }
   else if (type === 'final-lap') api.sound.play('start');
+  else if (type === 'glide') { api.sound.play('clear'); api.rumble(k.playerId, 60); }
+  else if (type === 'trick') { k.trickAt = raceTime; api.sound.play('clink'); api.rumble(k.playerId, 40); }
   else if (type === 'finish') { api.sound.play(place(k) === 1 ? 'strike' : 'end'); api.rumble(k.playerId, 250); }
 }
 
@@ -318,7 +322,13 @@ function syncMeshes(t, dt) {
     const slope = Math.atan2(ahead.y - behind.y, Math.hypot(ahead.x - behind.x, ahead.z - behind.z));
     m.body.rotation.x = k.air ? -k.vy * 0.02 : -slope;
     m.body.position.y = k.hop > 0 ? Math.sin((k.hop / HOP_TIME) * Math.PI) * 0.45 : 0; // the drift hop
-    m.body.rotation.z = k.roll;
+    // a trick is a full barrel roll; otherwise lean into the turn
+    m.body.rotation.z = k.trick > 0 ? (1 - k.trick / TRICK_TIME) * Math.PI * 2 : k.roll;
+    // the glider unfolds when gliding and folds away on landing
+    const open = k.gliding ? 1 : 0;
+    m.glider.userData.open = (m.glider.userData.open ?? 0) + (open - (m.glider.userData.open ?? 0)) * Math.min(1, dt * 8);
+    m.glider.visible = m.glider.userData.open > 0.02;
+    m.glider.scale.set(m.glider.userData.open, 1, 0.4 + 0.6 * m.glider.userData.open);
     // (model cars are turned around, so their wheels spin the other way)
     m.wheels.forEach((w) => { w.rotation.x += (m.flipWheels ? -1 : 1) * k.v * 0.016; });
     m.marker.position.y = 3.1 + Math.sin(t * 0.005) * 0.15;
@@ -340,7 +350,10 @@ function syncMeshes(t, dt) {
 
 function moveCamera(h, dt) {
   const fx = Math.sin(h.heading), fz = Math.cos(h.heading);
-  const want = new THREE.Vector3(h.x - fx * 8, h.y + 3.6, h.z - fz * 8);
+  // a bit higher and further back while gliding, to see where you'll land
+  h.camGlide = (h.camGlide || 0) + ((h.gliding ? 1 : 0) - (h.camGlide || 0)) * Math.min(1, dt * 3);
+  const back = 8 + h.camGlide * 3, up = 3.6 + h.camGlide * 3;
+  const want = new THREE.Vector3(h.x - fx * back, h.y + up, h.z - fz * back);
   if (!h.camPos) h.camPos = want.clone();
   h.camPos.lerp(want, 1 - Math.exp(-7 * dt));
   h.camera.position.copy(h.camPos);
@@ -426,11 +439,12 @@ function updateHud() {
     set('.kart-item', icon);
     q('.kart-itembox').classList.toggle('ready', !!h.item && h.roulette <= 0);
     h.hud.classList.toggle('boosting', h.boost > 0); // speed lines at the screen edges
-    set('.kart-drift', h.spin > 0 ? 'Spin out!' : h.drifting ? (h.charge > 2.2 ? 'TURBO!' : h.charge > 1 ? 'Boost ready' : 'Drift…') : h.shield > 0 ? 'Shield' : '');
+    set('.kart-drift', h.spin > 0 ? 'Spin out!' : h.gliding ? 'Gliding! (DRIFT = trick)' : h.drifting ? (h.charge > 2.2 ? 'TURBO!' : h.charge > 1 ? 'Boost ready' : 'Drift…') : h.shield > 0 ? 'Shield' : '');
     let msg = '';
     if (state === 'countdown') msg = timer < 3 ? String(3 - Math.floor(timer)) : '';
     else if (state === 'race' && timer < 1) msg = 'GO!';
     else if (h.finished != null) msg = `Finished ${ordinal(order.indexOf(h) + 1)}!`;
+    else if (h.trickAt != null && raceTime - h.trickAt < 0.9) msg = 'Trick!';
     else if (h.finalLapAt != null && raceTime - h.finalLapAt < 2) msg = 'Final lap!';
     set('.kart-msg', msg);
   }
@@ -490,7 +504,7 @@ function onButton(e) {
   const c = inputFor(playerId), down = s === 'down';
   if (button === 'A') c.gas = down;
   if (button === 'B') c.brake = down;
-  if (button === 'R') c.drift = down;          // DRIFT (also keeps accelerating)
+  if (button === 'R') { c.drift = down; if (down) c.tapped = true; } // DRIFT (also keeps accelerating)
   if (button === 'UP') c.item = down;          // ITEM held also keeps accelerating
   if (button === 'LEFT') c.left = down;
   if (button === 'RIGHT') c.right = down;

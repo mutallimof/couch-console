@@ -16,7 +16,7 @@ export const TRACKS = [
     grip: 1, scale: 1.35,
     points: [[0, 0, 0], [60, 0, 0], [105, 3, 10], [138, 8, 45], [135, 9, 90], [105, 4, 112], [65, 0, 106], [40, 0, 80], [10, 5, 70],
       [-12, 0, 92], [-50, 0, 110], [-95, 4, 95], [-115, 6, 55], [-100, 2, 15], [-60, 0, 0]],
-    pads: [0.18, 0.62], boxes: [0.1, 0.42, 0.75], coins: [0.27, 0.53, 0.88], tunnel: null,
+    pads: [0.18, 0.62], boxes: [0.1, 0.42, 0.75], coins: [0.27, 0.53, 0.88], glides: [0.515], tunnel: null,
   },
   {
     id: 'desert', name: 'Dune Canyon', theme: 'desert', blurb: 'Long sweeping turns between red rocks. Hit the crests for air!',
@@ -24,7 +24,7 @@ export const TRACKS = [
     grip: 0.95, scale: 1.5,
     points: [[0, 0, 0], [70, 0, -5], [120, 6, 20], [130, 12, 70], [95, 5, 100], [60, 12, 90], [30, 2, 120], [-20, 0, 125], [-75, 8, 100],
       [-110, 0, 60], [-95, 10, 20], [-55, 2, -10]],
-    pads: [0.08, 0.5], boxes: [0.2, 0.55, 0.82], coins: [0.33, 0.66, 0.92], tunnel: [0.36, 0.44],
+    pads: [0.08, 0.5], boxes: [0.2, 0.55, 0.82], coins: [0.33, 0.66, 0.92], glides: [0.835], tunnel: [0.36, 0.44],
   },
   {
     id: 'snow', name: 'Frosty Peaks', theme: 'snow', blurb: 'Climb the mountain, fly down the other side. The road is icy!',
@@ -32,7 +32,7 @@ export const TRACKS = [
     grip: 0.78, scale: 1.4,
     points: [[0, 0, 0], [55, 2, -8], [100, 9, 10], [118, 16, 50], [95, 22, 85], [50, 24, 95], [10, 18, 80], [-25, 10, 100],
       [-70, 4, 95], [-100, 0, 55], [-90, 0, 15], [-45, 0, -5]],
-    pads: [0.12, 0.7], boxes: [0.06, 0.4, 0.78], coins: [0.25, 0.5, 0.9], tunnel: [0.58, 0.68],
+    pads: [0.12, 0.7], boxes: [0.06, 0.4, 0.78], coins: [0.25, 0.5, 0.9], glides: [0.497], tunnel: [0.58, 0.68],
   },
   {
     id: 'city', name: 'Neon City', theme: 'city', blurb: 'A night race through glowing towers, over a bridge and under it.',
@@ -41,7 +41,7 @@ export const TRACKS = [
     // a figure-8: the second crossing goes over a bridge
     points: [[0, 0, 0], [45, 0, 35], [90, 0, 60], [120, 0, 30], [100, 0, -15], [50, 4, -25], [0, 12, 0], [-45, 4, 30],
       [-95, 0, 55], [-120, 0, 20], [-95, 0, -20], [-50, 0, -30]],
-    pads: [0.15, 0.55], boxes: [0.08, 0.36, 0.72], coins: [0.24, 0.46, 0.86], tunnel: null,
+    pads: [0.15, 0.55], boxes: [0.08, 0.36, 0.72], coins: [0.24, 0.46, 0.86], glides: [0.512], tunnel: null,
   },
   {
     id: 'pirate', name: 'Pirate Cove', theme: 'pirate', blurb: 'A wooden boardwalk around a palm island. Watch out for the sea monster!',
@@ -49,7 +49,7 @@ export const TRACKS = [
     water: '#1C8FC9', grip: 0.95, scale: 1.4,
     points: [[0, 0, 0], [60, 0, -5], [110, 2, 15], [130, 6, 55], [110, 3, 95], [70, 0, 108], [38, 7, 82], [0, 0, 95],
       [-45, 0, 122], [-95, 4, 102], [-122, 0, 58], [-102, 0, 12], [-55, 0, -8]],
-    pads: [0.2, 0.6], boxes: [0.1, 0.4, 0.74], coins: [0.28, 0.52, 0.9], tunnel: [0.8, 0.87],
+    pads: [0.2, 0.6], boxes: [0.1, 0.4, 0.74], coins: [0.28, 0.52, 0.9], glides: [0.44], tunnel: [0.8, 0.87],
   },
 ];
 
@@ -69,8 +69,9 @@ export function trackPath(THREE, def) {
     nor.push(new THREE.Vector3(-d.z, 0, d.x).normalize()); // to the driver's right
   }
   const at = (i) => ((Math.round(i) % SAMPLES) + SAMPLES) % SAMPLES;
-  // Boost pads: two side by side at each spot
+  // Boost pads: two side by side at each spot. Glide ramps: across the whole road.
   const pads = def.pads.flatMap((t) => [-3.5, 3.5].map((side) => ({ i: at(t * SAMPLES), side })));
+  const glides = (def.glides || []).map((t) => ({ i: at(t * SAMPLES) }));
 
   // Nearest center-line sample to (x, z), searching near the last known one.
   // Uses the height too, so the two levels of a bridge never get mixed up.
@@ -91,5 +92,5 @@ export function trackPath(THREE, def) {
     return { i: best, lateral, height };
   }
 
-  return { pts, tan, nor, SAMPLES, length, at, locate, pads, def };
+  return { pts, tan, nor, SAMPLES, length, at, locate, pads, glides, def };
 }

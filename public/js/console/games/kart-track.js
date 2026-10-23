@@ -197,6 +197,37 @@ export function buildTrack(THREE, def, assets = null) {
     group.add(pad);
   }
 
+  // Glide ramps: a blue pad with white chevrons across the whole road, between two glowing posts
+  if (path.glides.length) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+    const x = c.getContext('2d');
+    x.fillStyle = '#1C7ED6'; x.fillRect(0, 0, 256, 128);
+    x.strokeStyle = '#fff'; x.lineWidth = 10; x.lineJoin = 'round';
+    for (const cx of [48, 128, 208]) for (const cy of [44, 84]) {
+      x.beginPath(); x.moveTo(cx - 22, cy + 14); x.lineTo(cx, cy - 8); x.lineTo(cx + 22, cy + 14); x.stroke();
+    }
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const padMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, emissive: '#1C7ED6', emissiveIntensity: def.night ? 0.8 : 0.25 });
+    const postMat = new THREE.MeshStandardMaterial({ color: '#E7F5FF', roughness: 0.3 });
+    const ringMat = new THREE.MeshStandardMaterial({ color: '#4DABF7', emissive: '#4DABF7', emissiveIntensity: 3 });
+    for (const { i } of path.glides) {
+      const g = new THREE.Group();
+      const pad = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, 7), padMat);
+      pad.rotation.x = -Math.PI / 2; pad.position.y = 0.09; pad.receiveShadow = true;
+      g.add(pad);
+      for (const s of [-1, 1]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 6, 12), postMat);
+        post.position.set(s * (ROAD_HALF + 0.8), 3, 0); post.castShadow = true;
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.16, 10, 24), ringMat);
+        ring.position.set(s * (ROAD_HALF + 0.8), 6.4, 0);
+        g.add(post, ring);
+      }
+      g.position.copy(pts[i]);
+      g.rotation.y = Math.atan2(tan[i].x, tan[i].z);
+      group.add(g);
+    }
+  }
+
   // Item boxes: a row of 4 across the road; coins: lines of 6 along the road.
   // Uses the Toy Car Kit models when they're loaded.
   const model = (file, size, fallback) => {

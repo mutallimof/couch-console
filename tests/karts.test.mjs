@@ -152,11 +152,12 @@ test('the park jump launches a fast kart into the air, and it lands', () => {
     const d = park.pts[i].y - park.pts[park.at(i + 10)].y;
     if (d > drop) { drop = d; at = i; }
   }
-  const k = kart(park, { i: park.at(at - 120), kartId: 'speedster' });
+  const noRamp = { ...park, glides: [] }; // (a glide ramp sits before this crest; test the plain jump)
+  const k = kart(noRamp, { i: park.at(at - 120), kartId: 'speedster' });
   let flew = false, landed = false;
-  const world = { track: park, topScale: 1, raceTime: 0, onEvent: () => {} };
+  const world = { track: noRamp, topScale: 1, raceTime: 0, onEvent: () => {} };
   for (let t = 0; t < 5; t += DT) {
-    stepKart(k, DT, { steer: followRoad(park, k), gas: true, brake: false }, world);
+    stepKart(k, DT, { steer: followRoad(noRamp, k), gas: true, brake: false }, world);
     if (k.air) flew = true;
     else if (flew) landed = true;
   }
@@ -178,4 +179,96 @@ test('every track has a usable center line', () => {
     const l = t.locate(t.pts[500].x + t.nor[500].x * 3, t.pts[500].z + t.nor[500].z * 3, 495);
     assert.ok(Math.abs(l.i - 500) <= 1 && Math.abs(l.lateral - 3) < 0.1, `${def.id}: locate works`);
   }
+});
+
+// ---- Phase 24: glide ramps and tricks ----
+
+test('a glide ramp launches the kart into a long, slow glide, and it lands again', () => {
+  const g = park.glides[0];
+  const k = kart(park, { i: park.at(g.i - 140), kartId: 'speedster' });
+  const events = [];
+  let glided = 0, landed = false;
+  const world = { track: park, topScale: 1, raceTime: 0, onEvent: (type) => events.push(type) };
+  for (let t = 0; t < 10; t += DT) {
+    stepKart(k, DT, { steer: followRoad(park, k), gas: true, brake: false }, world);
+    if (k.gliding) glided += DT;
+    else if (glided > 0 && !k.air) { landed = true; break; }
+  }
+  assert.ok(events.includes('glide'), 'launched');
+  assert.ok(glided > 1.5, `glided for ${glided.toFixed(1)} s (a normal jump is well under a second)`);
+  assert.ok(landed, 'landed again');
+});
+
+test('too slow for the ramp = no take-off', () => {
+  const g = park.glides[0];
+  const k = kart(park, { i: park.at(g.i - 3) });
+  k.v = 8;
+  drive(park, k, 0.3, { gas: false, steer: () => 0 });
+  assert.ok(!k.gliding);
+});
+
+test('tapping DRIFT in the air does a trick, and landing it gives a boost', () => {
+  const k = kart(park, { i: 300 });
+  drive(park, k, 2);
+  k.air = true; k.vy = 6; // as if a crest launched it
+  const events = [];
+  drive(park, k, DT * 2, { drift: true, events }); // tap
+  assert.ok(k.trick > 0, 'doing the trick');
+  drive(park, k, 2, { drift: false, events });      // ...and land
+  assert.ok(!k.air);
+  assert.ok(events.includes('trick') && events.includes('boost'));
+});
+
+test('holding DRIFT from before the jump is not a trick (it has to be a fresh tap)', () => {
+  const k = kart(park, { i: 300 });
+  drive(park, k, 2, { drift: true, steer: () => 0 }); // held on the ground (no turn = no drift)
+  k.air = true; k.vy = 6;
+  const events = [];
+  drive(park, k, 2, { drift: true, steer: () => 0, events });
+  assert.ok(!events.includes('trick'));
+});
+
+test('computer karts glide but never do tricks', () => {
+  const k = kart(park, { i: 300, playerId: null });
+  drive(park, k, 2);
+  k.air = true; k.vy = 6;
+  const events = [];
+  drive(park, k, DT * 2, { drift: true, events });
+  drive(park, k, 2, { events });
+  assert.ok(!events.includes('trick'));
+});
+
+test('a kart already hopping slightly off the road still catches the glide ramp', () => {
+  const g = park.glides[0];
+  const k = kart(park, { i: park.at(g.i - 2), kartId: 'speedster' });
+  k.v = 34; k.air = true; k.vy = 1; k.y += 0.8;
+  const events = [];
+  drive(park, k, 0.2, { steer: () => 0, events });
+  assert.ok(events.includes('glide') && k.gliding);
+});
+
+test('a glider with no steering follows the bends and lands on the road', () => {
+  for (const def of TRACKS) {
+    const t = trackPath(THREE, def);
+    const k = kart(t, { i: t.at(t.glides[0].i - 3), kartId: 'speedster' });
+    k.v = 34;
+    const world = { track: t, topScale: 1, raceTime: 0, onEvent: () => {} };
+    let glided = false;
+    for (let s = 0; s < 12 && !(glided && !k.air); s += DT) {
+      stepKart(k, DT, { steer: 0, gas: true, brake: false }, world);
+      if (k.gliding) glided = true;
+    }
+    assert.ok(glided && !k.air, `${def.id}: glided and landed`);
+    assert.ok(Math.abs(k.lateral) < 9.6, `${def.id}: landed on the road (lateral ${k.lateral.toFixed(1)} m)`);
+  }
+});
+
+test('a very quick DRIFT tap in the air still counts as a trick', () => {
+  const k = kart(park, { i: 300 });
+  drive(park, k, 2);
+  k.air = true; k.vy = 6;
+  const world = { track: park, topScale: 1, raceTime: 0, onEvent: () => {} };
+  // pressed and let go between two steps: the step sees drift=false but tapped=true
+  stepKart(k, DT, kartInput({ gas: true, tapped: true }), world);
+  assert.ok(k.trick > 0);
 });

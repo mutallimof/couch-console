@@ -2,10 +2,15 @@
 // bumping. No graphics and no sound, so they can be tested in Node (tests/karts.test.mjs).
 // turbo-karts.js calls these and turns the events into sounds, rumble and animations.
 //   events (onEvent(type, kart)): 'boost' · 'wall' · 'land' (hard landing) · 'final-lap' · 'finish'
+//   · 'glide' (a glide ramp launched the kart) · 'trick' (landed a trick: a boost follows)
 import { ROAD_HALF, WALL } from './kart-path.js';
 
 export const LAPS = 3;
 export const HOP_TIME = 0.25; // seconds of the little hop that starts a drift (just for show)
+// Glide ramps launch the kart and open a glider: it falls slowly and steers freely until it lands.
+export const GLIDE_LAUNCH = 9, GLIDE_GRAVITY = 0.28, GLIDE_SINK = 4.5;
+// Tricks: tap DRIFT in the air for a barrel roll; land it for a short boost.
+export const TRICK_TIME = 0.45, TRICK_BOOST = 0.8;
 export const COAST = 6, BRAKE = 30, OFFROAD = 0.5, BOOST_BONUS = 12, GRAVITY = 26, KART_SIZE = 3.2;
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -13,13 +18,15 @@ const angleDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 
 // What the buttons a player holds mean for the kart. DRIFT and ITEM keep accelerating
 // (your thumb has moved off GAS to press them); BRAKE always wins over gas.
-//   held: { steer, gas, brake, drift, item } -> input for stepKart
+//   held: { steer, gas, brake, drift, item, tapped } -> input for stepKart
+//   (tapped = DRIFT was pressed since the last step, even if already let go: a quick tap counts)
 export function kartInput(held) {
   return {
     steer: held.steer || 0,
     gas: !!(held.gas || held.drift || held.item) && !held.brake,
     brake: !!held.brake,
     drift: !!held.drift,
+    tapped: !!held.tapped,
   };
 }
 
@@ -31,8 +38,13 @@ export function stepKart(k, dt, input, world) {
   const { track, onEvent } = world;
   const ph = k.phys, grip = track.def.grip;
   let { steer, gas, brake, drift = false } = input;
+  const tap = input.tapped || (drift && !k.driftHeld); // DRIFT pressed this step (not just held)
+  k.driftHeld = drift;
   if (k.spin > 0) { k.spin -= dt; steer = 0; gas = false; brake = false; drift = false; k.drifting = false; }
   k.hop = Math.max(0, (k.hop || 0) - dt);
+  k.trick = Math.max(0, (k.trick || 0) - dt);
+  // A trick: tap DRIFT while airborne (players only; one per jump)
+  if (k.playerId && k.air && tap && !k.trickDone && k.spin <= 0) { k.trick = TRICK_TIME; k.trickDone = true; }
   const offroad = Math.abs(k.lateral) > ROAD_HALF + 1.6;
   // top speed: kart stat · coins · boost · grass · CPU skill (and a little catch-up help)
   let top = ph.top * (1 + Math.min(10, k.coins) * 0.012);
@@ -66,7 +78,7 @@ export function stepKart(k, dt, input, world) {
   } else {
     turn = steer * ph.turn * clamp(Math.abs(k.v) / 12, 0, 1) * Math.sign(k.v || 1) * (0.6 + 0.4 * grip);
   }
-  if (k.air) turn *= 0.3;
+  if (k.air && !k.gliding) turn *= 0.3; // a glider steers freely in the air
   k.heading -= turn * dt; // positive steer = right = clockwise seen from above
   if (k.spin > 0) k.heading += dt * 9; // spinning out
   // drifting karts (and icy roads) slide outwards a little
@@ -82,18 +94,27 @@ export function stepKart(k, dt, input, world) {
   lapCheck(k, prev, track.SAMPLES, world.raceTime, onEvent);
   // Height: follow the road, but fly off crests when the road drops away faster than gravity
   if (k.air) {
-    k.vy -= GRAVITY * dt;
+    k.vy -= GRAVITY * (k.gliding ? GLIDE_GRAVITY : 1) * dt;
+    if (k.gliding) k.vy = Math.max(k.vy, -GLIDE_SINK); // floats down gently
     k.y += k.vy * dt;
     if (k.y <= loc.height) {
-      k.y = loc.height; k.air = false;
+      k.y = loc.height; k.air = false; k.gliding = false;
       if (k.vy < -8) onEvent('land', k);
       k.vy = 0;
+      if (k.trickDone) { k.trickDone = false; onEvent('trick', k); giveBoost(k, TRICK_BOOST, onEvent); }
     }
   } else {
     const vyRoad = (loc.height - k.y) / dt;
     // only real crests launch you into the air
     if (vyRoad < k.vy - GRAVITY * dt * 3 && k.v > 18) { k.air = true; k.vy = Math.max(k.vy, 2); k.y += k.vy * dt; }
     else { k.vy = vyRoad * 0.5 + k.vy * 0.5; k.y = loc.height; }
+  }
+
+  // Gliding follows the road's bends by itself (your steering adds to it), so a long glide
+  // lands on the track instead of across a bend on the grass.
+  if (k.gliding) {
+    const ahead = track.pts[track.at(k.idx + 25)]; // aim at the middle of the road a little ahead
+    k.heading += angleDiff(Math.atan2(ahead.x - k.x, ahead.z - k.z), k.heading) * Math.min(1, dt * 3);
   }
 
   // Barriers: bounce back in. A real hit costs speed; scraping only slows a little.
@@ -107,6 +128,15 @@ export function stepKart(k, dt, input, world) {
       k.wallCooldown = 0.4; k.v *= 0.6;
       onEvent('wall', k);
     } else k.v *= 1 - 1.5 * dt;
+  }
+  // Glide ramps: full road width; you need a bit of speed to take off. A kart that the hill
+  // before the ramp has just lifted off the road (still low) is caught too.
+  for (const g of track.glides || []) {
+    const di = Math.abs(((k.idx - g.i + track.SAMPLES * 1.5) % track.SAMPLES) - track.SAMPLES / 2);
+    if (di < 3 && Math.abs(k.lateral) < ROAD_HALF && !k.gliding && k.y - loc.height < 2 && k.v > 15) {
+      k.air = true; k.gliding = true; k.vy = GLIDE_LAUNCH; k.drifting = false;
+      onEvent('glide', k);
+    }
   }
   // Boost pads
   for (const pad of track.pads) {
