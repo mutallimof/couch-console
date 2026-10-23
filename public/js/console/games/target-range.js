@@ -240,7 +240,7 @@ function renderHud() {
   if (state === 'ready') {
     const goal = { versus: 'Hit the most targets!', coop: `Team goal: ${COOP_GOAL} points`, solo: `Best: ${getBest()}` }[api.mode];
     html += `<div class="panel" style="--c:#9C6B3C"><h1>Target Range</h1><p>Aim and press A to shoot</p>
-      <p>Center 3 · Middle 2 · Edge 1 · Gold +5 · Red X −5</p><p>${goal}</p><p>A = start · B = menu</p></div>`;
+      <p>Center 3 · Middle 2 · Edge 1</p><p>Gold movers +5 · Red X −5</p><p>${goal}</p><p>A = start · B = menu</p></div>`;
   } else if (state === 'over') {
     let title, c = '#5B6577', line;
     if (api.mode === 'versus') {

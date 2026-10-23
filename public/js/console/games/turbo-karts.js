@@ -75,7 +75,7 @@ async function loadModels(paths) {
   el.innerHTML = '<div><div>Loading…</div><div class="kart-progress"><i></i></div></div>';
   root.append(el);
   const bar = el.querySelector('i');
-  const models = await loadAll(todo, (f) => { bar.style.width = `${Math.round(f * 100)}%`; });
+  const models = await loadAll(todo, (f) => { bar.style.setProperty('--p', f); });
   if (token !== alive) return false;
   todo.forEach((p, i) => { if (models[i]) assets.set(p, models[i]); });
   el.remove();

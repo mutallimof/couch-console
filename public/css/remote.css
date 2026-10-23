@@ -2,7 +2,7 @@
   --bg: #f7f9fc;
   --card: #ffffff;
   --text: #2b3445;
-  --muted: #8a94a6;
+  --muted: #5F6B80; /* secondary text: ≥4.5:1 on the light background */
   --btn: #ffffff;
   --btn-down: #dfe6f0;
   --player: #b8c0cc;

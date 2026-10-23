@@ -7,7 +7,7 @@
   --bg-bottom: #dfe8f3;
   --card: #ffffff;
   --text: #2b3445;
-  --muted: #8a94a6;
+  --muted: #5F6B80; /* secondary text: ≥4.5:1 on white and on the light background */
   --shadow: 0 10px 30px rgba(40, 60, 90, 0.12);
 }
 
@@ -235,8 +235,8 @@ html, body {
   align-items: center;
   gap: 14px;
   border: 3px solid transparent;
-  transition: border-color 0.2s, opacity 0.2s;
-  opacity: 0.6;
+  transition: border-color 200ms var(--ease-out), opacity 200ms var(--ease-out);
+  opacity: 0.85; /* waiting slots look quieter, but their text stays readable */
 }
 .slot.connected { border-color: var(--player); opacity: 1; }
 
@@ -250,7 +250,7 @@ html, body {
 }
 .slot-state { font-size: 20px; font-weight: 700; }
 
-.pairing-close { margin: 0; font-size: 20px; font-weight: 700; color: #2F80ED; }
+.pairing-close { margin: 0; font-size: 20px; font-weight: 700; color: #1A5CC8; } /* darker blue: readable on the light background */
 .status { margin: 0; min-height: 1.4em; color: #c0392b; font-weight: 700; }
 
 /* ---------- Cursors ---------- */
@@ -328,7 +328,7 @@ html, body {
   border-radius: 16px;
   background: var(--tile);
   box-shadow: 0 8px 20px rgba(40, 60, 90, 0.14);
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
 .mode.focused { transform: scale(1.08); box-shadow: 0 0 0 5px #fff, 0 0 0 8px var(--tile), 0 16px 34px rgba(40, 60, 90, 0.25); }
 .picker-hint { margin: 0; color: var(--muted); font-size: 18px; font-weight: 700; }
@@ -415,8 +415,8 @@ html, body {
 }
 .cursors.crosshair .cursor-label { left: 20px; top: 18px; }
 .range-pop { position: absolute; transform: translate(-50%, -100%); font-size: 30px; font-weight: 900; white-space: nowrap;
-  text-shadow: 0 2px 0 #fff, 0 0 8px rgba(255, 255, 255, 0.9); animation: range-pop 0.9s ease-out forwards; }
-@keyframes range-pop { from { opacity: 1; margin-top: 0; } to { opacity: 0; margin-top: -60px; } }
+  text-shadow: 0 2px 0 #fff, 0 0 8px rgba(255, 255, 255, 0.9); animation: range-pop 0.9s var(--ease-out) forwards; }
+@keyframes range-pop { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 0 -60px; } }
 .dungeon-bar { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 28px; align-items: center;
   padding: 8px 24px; border-radius: 18px; background: rgba(255, 255, 255, 0.92); box-shadow: var(--shadow); font-size: 26px; font-weight: 900; white-space: nowrap; }
 .dungeon-bar .heart { color: #D5DBE3; font-size: 28px; }
@@ -492,7 +492,7 @@ html, body {
 /* Photos */
 .photo-grid, .video-grid { display: grid; gap: 18px; padding: 16px 48px 48px; overflow: hidden; max-height: calc(100% - 100px); }
 .photo-grid { grid-template-columns: repeat(5, 1fr); }
-.photo-tile, .video-tile { border-radius: 14px; overflow: hidden; background: #0003; transition: transform 0.15s, box-shadow 0.15s; }
+.photo-tile, .video-tile { border-radius: 14px; overflow: hidden; background: #0003; transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out); }
 .photo-tile { aspect-ratio: 4 / 3; }
 .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .photo-tile.focused, .video-tile.focused { transform: scale(1.05); box-shadow: 0 0 0 4px #fff, 0 12px 30px rgba(0, 0, 0, 0.5); }
@@ -565,7 +565,7 @@ html, body {
 .ks-seat { flex: 1; min-width: 0; max-width: 680px; display: flex; flex-direction: column; gap: 10px; padding: 14px 18px; border-radius: 22px;
   background: rgba(255, 255, 255, 0.07); border: 3px solid color-mix(in srgb, var(--c) 55%, transparent);
   transition: box-shadow 220ms cubic-bezier(0.23, 1, 0.32, 1), border-color 220ms cubic-bezier(0.23, 1, 0.32, 1); }
-.ks-seat.is-ready { border-color: var(--c); box-shadow: 0 0 0 3px var(--c), 0 0 36px color-mix(in srgb, var(--c) 60%, transparent); }
+.ks-seat.is-ready { border-color: var(--c); box-shadow: 0 0 0 3px var(--c), 0 14px 30px rgba(0, 0, 0, 0.35); }
 .ks-top { display: flex; align-items: baseline; gap: 12px; }
 .ks-tag { align-self: center; padding: 3px 11px; border-radius: 10px; background: var(--c); font-weight: 900; font-size: 18px; }
 .ks-name { font-size: 30px; }
@@ -604,7 +604,8 @@ html, body {
 .video-box p { margin: 4px; font-size: 24px; line-height: 1.5; }
 .kart-loading { z-index: 6; background: #9FD3FF; text-align: center; }
 .kart-progress { width: min(420px, 70vw); height: 18px; margin-top: 14px; border-radius: 9px; background: rgba(43, 52, 69, 0.2); overflow: hidden; }
-.kart-progress i { display: block; width: 0; height: 100%; background: #2F80ED; transition: width 0.2s; }
+.kart-progress i { display: block; width: 100%; height: 100%; background: #2F80ED; transform-origin: left; transform: scaleX(var(--p, 0));
+  transition: transform 200ms var(--ease-out); }
 .join-warning { margin-top: 10px !important; padding: 10px 14px; border-radius: 12px; background: #FFF3BF; color: #7A4D00; font-size: 14px; font-weight: 700; max-width: 380px; }
 .join-warning code { font-size: 12px; }
 
@@ -612,7 +613,7 @@ html, body {
 .cursor-trail { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* Mouse & keyboard mode (no phone): our own cursor replaces the system one */
-.use-mouse { font: 700 18px 'Nunito', sans-serif; color: #2F80ED; background: none; border: 2px solid currentColor;
+.use-mouse { font: 700 18px 'Nunito', sans-serif; color: #1A5CC8; background: none; border: 2px solid currentColor;
   border-radius: 12px; padding: 8px 16px; cursor: pointer; transition: transform 120ms var(--ease-out); }
 .use-mouse:active { transform: scale(0.97); }
 body.desk-mode, body.desk-mode * { cursor: none !important; }
@@ -651,3 +652,24 @@ body.desk-mode, body.desk-mode * { cursor: none !important; }
   .ks-stats { font-size: 12px; gap: 3px 10px; }
   .ks-hint { font-size: 13px; }
 }
+
+/* ---------- Phase 26: shared polish ---------- */
+/* QR codes stay invisible until their picture has loaded (no empty box flash) */
+img.qr-img:not([src]) { visibility: hidden; }
+
+/* Panels that appear at important moments (ready, game over, results, a dropped phone) arrive
+   from just below full size instead of popping in. Centered like a modal, so they scale from the
+   middle; under a quarter second, strong ease-out. */
+@keyframes panel-in { from { opacity: 0; scale: 0.96; } }
+.hud3d .panel, .kart-card, .pause-card, .picker .modes, .broken-app > * { animation: panel-in 240ms var(--ease-out) backwards; }
+/* Big short messages ("Goal!", "GO!", "Trick!") land with a quick punch */
+@keyframes msg-in { from { opacity: 0; scale: 0.85; } }
+.hud3d .msg, .kart-msg:not(:empty) { animation: msg-in 180ms var(--ease-out) backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .hud3d .panel, .kart-card, .pause-card, .picker .modes, .broken-app > *, .hud3d .msg, .kart-msg:not(:empty) { animation: tile-fade 150ms ease backwards; }
+  .range-pop { animation-name: tile-fade; animation-direction: reverse; }
+}
+
+/* Panels in the 3D games: the lines read as one block, never one orphaned word */
+.hud3d .panel { max-width: min(640px, 90vw); }
+.hud3d .panel p { text-wrap: balance; }
