@@ -1,8 +1,13 @@
-// Turbo Karts models, built from code (no model files needed).
-// When real 3D model packs are added later, these are the fallbacks.
+// Turbo Karts models: real models from the packs (cars, pirates) when they're loaded,
+// plus code-built characters, karts and track objects (also the fallbacks).
+
+import { CAR, PIRATE, cloneOf } from './karts-assets.js';
 
 let THREE;
 export function setThree(t) { THREE = t; }
+
+const CAR_SCALE = 3.2;      // Toy Car Kit cars are tiny; this makes them kart-sized (~2.8 m long)
+const PIRATE_HEIGHT = 1.45;  // pirates are scaled to this height (m) to fit the cars
 
 const std = (color, rough = 0.55, metal = 0, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
 const mesh = (geo, mat, x = 0, y = 0, z = 0, cast = true) => {
@@ -130,17 +135,66 @@ export function makeKart(kart, color) {
   return { group: g, wheels, seatZ: -0.35, seatY: 0.62 };
 }
 
-// Kart + driver + effects, ready to drive
-export function makeRacer(character, kart, color) {
-  const k = makeKart(kart, color);
-  const driver = makeCharacter(character);
+// A Toy Car Kit car (turned to face +z), with its four wheels found by name so they can spin
+function assetKart(gltf, kart) {
+  const { object } = cloneOf(gltf);
+  object.scale.setScalar(CAR_SCALE);
+  object.rotation.y = Math.PI; // the models face -z; our karts face +z
+  const g = new THREE.Group();
+  g.add(object);
+  const wheels = [];
+  object.traverse((o) => { if (/^wheel-/.test(o.name)) wheels.push(o); });
+  return { group: g, wheels, seatY: kart.seat[0], seatZ: kart.seat[1], flipWheels: true };
+}
+
+// A pirate driver (animated), or null if the model isn't loaded
+function assetDriver(gltf) {
+  const c = cloneOf(gltf);
+  if (!c) return null;
+  const obj = c.object;
+  obj.scale.setScalar(PIRATE_HEIGHT / 1.55); // pirates are about 1.55 m tall in the pack
+  const mixer = new THREE.AnimationMixer(obj);
+  const actions = Object.fromEntries(c.animations.map((a) => [a.name, mixer.clipAction(a)]));
+  let current = actions.Idle;
+  current?.play();
+  mixer.update(Math.random() * 2); // don't all bob in sync
+  // Switch to another animation (smoothly). One-shot animations go back to Idle when done.
+  const play = (name, loop = false) => {
+    const next = actions[name];
+    if (!next || next === current) return;
+    next.reset();
+    next.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+    next.clampWhenFinished = !loop;
+    current?.fadeOut(0.15);
+    next.fadeIn(0.15).play();
+    current = next;
+  };
+  mixer.addEventListener('finished', (e) => { if (e.action === current) play('Idle', true); });
+  return { object: obj, mixer, actions, play };
+}
+
+// A character standing on its own (select-screen showroom): a pirate with its animations,
+// or a code-built animal. Returns { object, anim } (anim = null for the animals).
+export function makeStandingCharacter(character, assets) {
+  const pirate = character.model && assets?.get(PIRATE(character.model));
+  const anim = pirate ? assetDriver(pirate) : null;
+  return { object: anim ? anim.object : makeCharacter(character), anim };
+}
+
+// Kart + driver + effects, ready to drive. `assets` = loaded models (Map path -> glTF), optional.
+export function makeRacer(character, kart, color, assets) {
+  const carModel = kart.model && assets?.get(CAR(kart.model));
+  const k = carModel ? assetKart(carModel, kart) : makeKart(kart, color);
+  const pirate = character.model && assets?.get(PIRATE(character.model));
+  const anim = pirate ? assetDriver(pirate) : null;
+  const driver = anim ? anim.object : makeCharacter(character);
   driver.position.set(0, k.seatY, k.seatZ);
-  driver.scale.setScalar(0.95);
+  if (!anim) driver.scale.setScalar(carModel ? 0.85 : 0.95);
   k.group.add(driver);
   // drift sparks, boost flame, shield bubble, blob shadow
   const sparkMat = new THREE.MeshBasicMaterial({ color: '#56CCF2' });
   const sparks = [-0.9, 0.9].map((x) => { const sp = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 0), sparkMat); sp.position.set(x, 0.2, -1.5); k.group.add(sp); return sp; });
-  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.6, 12), new THREE.MeshBasicMaterial({ color: '#FF922B', transparent: true, opacity: 0.9 }));
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.6, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color('#FF922B').multiplyScalar(5), transparent: true, opacity: 0.9 }));
   flame.rotation.x = -Math.PI / 2; flame.position.set(0, 0.75, -2.3); k.group.add(flame);
   const shield = new THREE.Mesh(new THREE.SphereGeometry(2.1, 24, 16), new THREE.MeshStandardMaterial({ color: '#94D82D', transparent: true, opacity: 0.25, emissive: '#94D82D', emissiveIntensity: 0.4 }));
   shield.position.y = 0.9; k.group.add(shield);
@@ -148,7 +202,27 @@ export function makeRacer(character, kart, color) {
   shadow.rotation.x = -Math.PI / 2; shadow.scale.set(0.8, 1.2, 1);
   const root = new THREE.Group();
   root.add(k.group);
-  return { root, body: k.group, wheels: k.wheels, driver, sparks, sparkMat, flame, shield, shadow };
+  // Glider: a wing that unfolds above the kart off glide ramps (scaled open by turbo-karts.js)
+  const glider = new THREE.Group();
+  const wingShape = new THREE.Shape();
+  wingShape.moveTo(0, 1.1); wingShape.lineTo(1.9, -0.55); wingShape.quadraticCurveTo(0, -0.15, -1.9, -0.55); wingShape.closePath();
+  const wing = new THREE.Mesh(new THREE.ShapeGeometry(wingShape), new THREE.MeshStandardMaterial({ color, roughness: 0.5, side: THREE.DoubleSide }));
+  wing.rotation.x = -Math.PI / 2 + 0.12; wing.castShadow = true;
+  const spine = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.6), new THREE.MeshStandardMaterial({ color: '#2B3445' }));
+  spine.position.set(0, 0.02, 0.2);
+  glider.add(wing, spine);
+  for (const s of [-1, 1]) {
+    const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.4, 6), spine.material);
+    strut.position.set(s * 0.45, -0.65, 0); strut.rotation.z = s * 0.35;
+    glider.add(strut);
+  }
+  glider.position.set(0, 2.6, -0.2); glider.visible = false;
+  k.group.add(glider);
+  // A floating marker in the player's color (set visible for human players)
+  const marker = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.6, 4), new THREE.MeshBasicMaterial({ color }));
+  marker.rotation.x = Math.PI; marker.position.y = 3.1; marker.visible = false;
+  k.group.add(marker);
+  return { root, body: k.group, wheels: k.wheels, flipWheels: !!k.flipWheels, driver, anim, marker, glider, sparks, sparkMat, flame, shield, shadow };
 }
 
 // ---------- Track objects ----------
@@ -222,6 +296,18 @@ export function makeScenery(theme, spots) {
     add(new THREE.ConeGeometry(2, 5.5, 8), lam('#2F6B4F'), spots, ([x, z, s]) => ({ pos: V(x, 2.75 * s, z), scale: S(s) }));
     add(new THREE.ConeGeometry(1.3, 2.2, 8), lam('#F8F9FA'), spots, ([x, z, s]) => ({ pos: V(x, 4.7 * s, z), scale: S(s) }));
     add(new THREE.SphereGeometry(2, 10, 6), lam('#F1F3F5'), spots.filter((_, i) => i % 4 === 0), ([x, z, s]) => ({ pos: V(x + 4, 0, z + 3), scale: V(s * 1.5, s * 0.5, s) }));
+  } else if (theme === 'sky') {
+    // Cloud Gardens: puffy clouds on the ground and floating rock islands with a lawn on top
+    const puff = new THREE.IcosahedronGeometry(1, 2), white = new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 1 });
+    const clouds = spots.filter((_, i) => i % 3 === 1);
+    for (const [dx, dy, k] of [[0, 0, 1], [2.6, -0.4, 0.75], [-2.4, -0.5, 0.7]]) {
+      add(puff, white, clouds, ([x, z, s]) => ({ pos: V(x + dx * s * 1.6, 1 + dy * s, z), scale: V(4 * s * k, 2.6 * s * k, 4 * s * k) }));
+    }
+    const isles = spots.filter((_, i) => i % 7 === 2);
+    const lift = ([x, z, s]) => 14 + (Math.abs(x * 13 + z * 7) % 22) * s;
+    add(new THREE.ConeGeometry(6, 9, 7), lam('#B49FC4', { side: THREE.DoubleSide }), isles, (p) => ({ pos: V(p[0], lift(p) - 4.5 * p[2], p[1]), scale: V(p[2], -p[2], p[2]) })); // upside down
+    add(new THREE.CylinderGeometry(6.2, 6.2, 1.2, 7), lam('#7CC36B'), isles, (p) => ({ pos: V(p[0], lift(p) + 0.6 * p[2], p[1]), scale: S(p[2]) }));
+    add(new THREE.SphereGeometry(1.8, 10, 8), lam('#F783AC'), isles, (p) => ({ pos: V(p[0] + 2 * p[2], lift(p) + 2.4 * p[2], p[1]), scale: S(p[2]) }));
   } else if (theme === 'city') {
     // Buildings with glowing windows
     const c = document.createElement('canvas'); c.width = 64; c.height = 128;
@@ -240,7 +326,8 @@ export function makeScenery(theme, spots) {
 
 // ---------- Portraits: render a character's head to a small image for menus/HUD ----------
 
-export function makePortraits(renderer, characters) {
+// assets (optional): loaded models, so the pirates are drawn from their real models
+export function makePortraits(renderer, characters, assets) {
   const size = 160;
   const target = new THREE.WebGLRenderTarget(size, size);
   target.texture.colorSpace = THREE.SRGBColorSpace; // so colors match the screen
@@ -248,13 +335,23 @@ export function makePortraits(renderer, characters) {
   scene.add(new THREE.HemisphereLight('#ffffff', '#666666', 2.2));
   const sun = new THREE.DirectionalLight('#ffffff', 2); sun.position.set(2, 3, 4); scene.add(sun);
   const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-  cam.position.set(0.6, 1.25, 2.6); cam.lookAt(0, 0.95, 0);
   const pixels = new Uint8Array(size * size * 4);
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d');
   const out = {};
   for (const c of characters) {
-    const ch = makeCharacter(c);
+    const pirate = c.model && assets?.get(PIRATE(c.model));
+    const anim = pirate ? assetDriver(pirate) : null;
+    const ch = anim ? anim.object : makeCharacter(c);
+    if (anim) {
+      // frame the pirate's head: find its top in the idle pose
+      anim.mixer.setTime(0.5);
+      ch.updateMatrixWorld(true);
+      const top = new THREE.Box3().setFromObject(ch, true).max.y;
+      cam.position.set(0.55, top - 0.1, 2.2); cam.lookAt(0, top - 0.3, 0);
+    } else {
+      cam.position.set(0.6, 1.25, 2.6); cam.lookAt(0, 0.95, 0);
+    }
     scene.add(ch);
     renderer.setRenderTarget(target);
     renderer.setClearColor(0x000000, 0);

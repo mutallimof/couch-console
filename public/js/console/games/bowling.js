@@ -376,7 +376,7 @@ function drawScoreboard() {
     text(players.length > 1 ? `P${active().playerId}'s turn · Frame ${turn.f + 1}` : `Frame ${turn.f + 1}`, left, y, 30, active().color, 'left');
     text('Point left/right to aim', left, y + 46 * scale, 22, '#5B6577', 'left');
     text('Hold B and swing your phone to throw', left, y + 80 * scale, 22, '#5B6577', 'left');
-    text('(tilt it to curve) · or press A for a medium throw', left, y + 112 * scale, 20, '#8A94A6', 'left');
+    text('(tilt it to curve) · or press A for a medium throw', left, y + 112 * scale, 20, '#5F6B80', 'left');
   }
 }
 

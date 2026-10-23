@@ -98,7 +98,7 @@ async function load() {
 export default {
   id: 'photos',
   title: 'Photos',
-  color: '#F2994A',
+  color: '#1F9E83',
   icon: ICON,
   minPlayers: 1,
   maxPlayers: 1,

@@ -62,10 +62,14 @@
         <p class="room-label">Room code</p>
         <p id="room-code" class="room-code">····</p>
         <p id="join-url" class="join-url"></p>
+        <p id="join-warning" class="join-warning" hidden>Phones can't open a <b>localhost</b> link.<br>
+          Use the tunnel (<code>cloudflared tunnel --url http://localhost:3000</code>) and open its link here,<br>
+          or do the one-time <b>Local setup</b> in README.md.</p>
       </div>
     </div>
 
     <div id="slots" class="slots"></div>
+    <button id="use-mouse" class="use-mouse" type="button">No phone? Use mouse &amp; keyboard</button>
     <p id="pairing-close" class="pairing-close" hidden>Press A or B to close</p>
     <p id="status" class="status"></p>
   </section>
@@ -76,7 +80,7 @@
   <pre id="debug" class="debug" hidden></pre>
 
   <!-- 3D games import "three"; our server serves it from node_modules -->
-  <script type="importmap">{ "imports": { "three": "/vendor/three.module.js" } }</script>
+  <script type="importmap">{ "imports": { "three": "/vendor/three.module.js", "three/addons/": "/vendor/three-addons/" } }</script>
   <!-- socket.io client is served by the Node server -->
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="/js/console/main.js"></script>

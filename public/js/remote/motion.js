@@ -1,62 +1,55 @@
-// Phone motion: permission, calibration, and tilt -> pointer (x, y in -1..1).
-// Also a touchpad fallback for phones/browsers without motion sensors.
+// Phone motion: permission, then the raw sensors are streamed to the console, which turns
+// them into a cursor (console/pointer/gyro-pointer.js). Sending raw data instead of a cursor
+// position means no calibration and no drift: the console learns this phone's axes itself.
+// Also a touchpad fallback (x, y in -1..1) for phones/browsers without motion sensors.
 
-const SEND_INTERVAL_MS = 15;   // ~60 Hz max
-const MIN_CHANGE = 0.002;      // don't send tiny changes
+const SAMPLE_INTERVAL_MS = 12; // sensors: at most ~80 samples per second
+const SEND_INTERVAL_MS = 15;   // touchpad: ~60 Hz max
+const MIN_CHANGE = 0.002;      // touchpad: don't send tiny changes
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-const wrapTo180 = (deg) => ((((deg + 180) % 360) + 360) % 360) - 180;
 
-// onPointer(x, y) is called at most ~60 times per second, only when the value changed.
-export function createMotion({ onPointer }) {
-  const ranges = { rangeX: 25, rangeY: 18 };   // degrees for a full-screen sweep
-  const stats = { alpha: null, beta: null, gamma: null, mag: null };
-  let calib = null;          // { alpha0, beta0 }; null = calibrate on next reading
-  let target = { x: 0, y: 0 };
-  let sent = { x: NaN, y: NaN, at: 0 };
-  let running = false;
+// onSample(sample) gets the raw sensors as soon as they change (rate-capped):
+//   { alpha, beta, gamma, motion: { rx, ry, rz } | null }
+// onPointer(x, y) is for the touchpad: at most ~60 times per second, only when it changed.
+export function createMotion({ onSample, onPointer }) {
+  const stats = { alpha: null, beta: null, gamma: null, mag: null, gyro: false };
+  let rate = null;          // latest gyroscope reading (rotationRate)
+  let lastSample = 0;
+
+  // Send the newest reading right away (the freshest data = the least lag), rate-capped.
+  function sendSample() {
+    const now = performance.now();
+    if (stats.alpha == null || now - lastSample < SAMPLE_INTERVAL_MS) return;
+    lastSample = now;
+    onSample({ alpha: stats.alpha, beta: stats.beta, gamma: stats.gamma, motion: rate });
+  }
 
   function onOrientation(e) {
     if (e.alpha == null || e.beta == null) return;
     stats.alpha = e.alpha; stats.beta = e.beta; stats.gamma = e.gamma;
-    if (!calib) calib = { alpha0: e.alpha, beta0: e.beta };
-    const dYaw = wrapTo180(e.alpha - calib.alpha0);
-    const dPitch = e.beta - calib.beta0;
-    // Signs: turning left / tilting down moves the cursor left / down.
-    target = {
-      x: clamp(-dYaw / ranges.rangeX, -1, 1),
-      y: clamp(-dPitch / ranges.rangeY, -1, 1),
-    };
+    sendSample();
   }
 
-  // Only used for the debug readout for now (swing detection comes later).
   function onMotion(e) {
-    const a = (e.acceleration?.x != null) ? e.acceleration : e.accelerationIncludingGravity;
-    if (a?.x == null) return;
-    stats.mag = Math.hypot(a.x, a.y, a.z);
-  }
-
-  // Send loop: runs every animation frame, rate-limited and change-filtered.
-  function tick(now) {
-    if (!running) return;
-    const changed = Math.abs(target.x - sent.x) > MIN_CHANGE || Math.abs(target.y - sent.y) > MIN_CHANGE
-      || Number.isNaN(sent.x);
-    if (changed && now - sent.at >= SEND_INTERVAL_MS) {
-      sent = { ...target, at: now };
-      onPointer(target.x, target.y);
+    // The raw gyroscope reacts faster than the fused orientation, so it's what makes the
+    // cursor feel immediate. Units and axes differ between phones; the console learns them.
+    const r = e.rotationRate;
+    if (r && (r.alpha != null || r.beta != null)) {
+      rate = { rx: r.beta || 0, ry: r.gamma || 0, rz: r.alpha || 0 };
+      stats.gyro = true;
+      sendSample();
     }
-    requestAnimationFrame(tick);
-  }
-
-  function startLoop() {
-    if (running) return;
-    running = true;
-    requestAnimationFrame(tick);
+    const a = (e.acceleration?.x != null) ? e.acceleration : e.accelerationIncludingGravity;
+    if (a?.x != null) stats.mag = Math.hypot(a.x, a.y, a.z);
   }
 
   // Must be called from a tap (iPhone only shows the permission prompt then).
-  // Resolves to { ok: true } or { ok: false, reason: 'denied' | 'unsupported' }.
+  // Resolves to { ok: true } or { ok: false, reason: 'insecure' | 'denied' | 'unsupported' | 'silent' }.
   async function start() {
+    // Browsers only give motion sensors to secure (https) pages, and they don't say so:
+    // events just never arrive. So check first and say exactly what's wrong.
+    if (!window.isSecureContext) return { ok: false, reason: 'insecure' };
     // Both requests are made right away, inside the tap, before any await.
     const asks = [globalThis.DeviceOrientationEvent, globalThis.DeviceMotionEvent]
       .filter((E) => typeof E?.requestPermission === 'function')
@@ -65,24 +58,27 @@ export function createMotion({ onPointer }) {
     if (answers.some((a) => a.status === 'rejected' || a.value !== 'granted')) {
       return { ok: false, reason: 'denied' };
     }
-    if (!('DeviceOrientationEvent' in window) || !window.isSecureContext) {
-      return { ok: false, reason: 'unsupported' };
-    }
+    if (!('DeviceOrientationEvent' in window)) return { ok: false, reason: 'unsupported' };
 
     window.addEventListener('deviceorientation', onOrientation);
     window.addEventListener('devicemotion', onMotion);
-    startLoop();
 
     // Desktops fire no events (or empty ones). Give the sensors 1.5 s to report.
     const t0 = performance.now();
     while (stats.alpha == null && performance.now() - t0 < 1500) {
       await new Promise((r) => setTimeout(r, 100));
     }
-    return stats.alpha == null ? { ok: false, reason: 'unsupported' } : { ok: true };
+    if (stats.alpha == null) {
+      window.removeEventListener('deviceorientation', onOrientation);
+      return { ok: false, reason: 'silent' }; // allowed, but no data (a desktop, or sensors blocked)
+    }
+    return { ok: true };
   }
 
   // Touchpad: drag to move the pointer (relative, like a laptop trackpad).
   function attachTouchpad(el) {
+    let target = { x: 0, y: 0 };
+    let sent = { x: NaN, y: NaN, at: 0 };
     let last = null;
     const GAIN = 2.5; // a drag across the full pad width moves 2.5 screen-halves
     el.addEventListener('pointerdown', (e) => {
@@ -101,21 +97,18 @@ export function createMotion({ onPointer }) {
     const end = () => { last = null; };
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
-    startLoop();
+    // Send loop: every animation frame, rate-limited and change-filtered.
+    (function tick(now) {
+      const changed = Math.abs(target.x - sent.x) > MIN_CHANGE || Math.abs(target.y - sent.y) > MIN_CHANGE
+        || Number.isNaN(sent.x);
+      if (changed && now - sent.at >= SEND_INTERVAL_MS) {
+        sent = { ...target, at: now };
+        onPointer(target.x, target.y);
+      }
+      requestAnimationFrame(tick);
+    })(performance.now());
+    return { recenter() { target = { x: 0, y: 0 }; } };
   }
 
-  return {
-    start,
-    attachTouchpad,
-    stats,
-    // Next sensor reading becomes the new "center"; the touchpad snaps to center.
-    recenter() {
-      calib = null;
-      target = { x: 0, y: 0 };
-    },
-    setRanges({ rangeX, rangeY } = {}) {
-      if (rangeX > 0) ranges.rangeX = rangeX;
-      if (rangeY > 0) ranges.rangeY = rangeY;
-    },
-  };
+  return { start, attachTouchpad, stats };
 }

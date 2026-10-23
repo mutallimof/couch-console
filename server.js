@@ -22,11 +22,20 @@ const file = (path) => fileURLToPath(new URL(path, import.meta.url));
 const CERT = file('./certs/cert.pem'), KEY = file('./certs/key.pem'), ROOT_CA = file('./certs/rootCA.crt');
 const httpsReady = existsSync(CERT) && existsSync(KEY);
 
-// This laptop's address on the Wi-Fi (e.g. 192.168.1.23)
+// This laptop's address on the Wi-Fi (e.g. 192.168.1.23).
+// Skips virtual adapters (WSL, Hyper-V, VirtualBox, VMware, Docker), which phones can't reach.
+// Set LAN_IP=192.168.x.y to choose the address yourself.
+const VIRTUAL = /vEthernet|WSL|Hyper-V|VirtualBox|VMware|VMnet|Docker|Loopback|Bluetooth|Tailscale|ZeroTier|vboxnet|docker|br-|veth/i;
+function lanAddresses() {
+  return Object.entries(networkInterfaces()).flatMap(([name, list]) =>
+    (list || []).filter((a) => a.family === 'IPv4' && !a.internal).map((a) => ({ name, address: a.address })));
+}
 function lanIp() {
-  const all = Object.values(networkInterfaces()).flat().filter((a) => a && a.family === 'IPv4' && !a.internal);
-  const home = all.find((a) => /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address));
-  return (home || all[0])?.address;
+  if (process.env.LAN_IP) return process.env.LAN_IP;
+  const all = lanAddresses(), real = all.filter((a) => !VIRTUAL.test(a.name));
+  const isPrivate = (a) => /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a.address);
+  const wifi = real.find((a) => /Wi-?Fi|Wireless|WLAN|wlan/i.test(a.name) && isPrivate(a));
+  return (wifi || real.find(isPrivate) || real[0] || all[0])?.address;
 }
 
 const app = express();
@@ -35,10 +44,38 @@ const io = new Server(server);
 const httpsServer = httpsReady ? createHttpsServer({ cert: readFileSync(CERT), key: readFileSync(KEY) }, app) : null;
 if (httpsServer) io.attach(httpsServer); // same rooms on both
 
-app.use(express.static(fileURLToPath(new URL('./public', import.meta.url))));
+// Browsers must check for a newer version of every file on each load (unchanged files come
+// back as a tiny "not modified"), so a plain refresh after `git pull` always runs the new code.
+// The big 3D model files rarely change, so the browser may keep those for a day.
+app.use(express.static(fileURLToPath(new URL('./public', import.meta.url)), {
+  setHeaders: (res, path) => res.set('Cache-Control', /[\\/]assets[\\/]/.test(path) ? 'public, max-age=86400' : 'no-cache'),
+}));
 // Three.js (3D games) is served from node_modules, so it works without internet.
 app.get('/vendor/three.module.js', (req, res) =>
   res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));
+// Three.js add-ons (model loader etc.), imported as "three/addons/..."
+app.use('/vendor/three-addons', express.static(file('./node_modules/three/examples/jsm')));
+
+// ---------- Games and channels on the menu (Phase 21e) ----------
+// Any games/<name>.js or channels/<name>.js with a <name>.game.json next to it is on the menu.
+// game.json: { title, color, order (lower = first), players, hidden (true = not on the menu) }
+const APP_DIRS = ['games', 'channels'];
+app.get('/api/apps', (req, res) => {
+  const list = [];
+  for (const dir of APP_DIRS) {
+    const folder = file(`./public/js/console/${dir}`);
+    for (const f of existsSync(folder) ? readdirSync(folder) : []) {
+      if (!f.endsWith('.game.json')) continue;
+      const name = f.slice(0, -'.game.json'.length);
+      let meta = {};
+      try { meta = JSON.parse(readFileSync(`${folder}/${f}`, 'utf8')); } catch { meta = { broken: 'game.json is not valid JSON' }; }
+      if (meta.hidden) continue;
+      list.push({ title: name, color: '#8A94A6', order: 99, ...meta, id: name, module: `/js/console/${dir}/${name}.js` });
+    }
+  }
+  list.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
+  res.json(list);
+});
 
 // ---------- Channels (Phase 17) ----------
 // Photos: any pictures you put in the photos/ folder.
@@ -223,8 +260,9 @@ io.on('connection', (socket) => {
       const room = rooms.get(socket.data.room);
       if (!room) return;
       const data = { ...(payload && typeof payload === 'object' ? payload : {}), playerId: socket.data.playerId };
-      // Pointer/wheel updates are frequent; it's fine to drop one if the network is busy.
-      const target = event === EV.INPUT_POINTER || event === EV.INPUT_WHEEL ? io.volatile : io;
+      // Pointer/wheel/motion updates are frequent; it's fine to drop one if the network is busy.
+      const frequent = event === EV.INPUT_POINTER || event === EV.INPUT_WHEEL || event === EV.INPUT_MOTION;
+      const target = frequent ? io.volatile : io;
       target.to(room.consoleId).emit(event, data);
     });
   }
@@ -262,5 +300,7 @@ httpsServer?.listen(HTTPS_PORT, () => {
   const ip = lanIp();
   console.log(`Local HTTPS is on. Open this on the laptop:  https://${ip || 'localhost'}:${HTTPS_PORT}`);
   console.log(`Phones on the same Wi-Fi just scan the QR code (no tunnel needed).`);
+  // Show every network address, so a wrong pick is easy to spot (fix it with LAN_IP=...)
+  for (const a of lanAddresses()) console.log(`  network "${a.name}": ${a.address}${a.address === ip ? '   <- used for the QR code' : ''}`);
   console.log(`First time on a phone? Trust the certificate: http://${ip}:${PORT}/rootCA.crt  (see README)`);
 });

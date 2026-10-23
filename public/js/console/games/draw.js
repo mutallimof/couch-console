@@ -108,7 +108,7 @@ export default {
   color: '#7B61FF',
   icon: ICON,
   minPlayers: 1,
-  maxPlayers: 2,
+  maxPlayers: 4,
   mount(container, gameApi) {
     api = gameApi;
     root = document.createElement('div');

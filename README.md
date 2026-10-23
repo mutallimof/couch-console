@@ -6,9 +6,11 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started: **Turbo Karts**, **Table Tennis**, **Target Range**, **Air Hockey**, **Gem Dungeon**, a boot animation, local HTTPS, and the **Photos**, **Weather** and **Video** channels are in. See `PLAN.md` for the roadmap.
+> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started: **Turbo Karts**, **Table Tennis**, **Target Range**, **Air Hockey**, **Gem Dungeon**, a boot animation, local HTTPS, and the **Photos**, **Weather**, **Video**, **Timer** and **On This Day** channels are in. See `PLAN.md` for the roadmap.
 >
 > **After pulling new code, run `npm install` again.** Turbo Karts uses the `three` 3D library, which needs to be downloaded once.
+>
+> **3D models:** Turbo Karts uses free CC0 model packs in `public/assets/` (Kenney *Toy Car Kit* and *Racing Kit*, Quaternius *Pirate Kit*). They load with a progress bar when you open the game and when you pick a track. If a model is missing, the game draws a simple built-in version instead, so it always works.
 
 ---
 
@@ -61,15 +63,17 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 2. Scan the QR code on the laptop screen with your phone's camera.
 3. The phone shows a big **P1** badge, and the laptop shows **P1 Connected**.
 4. On the phone, tap **Tap to start**. On iPhone, tap **Allow** when it asks about motion.
-5. Hold the phone like a TV remote, with its top edge pointing at the laptop screen. Turn and tilt it to move your cursor on the laptop.
-6. Press **Recenter** any time to make the current direction the middle of the screen.
+5. Point the phone at the laptop screen and turn and tilt it to move your cursor. Hold it however feels natural (flat, upright like a TV remote, or sideways): there's no calibration, the console learns how your phone's sensors work during the first few seconds of moving it.
+6. Press **Recenter** any time to put the cursor back in the middle. Small drift fixes itself whenever you hold the phone still for a moment.
 
 7. **Click the laptop page once** with your mouse or touchpad. Browsers block sound until you do. Press **F11** for full screen.
 
-### Playing with 2 phones
-- Both phones scan the **same QR code**. The first phone is **P1 (blue)**, the second is **P2 (red)**.
-- While you're in the menu, a small QR code in the bottom-right corner lets the second phone join.
-- **P1 controls the menu.** P2's cursor shows, but only P1 can open and close things.
+### Playing with 2 to 4 phones
+- Every phone scans the **same QR code**. The first phone is **P1 (blue)**, then **P2 (red)**, **P3 (green)** and **P4 (yellow)**.
+- While you're in the menu, a small QR code in the bottom-right corner lets more phones join.
+- **P1 controls the menu** (the ring around the selected tile is in P1's color). Other players' cursors show, but only P1 can open and close things.
+- **Balloon Pop, Draw and Target Range** take up to 4 players. The other games take 2 (the first two players); the others can watch.
+- **Phone sounds:** when something happens to you in a game (a hit, a pop, a crash), your own phone plays a little sound, and vibrates on Android. Turn it off in Settings.
 - In **Draw**, both players paint at the same time, each with their own color and brush.
 - **Balloon Pop** asks for a mode when 2 phones are connected:
   - **Solo:** only P1 plays.
@@ -86,7 +90,15 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 | **B** | go back |
 | **HOME** | return to the menu from anywhere |
 
-- **Turbo Karts:** a 3D kart race (3 laps, 8 racers). First each player picks a **character** and a **kart** (D-pad, A = confirm, B = back), then P1 picks one of 4 **tracks**. Drive through **item boxes** and press **ITEM** to use what you got: *Turbo* (speed boost), *Homing Orb* (hits the kart ahead), *Slick* (dropped behind you) or *Shield*. **Coins** raise your top speed; getting hit makes you drop some. Your phone turns into a **steering wheel**: hold it sideways with the screen facing you and turn it like a wheel. **GAS** is under your right thumb, and **BRAKE** is under your left. Hold BRAKE while turning at speed to **drift**, then let go for a **mini-turbo** (blue sparks = small boost, orange = big boost). Orange arrows on the road are boost pads. Press **Recenter** to set "straight ahead". With 2 phones choose **Versus** (split screen), **Co-op** (your team's points vs the 2 best computer karts) or **Solo**. No motion sensors? Steer with ◀ ▶ (switch back with HOME).
+- **Turbo Karts:** a 3D kart race (3 laps, 8 racers). First each player picks a **character** and a **kart** (D-pad, A = confirm, B = back), watching them in a little 3D showroom: the character waves when picked and cheers when you're ready, and the kart turns on a turntable next to its stats, then P1 picks one of 6 **tracks** (Sunny Park, Dune Canyon, Frosty Peaks, Neon City, Pirate Cove, Cloud Gardens). Drive through **item boxes** and press **ITEM** to use what you got: *Turbo* (speed boost), *Homing Orb* (hits the kart ahead), *Slick* (dropped behind you), *Shield*, *Triple Slick* (three slicks, one per press), *Magnet* (grabs coins from far away and pulls you along behind the kart ahead) or, if you're near the back, the *Lightning Bolt* (everyone ahead of you shrinks and slows for a few seconds; a Shield blocks it). **Coins** raise your top speed; getting hit makes you drop some. Your phone turns into a **kart controller**: hold it sideways with both thumbs.
+  - **Left thumb, steering strip:** put your thumb on it and slide. The further from the middle, the harder you turn; the striped middle band means straight. The dot shows where your thumb is.
+  - **Right thumb, four buttons:** **GAS** (bottom right), **DRIFT** next to it, **ITEM** and **BRAKE** above. Slide your thumb from one to the next without lifting it. Holding **DRIFT** or **ITEM** keeps accelerating, so you can move off GAS.
+  - **Drift:** hold DRIFT while turning at speed (the kart does a little hop), then let go for a **mini-turbo** (blue sparks = small boost, orange = big boost). Braking ends a drift with no turbo.
+  - **Switches at the top:** **Tilt steering** (turn the phone like a wheel instead of using the strip, with a Recenter button) and **Auto-gas** (always accelerating). The phone remembers them.
+  - **Glide ramps:** a blue pad with white chevrons across the road, between two glowing posts. Drive over it at speed and a glider opens: you float down slowly, steering freely, and the glider follows the road's bends.
+  - **Shortcuts (Cloud Gardens):** some glide ramps are narrow and sit on one side of the road, with orange posts. Steer onto one and you glide straight across a gap (follow the glowing hoops) and land further along the lap, skipping a long loop of road. The minimap shows shortcuts as dashed lines. Some computer racers dare to take them too.
+  - **Tricks:** tap **DRIFT** while in the air (off a glide ramp or any jump) for a barrel roll. Land it for a short boost ("Trick!").
+  - Orange arrows on the road are boost pads. With 2 phones choose **Versus** (split screen), **Co-op** (your team's points vs the 2 best computer karts) or **Solo**. Keyboard mode: arrows steer, Enter/Space = gas, R or Shift = drift, U = item, Esc = brake.
 - **Table Tennis:** a 3D ping-pong table. The paddles move by themselves; you **swing your phone** to hit when the ball reaches you (or press A). Swinging early or late, or tilting the phone, aims left or right; a harder swing hits faster. **Versus** is first to 11 (win by 2), **Co-op** counts how long you can keep a rally going together, and **Solo** is against the computer.
 - **Target Range:** a 3D shooting gallery. Your cursor becomes a **crosshair**: aim and press **A** to shoot targets as they pop up. Center = 3, middle = 2, edge = 1, gold movers = +5, and red X signs = −5 (don't shoot those!). 45-second rounds: **Versus** (whoever hits a target first scores), **Co-op** (team goal of 120) or **Solo** (beat your best).
 - **Air Hockey:** your mallet follows your pointer on your half of a 3D table. Knock the puck into the other goal; first to 7 wins. **Versus** (P1 left, P2 right) or **Solo** against the computer.
@@ -98,17 +110,38 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 - **Photos:** put pictures (.jpg, .png, .gif, .webp) in the `photos` folder inside `couch-console`. Point or use the D-pad to choose one and press A to open it. ◀ ▶ flips through them, A starts or stops a slideshow, and B goes back. Your photos are never uploaded to GitHub.
 - **Weather:** today's weather and the next days (needs internet). ◀ ▶ changes the city. "My location" asks the laptop's browser for permission once. + / − switches between °C and °F, and A refreshes.
 - **Video:** plays YouTube videos (needs internet). The list comes from `videos.txt` in the `couch-console` folder. Copy `videos.example.txt` to `videos.txt` and put one `Title | YouTube link` per line. While watching: A = play/pause, ◀ ▶ = back/forward 10 s, + / − = volume, ▲ ▼ = previous/next video, B = back to the list. If a video doesn't start, click the laptop page once (browsers block autoplay with sound) and press A.
-- **Settings:** pointer speed (1 to 10), sound on/off, and **Show QR code** to connect a phone again.
+- **Timer:** works without internet. ◀ ▶ switches between a big **Clock**, a **Timer** and a **Stopwatch**. Timer: ▲ ▼ = ±1 minute, + / − = ±10 seconds, A = start/pause, − = reset once started. When time is up the screen flashes, it chimes and every phone buzzes (A stops it). Stopwatch: A = start/pause, + = lap, − = reset. The timer keeps running if you go back to the menu.
+- **On This Day:** what happened on today's date in history, from Wikipedia (needs internet, no account). ◀ ▶ = Highlights / Events / Born today / Holidays, ▲ ▼ = browse, A = a random one, + / − = next/previous day.
+- **Settings:** pointer speed (1 to 10), sound on/off, phone sounds on/off, and **Show QR code** to connect a phone again.
 
 If the phone can't use motion sensors, or you tapped "Don't Allow", it shows a **touchpad** instead. Drag on it to move the cursor.
 On iPhone, to get the motion question again: Settings → Apps → Safari → Clear History and Website Data, then reload the page.
 
 No camera handy? Open `https://…trycloudflare.com/remote.html` on the phone and type the 4-letter room code shown on the laptop.
 
-**Boot animation:** a short intro plays when the console page opens. Click, press any key or press any phone button to skip it. To turn it off completely, add `?noboot=1` to the laptop link.
+**No phone at all?** Click **No phone? Use mouse & keyboard** on the QR screen. You play as P1:
+
+| Mouse / key | Does |
+|---|---|
+| Move the mouse | pointer |
+| Left click, Enter or Space | **A** |
+| Right click, Esc or Backspace | **B** |
+| Arrow keys | D-pad (in Turbo Karts ◀ ▶ steer) |
+| H | HOME (back to the menu) |
+| + / − | PLUS / MINUS |
+| U | ITEM in Turbo Karts |
+
+When a phone joins, it takes over as P1.
+
+**Boot animation:** a short intro (about 3 seconds) plays when the console page opens: the Couch Console logo, a TV with a couch inside whose four cushions are the player colors, draws itself and lights up. Click, press any key or press any phone button to skip it. To turn it off completely, add `?noboot=1` to the laptop link.
 
 **Debug mode:** add `?debug=1` to the end of the laptop link (for example `https://…trycloudflare.com/console.html?debug=1`).
 On the phone, add `&debug=1` to the end of its link. You'll see live sensor numbers, messages per second and ping times.
+On the laptop, the debug box also shows how many frames per second the laptop draws (below about 50 means it's struggling), each phone's motion messages per second and what the pointer has learned about the phone (`learning…` at first, then a line like `x←x+1.00 y←y+1.00 z←z+1.00` once it trusts the gyroscope). Press **L** on the laptop keyboard to switch the cursor prediction off and on, to compare how it feels.
+
+**Turbo Karts looks:** reflections, a sky with a sun, textured roads and grass, a soft glow on bright things (boost flames, drift sparks, neon) and speed lines while boosting. If your laptop can't keep up, the glow effects switch themselves off. To force them, add `?fx=on` (always on) or `?fx=off` (always off) to the laptop link, for example `…/console.html?fx=off`.
+
+**Phone says "Motion needs a secure page"?** The phone opened a plain `http://` link, and browsers only allow motion sensors on secure (`https://`) pages. The message on the phone says what to do; tap it to close it. Meanwhile you can use the touchpad on the phone.
 
 **Good to know**
 - Refreshing the phone page keeps you as P1.
@@ -152,6 +185,11 @@ Instead of the cloudflared tunnel, phones on the **same Wi-Fi** as your laptop c
 
 After that, just scan the QR code as usual. It points straight to your laptop.
 If your laptop's Wi-Fi address changes (another network), run `npm run certs` again.
+
+**Phone can't open the QR link?** Look at the link printed under the QR code:
+- It starts with `http://localhost`: the local setup isn't on (no `certs` folder). Do the steps above, or use the cloudflared tunnel.
+- It has an address like `https://172.x.x.x:3443` that isn't your Wi-Fi: `npm start` lists every network address and marks the one it used. Pick your Wi-Fi one and start with it, e.g. in PowerShell: `$env:LAN_IP="192.168.1.23"; npm start`
+- The address looks right but nothing loads: make sure the phone is on the **same Wi-Fi** (not mobile data or a guest network), the Wi-Fi is set to **Private** in Windows, and Node.js is allowed in Windows Firewall.
 The `certs` folder holds a private key: it is **never** uploaded to GitHub (it's in `.gitignore`).
 
 ---
@@ -170,3 +208,19 @@ public/            everything the browser loads
 PLAN.md            the full spec and phase list
 CLAUDE.md          working rules for the AI assistant
 ```
+
+### Adding, hiding or reordering games
+Every game and channel lives in `public/js/console/games/` or `public/js/console/channels/` and has a small settings file next to it with the same name, ending in `.game.json`. For example, `balloon-pop.js` has `balloon-pop.game.json`:
+
+```json
+{ "title": "Balloon Pop", "color": "#E0548F", "order": 6, "players": 4, "hidden": false }
+```
+
+- **Reorder the menu:** change `order` (lower numbers come first).
+- **Hide a game:** set `"hidden": true` (its files stay; it just isn't on the menu).
+- **Add a game:** put `my-game.js` and `my-game.game.json` in the `games` folder and refresh the laptop page.
+
+If a game has a bug and can't load, only its tile shows **Couldn't load…**; the rest of the console keeps working.
+
+### Tests
+`npm test` runs the automatic tests (no phone needed).

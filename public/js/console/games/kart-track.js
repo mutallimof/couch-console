@@ -1,80 +1,64 @@
-// Turbo Karts tracks: four themed circuits with hills, jump crests, a bridge and a tunnel.
+// Turbo Karts tracks: five themed circuits with hills, jump crests, a bridge and tunnels.
 // buildTrack() turns a track definition into 3D meshes plus helpers to find where a kart is.
 import { makeScenery, makeItemBox, makeCoin } from './karts-models.js';
+import { CAR, cloneOf, fit } from './karts-assets.js';
+import { decorate } from './karts-decor.js';
+import { trackPath, ROAD_HALF, WALL, SAMPLES, SHORTCUT_HALF, SHORTCUT_ARC } from './kart-path.js';
 
-export const ROAD_HALF = 8;          // half the road width (meters)
-export const WALL = ROAD_HALF + 4.5; // barriers this far from the center line
-const SAMPLES = 1000;
+// Track data and the center line live in kart-path.js (no graphics, testable)
+export { ROAD_HALF, WALL, TRACKS } from './kart-path.js';
 
-// Each track: a closed loop of [x, height, z] points (the start line is at the first point),
-// a theme, where the extras go (0..1 along the lap), and how grippy the road is.
-export const TRACKS = [
-  {
-    id: 'park', name: 'Sunny Park', theme: 'park', blurb: 'Gentle hills and a big jump. Great for starters.',
-    sky: ['#5AA9F0', '#CFE9FF'], fog: [160, 520], ground: '#7CC36B', road: '#5A606B', curb: ['#E03131', '#FFFFFF'], wall: ['#2F80ED', '#F4F7FB'],
-    grip: 1, scale: 1.35,
-    points: [[0, 0, 0], [60, 0, 0], [105, 3, 10], [138, 8, 45], [135, 9, 90], [105, 4, 112], [65, 0, 106], [40, 0, 80], [10, 5, 70],
-      [-12, 0, 92], [-50, 0, 110], [-95, 4, 95], [-115, 6, 55], [-100, 2, 15], [-60, 0, 0]],
-    pads: [0.18, 0.62], boxes: [0.1, 0.42, 0.75], coins: [0.27, 0.53, 0.88], tunnel: null,
-  },
-  {
-    id: 'desert', name: 'Dune Canyon', theme: 'desert', blurb: 'Long sweeping turns between red rocks. Hit the crests for air!',
-    sky: ['#F2A65A', '#FBE3B5'], fog: [150, 480], ground: '#E3B778', road: '#8A6A4D', curb: ['#C2410C', '#FFF4E6'], wall: ['#C97B4A', '#FFE8CC'],
-    grip: 0.95, scale: 1.5,
-    points: [[0, 0, 0], [70, 0, -5], [120, 6, 20], [130, 12, 70], [95, 5, 100], [60, 12, 90], [30, 2, 120], [-20, 0, 125], [-75, 8, 100],
-      [-110, 0, 60], [-95, 10, 20], [-55, 2, -10]],
-    pads: [0.08, 0.5], boxes: [0.2, 0.55, 0.82], coins: [0.33, 0.66, 0.92], tunnel: [0.36, 0.44],
-  },
-  {
-    id: 'snow', name: 'Frosty Peaks', theme: 'snow', blurb: 'Climb the mountain, fly down the other side. The road is icy!',
-    sky: ['#8DB8E8', '#EEF5FC'], fog: [120, 420], ground: '#F1F3F5', road: '#6C7A89', curb: ['#1C7ED6', '#FFFFFF'], wall: ['#E7F5FF', '#74C0FC'],
-    grip: 0.78, scale: 1.4,
-    points: [[0, 0, 0], [55, 2, -8], [100, 9, 10], [118, 16, 50], [95, 22, 85], [50, 24, 95], [10, 18, 80], [-25, 10, 100],
-      [-70, 4, 95], [-100, 0, 55], [-90, 0, 15], [-45, 0, -5]],
-    pads: [0.12, 0.7], boxes: [0.06, 0.4, 0.78], coins: [0.25, 0.5, 0.9], tunnel: [0.58, 0.68],
-  },
-  {
-    id: 'city', name: 'Neon City', theme: 'city', blurb: 'A night race through glowing towers, over a bridge and under it.',
-    sky: ['#0B1026', '#3B2A6B'], fog: [120, 420], ground: '#1B1F3A', road: '#2A2F45', curb: ['#E64980', '#22B8CF'], wall: ['#7048E8', '#22B8CF'],
-    grip: 1, scale: 1.45, night: true,
-    // a figure-8: the second crossing goes over a bridge
-    points: [[0, 0, 0], [45, 0, 35], [90, 0, 60], [120, 0, 30], [100, 0, -15], [50, 4, -25], [0, 12, 0], [-45, 4, 30],
-      [-95, 0, 55], [-120, 0, 20], [-95, 0, -20], [-50, 0, -30]],
-    pads: [0.15, 0.55], boxes: [0.08, 0.36, 0.72], coins: [0.24, 0.46, 0.86], tunnel: null,
-  },
-];
+// Where the sun is (a direction): the sky draws its disc here and turbo-karts.js puts the
+// shadow-casting light here, so shadows always point away from the sun you can see.
+export const SUN_DIR = [0.62, 0.42, 0.66];
 
-export function buildTrack(THREE, def) {
-  const P = def.points.map(([x, y, z]) => new THREE.Vector3(x * def.scale, y, z * def.scale));
-  const curve = new THREE.CatmullRomCurve3(P, true, 'centripetal');
-  const length = curve.getLength();
-
-  // Sample the center line once: position, direction and the sideways normal at each point
-  const pts = [], tan = [], nor = [];
-  for (let i = 0; i < SAMPLES; i++) {
-    const t = i / SAMPLES;
-    pts.push(curve.getPointAt(t));
-    const d = curve.getTangentAt(t);
-    tan.push(d);
-    nor.push(new THREE.Vector3(-d.z, 0, d.x).normalize()); // to the driver's right
+// A tiling grey noise texture (multiplied with the surface color): asphalt grit or grass
+// clumps, so big surfaces aren't flat color. size = pixels, specks = how many dots.
+function noiseTexture(THREE, { size = 256, base = 225, spread = 30, specks = 2500, speckSize = 2, repeat = [1, 1] }) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d');
+  const img = x.createImageData(size, size);
+  for (let i = 0; i < size * size; i++) {
+    const v = base + (Math.random() - 0.5) * spread;
+    img.data.set([v, v, v, 255], i * 4);
   }
-  const at = (i) => ((Math.round(i) % SAMPLES) + SAMPLES) % SAMPLES;
+  x.putImageData(img, 0, 0);
+  for (let i = 0; i < specks; i++) {
+    const v = base + (Math.random() - 0.5) * spread * 3;
+    x.fillStyle = `rgb(${v},${v},${v})`;
+    x.fillRect(Math.random() * size, Math.random() * size, speckSize * (0.5 + Math.random()), speckSize * (0.5 + Math.random()));
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(...repeat);
+  t.anisotropy = 8;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// assets (optional): loaded models (Map path -> glTF) for item boxes, coins and trackside decor
+export function buildTrack(THREE, def, assets = null) {
+  const path = trackPath(THREE, def);
+  const { pts, tan, nor, length, at, locate } = path;
   const edge = (i, off, dy = 0) => pts[i].clone().addScaledVector(nor[i], off).add(new THREE.Vector3(0, dy, 0));
   const group = new THREE.Group();
   const C = (hex) => new THREE.Color(hex);
 
   // A strip along the track between two side offsets (road surface, curbs, lines, walls)
   function strip(offA, offB, dyA, dyB, colorFn, opts = {}) {
-    const pos = [], col = [], idx = [];
+    const pos = [], col = [], idx = [], uv = [];
+    const stretch = length / SAMPLES / Math.abs(offA - offB || 1); // keeps texture pixels square
     for (let i = 0; i <= SAMPLES; i++) {
       const k = i % SAMPLES, a = edge(k, offA, dyA), b = edge(k, offB, dyB), c = colorFn(i);
       pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
       col.push(c.r, c.g, c.b, c.r, c.g, c.b);
+      uv.push(0, i * stretch, 1, i * stretch);
       if (i < SAMPLES) { const v = i * 2; idx.push(v, v + 1, v + 2, v + 1, v + 3, v + 2); }
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     g.setIndex(idx);
     g.computeVertexNormals();
     const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: opts.rough ?? 0.85, ...opts.mat }));
@@ -83,12 +67,26 @@ export function buildTrack(THREE, def) {
     return m;
   }
 
-  // Sky dome with a vertical gradient (and stars at night)
+  // Sky dome: a vertical gradient with the sun (a disc and a soft halo; a moon-like glow at
+  // night) and stars at night. The two #includes give it the same color handling as
+  // everything else, with or without the screen effects.
   const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 32, 16), new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { top: { value: C(def.sky[0]) }, bottom: { value: C(def.sky[1]) } },
-    vertexShader: 'varying float h; void main(){ h = normalize(position).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-    fragmentShader: 'uniform vec3 top; uniform vec3 bottom; varying float h; void main(){ gl_FragColor = vec4(mix(bottom, top, smoothstep(-0.05, 0.5, h)), 1.0); }',
+    uniforms: {
+      top: { value: C(def.sky[0]) }, bottom: { value: C(def.sky[1]) },
+      sunDir: { value: new THREE.Vector3(...SUN_DIR).normalize() },
+      sunColor: { value: C(def.night ? '#9FB4FF' : '#FFF1C9') }, sunSize: { value: def.night ? 3000 : 900 },
+    },
+    vertexShader: 'varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `uniform vec3 top, bottom, sunDir, sunColor; uniform float sunSize; varying vec3 vDir;
+      void main(){
+        vec3 col = mix(bottom, top, smoothstep(-0.05, 0.5, vDir.y));
+        float d = max(dot(normalize(vDir), sunDir), 0.0);
+        col += sunColor * (pow(d, sunSize) * 4.0 + pow(d, 12.0) * 0.35);
+        gl_FragColor = vec4(col, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
   }));
   group.add(sky);
   if (def.night) {
@@ -98,21 +96,38 @@ export function buildTrack(THREE, def) {
     group.add(new THREE.Points(stars, new THREE.PointsMaterial({ color: '#ffffff', size: 2.2, fog: false })));
   }
 
-  // Ground
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(800, 64), new THREE.MeshStandardMaterial({ color: def.ground, roughness: 1 }));
-  ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; ground.receiveShadow = true;
+  // Ground. Water tracks get a round sandy island in the middle of the sea.
+  let island = null;
+  if (def.water) {
+    const cx = pts.reduce((a, p) => a + p.x, 0) / SAMPLES, cz = pts.reduce((a, p) => a + p.z, 0) / SAMPLES;
+    island = { x: cx, z: cz, r: Math.max(...pts.map((p) => Math.hypot(p.x - cx, p.z - cz))) + 45 };
+    const sea = new THREE.Mesh(new THREE.CircleGeometry(900, 64), new THREE.MeshStandardMaterial({ color: def.water, roughness: 0.15, metalness: 0.2 }));
+    sea.rotation.x = -Math.PI / 2; sea.position.y = -0.6; sea.receiveShadow = true;
+    group.add(sea);
+  }
+  const groundR = island ? island.r : 800;
+  const groundTex = noiseTexture(THREE, { base: 222, spread: 16, specks: 1800, speckSize: 2, repeat: [groundR / 6, groundR / 6] });
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(groundR, 64), new THREE.MeshStandardMaterial({ color: def.ground, map: groundTex, roughness: 1 }));
+  ground.rotation.x = -Math.PI / 2; ground.position.set(island?.x ?? 0, -0.05, island?.z ?? 0); ground.receiveShadow = true;
   group.add(ground);
 
   // Road, center dashes, curbs, side slab (thickness) and barriers
   const roadCol = C(def.road);
-  strip(ROAD_HALF, -ROAD_HALF, 0.02, 0.02, (i) => roadCol.clone().offsetHSL(0, 0, (i % 40 < 20 ? 0.01 : -0.01)), { mat: def.night ? { emissive: '#14182c' } : {} });
+  // Asphalt: fine grit plus darker tyre-worn bands in the racing lines
+  const asphalt = noiseTexture(THREE, { size: 256, base: 228, spread: 34, specks: 4000, speckSize: 1.5, repeat: [1, 1] });
+  strip(ROAD_HALF, -ROAD_HALF, 0.02, 0.02, (i) => roadCol.clone().offsetHSL(0, 0, (i % 40 < 20 ? 0.01 : -0.01)),
+    { rough: 0.78, mat: { map: asphalt, ...(def.night ? { emissive: '#14182c' } : {}) } });
+  for (const lane of [-3.5, 3.5]) {
+    strip(lane - 1.2, lane + 1.2, 0.025, 0.025, () => roadCol.clone().offsetHSL(0, 0, -0.035),
+      { rough: 0.6, mat: { transparent: true, opacity: 0.35, depthWrite: false } });
+  }
   strip(0.3, -0.3, 0.03, 0.03, (i) => (Math.floor(i / 8) % 2 ? roadCol : C('#F4F7FB')));
   for (const s of [1, -1]) {
     strip(s * ROAD_HALF, s * (ROAD_HALF + 1.6), 0.05, 0.05, (i) => C(def.curb[Math.floor(i / 5) % 2]),
       { mat: def.night ? { emissive: '#ffffff', emissiveIntensity: 0.25 } : {} });
     strip(s * (ROAD_HALF + 1.6), s * (ROAD_HALF + 1.6), 0.05, -0.8, () => C('#3B3F4A'));       // slab edge
     strip(s * WALL, s * WALL, 0, 1.2, (i) => C(def.wall[Math.floor(i / 10) % 2]),
-      { mat: def.night ? { emissive: def.wall[0], emissiveIntensity: 0.6 } : {} });         // barrier
+      { mat: def.night ? { emissive: def.wall[0], emissiveIntensity: 3.5 } : {} });       // barrier (glows at night)
     strip(s * (ROAD_HALF + 1.6), s * WALL, 0.04, 0.04, () => C(def.ground).offsetHSL(0, 0, -0.06)); // shoulder
   }
 
@@ -139,7 +154,7 @@ export function buildTrack(THREE, def) {
   const startG = new THREE.Group();
   const line = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, 2.5), new THREE.MeshStandardMaterial({ map: ctex }));
   line.rotation.x = -Math.PI / 2; line.position.y = 0.07; startG.add(line);
-  const archMat = new THREE.MeshStandardMaterial({ color: def.wall[0], emissive: def.night ? def.wall[0] : '#000', emissiveIntensity: 0.6 });
+  const archMat = new THREE.MeshStandardMaterial({ color: def.wall[0], emissive: def.night ? def.wall[0] : '#000', emissiveIntensity: def.night ? 3.5 : 0 });
   for (const s of [-1, 1]) { const post = new THREE.Mesh(new THREE.BoxGeometry(1, 8, 1), archMat); post.position.set(s * (ROAD_HALF + 2), 4, 0); post.castShadow = true; startG.add(post); }
   const beam = new THREE.Mesh(new THREE.BoxGeometry(ROAD_HALF * 2 + 5, 1.8, 1), archMat); beam.position.y = 8.5; startG.add(beam);
   const banner = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2 + 4, 1.4), new THREE.MeshBasicMaterial({ map: ctex }));
@@ -151,7 +166,7 @@ export function buildTrack(THREE, def) {
   // Tunnel: a row of arches over part of the track
   if (def.tunnel) {
     const [a, b] = def.tunnel.map((t) => Math.round(t * SAMPLES));
-    const tMat = new THREE.MeshStandardMaterial({ color: def.theme === 'snow' ? '#DEE2E6' : '#A0522D', roughness: 0.9, side: THREE.DoubleSide });
+    const tMat = new THREE.MeshStandardMaterial({ color: { snow: '#DEE2E6', pirate: '#8D7B68' }[def.theme] || '#A0522D', roughness: 0.9, side: THREE.DoubleSide });
     const lights = new THREE.MeshBasicMaterial({ color: '#FFE066' });
     for (let i = a; i <= b; i += 3) {
       const k = at(i);
@@ -170,8 +185,7 @@ export function buildTrack(THREE, def) {
   // Boost pads (glowing arrows on the road)
   const arrow = new THREE.Shape();
   arrow.moveTo(0, 2.2); arrow.lineTo(1.8, 0); arrow.lineTo(0.8, 0); arrow.lineTo(0.8, -2); arrow.lineTo(-0.8, -2); arrow.lineTo(-0.8, 0); arrow.lineTo(-1.8, 0); arrow.closePath();
-  const pads = def.pads.flatMap((t) => [-3.5, 3.5].map((side) => {
-    const i = at(t * SAMPLES);
+  for (const { i, side } of path.pads) {
     const pad = new THREE.Group();
     const base = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 6.5), new THREE.MeshBasicMaterial({ color: '#FF922B' }));
     base.rotation.x = -Math.PI / 2;
@@ -181,17 +195,77 @@ export function buildTrack(THREE, def) {
     pad.position.copy(edge(i, side, 0.08));
     pad.rotation.y = Math.atan2(tan[i].x, tan[i].z);
     group.add(pad);
-    return { i, side };
-  }));
+  }
 
-  // Item boxes: a row of 4 across the road; coins: lines of 6 along the road
+  // Glide ramps: a blue pad with white chevrons across the whole road, between two glowing posts
+  if (path.glides.length) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+    const x = c.getContext('2d');
+    x.fillStyle = '#1C7ED6'; x.fillRect(0, 0, 256, 128);
+    x.strokeStyle = '#fff'; x.lineWidth = 10; x.lineJoin = 'round';
+    for (const cx of [48, 128, 208]) for (const cy of [44, 84]) {
+      x.beginPath(); x.moveTo(cx - 22, cy + 14); x.lineTo(cx, cy - 8); x.lineTo(cx + 22, cy + 14); x.stroke();
+    }
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const padMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4, emissive: '#1C7ED6', emissiveIntensity: def.night ? 0.8 : 0.25 });
+    const postMat = new THREE.MeshStandardMaterial({ color: '#E7F5FF', roughness: 0.3 });
+    const ringMat = new THREE.MeshStandardMaterial({ color: '#4DABF7', emissive: '#4DABF7', emissiveIntensity: 3 });
+    const hoopMat = new THREE.MeshStandardMaterial({ color: '#FFD8A8', emissive: '#FFA94D', emissiveIntensity: 2.5 });
+    for (const glide of path.glides) {
+      const { i } = glide, half = glide.side == null ? ROAD_HALF : SHORTCUT_HALF, mid = glide.side ?? 0;
+      const g = new THREE.Group();
+      const pad = new THREE.Mesh(new THREE.PlaneGeometry(half * 2, 7), padMat);
+      pad.rotation.x = -Math.PI / 2; pad.position.set(-mid, 0.09, 0); pad.receiveShadow = true;
+      g.add(pad);
+      for (const s of [-1, 1]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 6, 12), postMat);
+        post.position.set(-mid + s * (half + 0.8), 3, 0); post.castShadow = true;
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.16, 10, 24), glide.to == null ? ringMat : hoopMat);
+        ring.position.set(-mid + s * (half + 0.8), 6.4, 0);
+        g.add(post, ring);
+      }
+      g.position.copy(pts[i]);
+      g.rotation.y = Math.atan2(tan[i].x, tan[i].z);
+      group.add(g);
+      // A shortcut: glowing hoops show the way across the gap, over a bank of clouds
+      if (glide.to != null) {
+        const A = glide.from, B = glide.land, dir = Math.atan2(B.x - A.x, B.z - A.z);
+        for (const f of [0.25, 0.5, 0.75]) {
+          const hoop = new THREE.Mesh(new THREE.TorusGeometry(4.5, 0.35, 10, 36), hoopMat);
+          hoop.position.set(A.x + (B.x - A.x) * f, A.y + (B.y - A.y) * f + SHORTCUT_ARC * Math.sin(Math.PI * f) + 2.5, A.z + (B.z - A.z) * f);
+          hoop.rotation.y = dir;
+          group.add(hoop);
+        }
+        const puffs = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 1 }), 14);
+        const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+        for (let n = 0; n < 14; n++) {
+          const f = 0.15 + (n / 13) * 0.7, s = 4 + ((n * 7) % 5);
+          m4.compose(new THREE.Vector3(A.x + (B.x - A.x) * f + ((n % 3) - 1) * 6, -1 + (n % 2) * 1.5, A.z + (B.z - A.z) * f + ((n % 4) - 1.5) * 5),
+            q, new THREE.Vector3(s, s * 0.55, s));
+          puffs.setMatrixAt(n, m4);
+        }
+        group.add(puffs);
+      }
+    }
+  }
+
+  // Item boxes: a row of 4 across the road; coins: lines of 6 along the road.
+  // Uses the Toy Car Kit models when they're loaded.
+  const model = (file, size, fallback) => {
+    const c = cloneOf(assets?.get(file));
+    if (!c) return fallback();
+    const g = fit(THREE, c.object, size);
+    const box = new THREE.Box3().setFromObject(g);
+    g.children[0].position.y -= (box.min.y + box.max.y) / 2; // spin around the middle
+    return g;
+  };
   const boxes = def.boxes.flatMap((t) => [-6, -2, 2, 6].map((side) => {
-    const i = at(t * SAMPLES), mesh = makeItemBox(), p = edge(i, side, 1.4);
+    const i = at(t * SAMPLES), mesh = model(CAR('item-box'), 1.6, makeItemBox), p = edge(i, side, 1.4);
     mesh.position.copy(p); group.add(mesh);
     return { i, side, mesh, p, respawn: 0 };
   }));
   const coins = def.coins.flatMap((t, n) => Array.from({ length: 6 }, (_, j) => {
-    const i = at(t * SAMPLES + j * 5), side = (n % 2 ? -3 : 3), mesh = makeCoin(), p = edge(i, side, 1.1);
+    const i = at(t * SAMPLES + j * 5), side = (n % 2 ? -3 : 3), mesh = model(CAR('item-coin-gold'), 1.1, makeCoin), p = edge(i, side, 1.1);
     mesh.position.copy(p); group.add(mesh);
     return { i, side, mesh, p, respawn: 0 };
   }));
@@ -202,30 +276,18 @@ export function buildTrack(THREE, def) {
     const x = (Math.random() - 0.5) * 600, z = (Math.random() - 0.5) * 520 + 50;
     let minD = Infinity;
     for (let i = 0; i < SAMPLES; i += 4) minD = Math.min(minD, (pts[i].x - x) ** 2 + (pts[i].z - z) ** 2);
-    if (minD > (WALL + (def.theme === 'city' ? 12 : 6)) ** 2) spots.push([x, z, 0.7 + Math.random() * 0.8]);
+    const onIsland = !island || Math.hypot(x - island.x, z - island.z) < island.r - 8;
+    if (onIsland && minD > (WALL + (def.theme === 'city' ? 12 : 6)) ** 2) spots.push([x, z, 0.7 + Math.random() * 0.8]);
   }
-  group.add(makeScenery(def.theme, spots));
-
-  // ---- Queries ----
-
-  // Nearest center-line sample to (x, z), searching near the last known one.
-  // Uses the height too, so the two levels of a bridge never get mixed up.
-  function locate(x, z, hint, y = null) {
-    let best = hint ?? 0, bestD = Infinity;
-    const range = hint == null ? SAMPLES : 50;
-    for (let k = -range; k <= range; k++) {
-      const i = at((hint ?? 0) + k), p = pts[i];
-      const d = (p.x - x) ** 2 + (p.z - z) ** 2 + (y == null ? 0 : ((p.y - y) * 3) ** 2);
-      if (d < bestD) { bestD = d; best = i; }
-    }
-    const p = pts[best], n = nor[best], t = tan[best];
-    const lateral = (x - p.x) * n.x + (z - p.z) * n.z;
-    // road height right here: between this sample and its neighbor
-    const along = (x - p.x) * t.x + (z - p.z) * t.z;
-    const j = at(best + Math.sign(along || 1)), f = Math.min(1, Math.abs(along) / (length / SAMPLES));
-    const height = p.y + (pts[j].y - p.y) * f;
-    return { i: best, lateral, height };
+  // Real models (grandstands, trees, palms...) when loaded; simple shapes otherwise.
+  // The city keeps its glowing code-built towers and Cloud Gardens its clouds either way.
+  let mixers = [];
+  if (assets) {
+    const decor = decorate(THREE, { pts, tan, nor, SAMPLES, def, island }, assets, spots);
+    group.add(decor.group);
+    mixers = decor.mixers;
   }
+  if (!assets || def.theme === 'city' || def.theme === 'sky') group.add(makeScenery(def.theme === 'pirate' ? 'park' : def.theme, spots));
 
-  return { group, pts, tan, nor, SAMPLES, length, pads, boxes, coins, locate, at, def };
+  return { ...path, group, boxes, coins, mixers };
 }

@@ -2,51 +2,54 @@
 import { EV, colorFor } from '../shared/protocol.js';
 import { players } from './players.js';
 import { createPointers } from './pointer.js';
+import { createGyroPointers } from './pointer/engine.js';
 import { createMenu } from './menu.js';
 import { createSettings } from './settings.js';
 import { sound } from './sound.js';
 import { playBoot } from './boot.js';
-import balloonPop from './games/balloon-pop.js';
-import draw from './games/draw.js';
-import paddleDuel from './games/paddle-duel.js';
-import bowling from './games/bowling.js';
-import turboKarts from './games/turbo-karts.js';
-import tableTennis from './games/table-tennis.js';
-import targetRange from './games/target-range.js';
-import airHockey from './games/air-hockey.js';
-import dungeon from './games/dungeon.js';
-import photos from './channels/photos.js';
-import weather from './channels/weather.js';
-import video from './channels/video.js';
+import { loadApps } from './apps.js';
 
 const $ = (id) => document.getElementById(id);
-const socket = io(); // global from /socket.io/socket.io.js
 const DEBUG = new URLSearchParams(location.search).has('debug');
-const pointers = createPointers($('cursors'));
 // Boot animation (skip it with ?noboot=1)
 const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoot({ sound });
-const ZOOM_MS = 300;
+// Games and channels, from their .game.json files (each loads on its own; see apps.js).
+// Loaded before connecting, so no server message can arrive before we're listening.
+const gameApps = await loadApps();
+const socket = io(); // global from /socket.io/socket.io.js
+const pointers = createPointers($('cursors'));
+const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
+const ZOOM_MS = 320;       // opening a game: the one big motion in the menu
+const ZOOM_BACK_MS = 220;  // going back is quicker than opening
+const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const MODE_LABELS = { solo: 'Solo', versus: 'Versus', coop: 'Co-op' };
 
 // The "driver" controls the menu: P1, or the lowest-numbered player if P1 is away.
 const driverId = () => players.list().reduce((min, p) => Math.min(min, p.playerId), Infinity);
 
 // ---------- Pointer sensitivity (1 = slow ... 10 = fast) ----------
-// Sent to the phones as the tilt (in degrees) needed to sweep the whole screen.
+// How far you turn the phone to cross the screen (applied here, in pointer/engine.js).
 
 let sensitivity = 5;
 try { sensitivity = Number(localStorage.getItem('couch.sensitivity')) || 5; } catch { /* ignore */ }
+gyro.setSpeed(sensitivity);
 
-function sendSettings() {
-  const f = 1.2 ** (5 - sensitivity); // level 5 = PLAN defaults (25° x 18°)
-  socket.emit(EV.FEEDBACK_SETTINGS, { rangeX: 25 * f, rangeY: 18 * f });
-}
+// Phone sounds: each phone plays a small sound when its own game feedback (rumble) arrives
+let phoneSounds = true;
+try { phoneSounds = localStorage.getItem('couch.phoneSounds') !== '0'; } catch { /* ignore */ }
+const sendSettings = () => socket.emit(EV.FEEDBACK_SETTINGS, { phoneSounds });
 
 const prefs = {
   getSensitivity: () => sensitivity,
   setSensitivity(n) {
     sensitivity = n;
     try { localStorage.setItem('couch.sensitivity', String(n)); } catch { /* ignore */ }
+    gyro.setSpeed(n);
+  },
+  getPhoneSounds: () => phoneSounds,
+  setPhoneSounds(on) {
+    phoneSounds = on;
+    try { localStorage.setItem('couch.phoneSounds', on ? '1' : '0'); } catch { /* ignore */ }
     sendSettings();
   },
   showQR: () => setPairing(true),
@@ -54,10 +57,10 @@ const prefs = {
 
 // ---------- Menu ----------
 
-const apps = [turboKarts, tableTennis, targetRange, airHockey, dungeon, balloonPop, draw, paddleDuel, bowling, photos, weather, video, createSettings(prefs)];
+const apps = [...gameApps, createSettings(prefs)]; // Settings is built in, always last
 const menu = createMenu({
   grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
-  onFocusChange: () => sound.play('hover'),
+  onFocusChange: (column) => sound.play('hover', { step: column }),
 });
 
 // ---------- Pairing / lobby ----------
@@ -68,7 +71,9 @@ let pairingForced = false;
 function setPairing(forced = pairingForced) {
   pairingForced = forced;
   const none = players.list().length === 0;
+  const wasShown = !$('pairing').hidden;
   $('pairing').hidden = !(forced || (none && !current?.mounted)); // a running game shows its own pause screen
+  if (wasShown && $('pairing').hidden && !current) menu.enter(); // the menu appears: tiles rise in
   $('pairing-close').hidden = !(forced && !none);
   const full = players.slots().every((s) => s.connected);
   $('mini-join').hidden = full || none;
@@ -78,6 +83,7 @@ function setPairing(forced = pairingForced) {
 socket.on('connect', () => {
   $('status').textContent = '';
   players.clear();
+  if (desk.active) players.join(desk.id, colorFor(desk.id)); // still playing with the mouse
   socket.emit(EV.CONSOLE_CREATE, ({ room }) => showRoom(room));
 });
 
@@ -87,8 +93,11 @@ socket.on('disconnect', () => {
 });
 
 socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
+  if (desk.active) desk.stop(); // a real phone takes over from the mouse
+  const isNew = !players.isConnected(playerId);
   players.join(playerId, color);
-  sendSettings(); // so the new phone uses the current pointer speed
+  if (isNew) sound.play('join');
+  sendSettings(); // so the new phone knows whether to play sounds
   socket.emit(EV.FEEDBACK_MODE, { mode: controllerMode, prompt: controllerPrompt }); // and the right controller layout
   playerReturned(playerId);
   // A new phone joining a running multi-player game (not solo) gets let in, if there's room.
@@ -98,7 +107,9 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
 });
 socket.on(EV.PLAYER_LEFT, ({ playerId }) => {
   players.leave(playerId);
+  sound.play('leave');
   pointers.remove(playerId);
+  gyro.remove(playerId);
   playerLost(playerId);
 });
 
@@ -114,6 +125,8 @@ async function showRoom(room) {
     $('qr').hidden = false;
     $('qr-loading').hidden = true;
     $('join-url').textContent = url;
+    // A phone can't open "localhost" (that's the phone itself): say what to do instead
+    $('join-warning').hidden = !/^https?:\/\/(localhost|127\.0\.0\.1)/.test(url);
   } catch (err) {
     $('qr-loading').textContent = 'Could not load the QR code.';
     console.error(err);
@@ -131,7 +144,13 @@ function renderSlots() {
     <span class="chip ${s.connected ? 'on' : ''}" style="--player:${s.color}">P${s.playerId}</span>`).join('');
 }
 
-players.onChange(() => { renderSlots(); setPairing(); });
+players.onChange(() => {
+  renderSlots();
+  setPairing();
+  // The focus ring shows who's driving the menu
+  const id = driverId();
+  document.documentElement.style.setProperty('--ring', Number.isFinite(id) ? colorFor(id) : '#2F80ED');
+});
 
 // ---------- Opening and closing apps (tile zoom) ----------
 // current = { app, handlers, allowed: Set<playerId>, missing: Set<playerId>, mounted }
@@ -143,6 +162,10 @@ function setController(mode, prompt = '') {
   controllerMode = mode;
   controllerPrompt = prompt;
   socket.emit(EV.FEEDBACK_MODE, { mode, prompt });
+  // No phone to type on? Ask on the laptop instead.
+  if (mode === 'keyboard' && desk.active) {
+    setTimeout(() => onInputText({ playerId: desk.id, text: (window.prompt(prompt || 'Type here') || '').trim() }), 50);
+  }
 }
 let busy = false;    // true during the zoom animation
 let picker = null;   // { modes, index } while the mode picker is showing
@@ -160,11 +183,14 @@ function openApp(app) {
   const stage = $('stage');
   current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set(), text: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
   stage.style.setProperty('--tile', app.color);
+  menu.press();
   stage.hidden = false;
-  const anim = stage.animate(
-    [{ clipPath: tileClip(menu.focusedTile()) }, { clipPath: 'inset(0px 0px 0px 0px round 0px)' }],
-    { duration: ZOOM_MS, easing: 'cubic-bezier(.2,.8,.2,1)' },
-  );
+  const anim = REDUCED_MOTION
+    ? stage.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: 'ease' })
+    : stage.animate(
+      [{ clipPath: tileClip(menu.focusedTile()) }, { clipPath: 'inset(0px 0px 0px 0px round 0px)' }],
+      { duration: ZOOM_MS, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
+    );
   anim.onfinish = () => {
     busy = false;
     // A 2-player game with 2 phones connected: ask which mode first.
@@ -200,10 +226,12 @@ function closeApp() {
   $('stage-content').innerHTML = '';
   current = null;
   const stage = $('stage');
-  const anim = stage.animate(
-    [{ clipPath: 'inset(0px 0px 0px 0px round 0px)' }, { clipPath: tileClip(menu.focusedTile()) }],
-    { duration: ZOOM_MS, easing: 'cubic-bezier(.2,.8,.2,1)' },
-  );
+  const anim = REDUCED_MOTION
+    ? stage.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease' })
+    : stage.animate(
+      [{ clipPath: 'inset(0px 0px 0px 0px round 0px)' }, { clipPath: tileClip(menu.focusedTile()) }],
+      { duration: ZOOM_BACK_MS, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+    );
   anim.onfinish = () => { stage.hidden = true; busy = false; setPairing(); };
 }
 
@@ -292,12 +320,29 @@ const count = (playerId) => msgCount.set(playerId, (msgCount.get(playerId) || 0)
 // Only players in the current game get its input (and not while it's paused).
 const gameGets = (playerId) => current?.mounted && current.missing.size === 0 && current.allowed.has(playerId);
 
-socket.on(EV.INPUT_POINTER, (e) => {
+function onInputPointer(e) {
   count(e.playerId);
   if (!Number.isFinite(e.x) || !Number.isFinite(e.y)) return;
-  pointers.move(e.playerId, e.x, e.y, colorFor(e.playerId));
+  pointers.move(e.playerId, e.x, e.y, colorFor(e.playerId), e.direct === true);
   if (gameGets(e.playerId)) current.handlers.pointer.forEach((fn) => fn(e));
+}
+socket.on(EV.INPUT_POINTER, onInputPointer);
+
+// Raw phone sensors: the gyro pointer turns them into a cursor (drawn every frame below)
+const finite = (v) => Number.isFinite(v);
+socket.on(EV.INPUT_MOTION, (e) => {
+  count(e.playerId);
+  if (!finite(e.alpha) || !finite(e.beta) || !finite(e.gamma)) return;
+  const m = e.motion;
+  const motion = m && finite(m.rx) && finite(m.ry) && finite(m.rz) ? { rx: m.rx, ry: m.ry, rz: m.rz } : null;
+  gyro.feed(e.playerId, { alpha: e.alpha, beta: e.beta, gamma: e.gamma, motion });
 });
+(function gyroLoop(now) {
+  for (const { playerId, x, y } of gyro.frame(now)) {
+    pointers.move(playerId, x * 2 - 1, y * 2 - 1, colorFor(playerId), true);
+  }
+  requestAnimationFrame(gyroLoop);
+})(performance.now());
 
 socket.on(EV.INPUT_SWING, (e) => {
   count(e.playerId);
@@ -310,14 +355,15 @@ socket.on(EV.INPUT_WHEEL, (e) => {
   if (gameGets(e.playerId)) current.handlers.wheel.forEach((fn) => fn(e));
 });
 
-socket.on(EV.INPUT_TEXT, (e) => {
+function onInputText(e) {
   if (typeof e.text !== 'string') return;
   if (gameGets(e.playerId)) current.handlers.text.forEach((fn) => fn({ playerId: e.playerId, text: e.text.slice(0, 100) }));
-});
+}
+socket.on(EV.INPUT_TEXT, onInputText);
 
-socket.on(EV.INPUT_RECENTER, (e) => count(e.playerId));
+socket.on(EV.INPUT_RECENTER, (e) => { count(e.playerId); gyro.recenter(e.playerId); });
 
-socket.on(EV.INPUT_BUTTON, (e) => {
+function onInputButton(e) {
   count(e.playerId);
   if (boot?.playing) { boot.skip(); return; } // any phone button skips the boot animation
   const { playerId, button, state } = e;
@@ -353,6 +399,16 @@ socket.on(EV.INPUT_BUTTON, (e) => {
   if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(button)) menu.move(button);
   // Open the focused tile (moving the cursor over a tile focuses it, see below).
   else if (button === 'A') openApp(menu.focusedApp());
+}
+socket.on(EV.INPUT_BUTTON, onInputButton);
+
+// Aim assist: only on menu tiles and the mode picker, never inside a game.
+pointers.setAssist((x, y) => {
+  if (busy || !$('pairing').hidden || (current && !picker)) return null;
+  const el = document.elementFromPoint(x, y)?.closest?.(picker ? '[data-mode]' : '[data-tile]');
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: Math.hypot(r.width, r.height) / 2 };
 });
 
 // The driver's cursor focuses whatever it hovers (menu tiles, picker modes).
@@ -378,6 +434,50 @@ let lastHover = null;
   }
   requestAnimationFrame(hoverLoop);
 })();
+
+// ---------- Mouse & keyboard (no phone) ----------
+// "Use mouse & keyboard" on the pairing screen adds a stand-in P1 that sends exactly what a
+// phone would: mouse = pointer, click = A, right-click = B, arrows = D-pad, Enter/Space = A,
+// Esc/Backspace = B, H = HOME, + / - = PLUS / MINUS, U = ITEM (UP) and R/Shift = DRIFT for karts.
+const KEYS = {
+  ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT', Enter: 'A', ' ': 'A',
+  Escape: 'B', Backspace: 'B', h: 'HOME', H: 'HOME', '+': 'PLUS', '=': 'PLUS', '-': 'MINUS', u: 'UP', U: 'UP',
+  r: 'R', R: 'R', Shift: 'R', // DRIFT in Turbo Karts
+};
+const desk = {
+  active: false,
+  id: 1,
+  start() {
+    this.active = true;
+    this.id = 1;
+    document.body.classList.add('desk-mode');
+    players.join(this.id, colorFor(this.id));
+    sound.play('join');
+  },
+  stop() {
+    this.active = false;
+    document.body.classList.remove('desk-mode');
+    players.leave(this.id);
+    pointers.remove(this.id);
+  },
+};
+const deskButton = (button, state) => desk.active && onInputButton({ playerId: desk.id, button, state });
+$('use-mouse').addEventListener('click', (e) => { e.stopPropagation(); unlockSound(); desk.start(); });
+addEventListener('mousemove', (e) => {
+  if (!desk.active) return;
+  // direct: a mouse is already precise, so it's drawn without the touchpad smoothing
+  onInputPointer({ playerId: desk.id, x: (e.clientX / innerWidth) * 2 - 1, y: (e.clientY / innerHeight) * 2 - 1, direct: true });
+});
+addEventListener('mousedown', (e) => { if (e.button === 0) deskButton('A', 'down'); else if (e.button === 2) deskButton('B', 'down'); });
+addEventListener('mouseup', (e) => { if (e.button === 0) deskButton('A', 'up'); else if (e.button === 2) deskButton('B', 'up'); });
+addEventListener('contextmenu', (e) => { if (desk.active) e.preventDefault(); });
+addEventListener('keydown', (e) => {
+  const button = KEYS[e.key];
+  if (!desk.active || !button) return;
+  e.preventDefault();
+  if (!e.repeat) deskButton(button, 'down');
+});
+addEventListener('keyup', (e) => { const button = KEYS[e.key]; if (button) deskButton(button, 'up'); });
 
 renderSlots();
 setPairing();
@@ -407,9 +507,17 @@ if (DEBUG) {
       pingMs = Math.round(performance.now() - t0);
     } catch { pingMs = 'err'; }
   }, 2000);
+  // Frames per second the laptop actually draws (below ~50 = the laptop is struggling)
+  let frames = 0, fps = 0;
+  (function countFrames() { frames++; requestAnimationFrame(countFrames); })();
   setInterval(() => {
+    fps = frames; frames = 0;
     const rates = players.list().map((p) => `P${p.playerId} ${msgCount.get(p.playerId) || 0} msgs/s`);
     msgCount.clear();
-    box.textContent = `latency (ping) ${pingMs} ms\n${rates.join('\n') || 'no players'}`;
+    box.textContent = `latency (ping) ${pingMs} ms   screen ${fps} fps${current ? `   in ${current.app.title}` : ''}\n`
+      + `${rates.join('\n') || 'no players'}\n`
+      + `${gyro.describe().join('\n')}\nL = cursor prediction on/off (for comparing)`;
   }, 1000);
+  // A/B test the cursor prediction ("display lead") with the L key
+  addEventListener('keydown', (e) => { if (e.key === 'l' || e.key === 'L') gyro.toggleLead(); });
 }

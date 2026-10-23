@@ -3,6 +3,7 @@ import { EV, ROOM_LETTERS, ROOM_CODE_LENGTH } from '../shared/protocol.js';
 import { createMotion } from './motion.js';
 import { createSwing } from './swing.js';
 import { createWheel } from './wheel.js';
+import { createKartPad } from './kart-pad.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
@@ -40,13 +41,14 @@ function setConnected(on, text) {
 function setPlayer(playerId, color) {
   document.documentElement.style.setProperty('--player', color || '');
   $('badge').textContent = playerId ? `P${playerId}` : '–';
+  $('kp-badge').textContent = $('badge').textContent;
 }
 
 function showJoinForm(message = '') {
   joined = false;
   setPlayer(null, '');
   $('controller').hidden = true;
-  $('wheel-pad').hidden = true;
+  $('kart-pad').hidden = true;
   $('keyboard-pad').hidden = true;
   $('start').hidden = true;
   $('join-form').hidden = false;
@@ -131,12 +133,20 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 // ---------- Motion pointer ----------
 
 const motion = createMotion({
-  onPointer: (x, y) => {
+  // Raw sensors -> the console turns them into this player's cursor
+  onSample: (sample) => {
     if (!joined || mode === 'wheel') return; // no cursor while driving
+    sentCount++;
+    socket.volatile.emit(EV.INPUT_MOTION, sample);
+  },
+  // Touchpad (phones without motion sensors)
+  onPointer: (x, y) => {
+    if (!joined || mode === 'wheel') return;
     sentCount++;
     socket.volatile.emit(EV.INPUT_POINTER, { x, y });
   },
 });
+let touchpad = null;
 let started = false;
 
 // Swings (for Bowling): sent to the console, which decides what to do with them.
@@ -145,26 +155,37 @@ const swing = createSwing({
   getGamma: () => motion.stats.gamma,
 });
 
-// ---------- Steering wheel (kart racer) ----------
-// The console switches us between the normal remote ('pointer') and the wheel layout.
+// ---------- Kart pad (Turbo Karts) ----------
+// The console switches us between the normal remote ('pointer'), the kart pad ('wheel')
+// and a text box ('keyboard'). The kart pad steers with its strip, or by tilting (wheel.js).
 
 let mode = 'pointer';
-const wheel = createWheel({
-  onSteer: (steer) => {
-    if (!joined) return;
-    sentCount++;
-    socket.volatile.emit(EV.INPUT_WHEEL, { steer });
-  },
+const sendSteer = (steer) => {
+  if (!joined) return;
+  sentCount++;
+  socket.volatile.emit(EV.INPUT_WHEEL, { steer });
+};
+const wheel = createWheel({ onSteer: (steer) => { if (kartPad.tilt) sendSteer(steer); } });
+const kartPad = createKartPad({
+  root: $('kart-pad'),
+  onButton: (button, state) => emit(EV.INPUT_BUTTON, { button, state }),
+  onSteer: (steer) => { if (!kartPad.tilt) sendSteer(steer); },
+  onTilt: (on) => { sendSteer(0); if (on && started) wheel.start(); else wheel.stop(); },
+  onRecenter: () => { wheel.recenter(); emit(EV.INPUT_RECENTER); },
 });
 
 function applyMode() {
   if (!joined) return;
-  const isWheel = mode === 'wheel', isKeys = mode === 'keyboard';
-  $('controller').hidden = isWheel || isKeys;
-  $('wheel-pad').hidden = !isWheel;
+  const isKart = mode === 'wheel', isKeys = mode === 'keyboard';
+  const wasKart = !$('kart-pad').hidden;
+  $('controller').hidden = isKart || isKeys;
+  $('kart-pad').hidden = !isKart;
+  document.body.classList.toggle('kart-mode', isKart); // hides the top bar: the pad has its own
   $('keyboard-pad').hidden = !isKeys;
   if (isKeys) { $('keyboard-input').value = ''; $('keyboard-input').focus(); }
-  if (isWheel && started) wheel.start();
+  if (isKart && !wasKart) kartPad.show();
+  if (!isKart && wasKart) kartPad.hide();
+  if (isKart && started && kartPad.tilt) wheel.start();
   else wheel.stop();
 }
 
@@ -182,16 +203,19 @@ $('keyboard-pad').addEventListener('submit', (e) => {
 });
 $('keyboard-cancel').addEventListener('click', () => emit(EV.INPUT_TEXT, { text: '' }));
 
+$('motion-msg').addEventListener('click', () => { $('motion-msg').hidden = true; });
+
 function showTouchpad(message) {
   $('touchpad').hidden = false;
   if (message) {
-    $('motion-msg').textContent = message;
+    $('motion-text').textContent = message;
     $('motion-msg').hidden = false;
   }
-  motion.attachTouchpad($('touchpad'));
+  touchpad = motion.attachTouchpad($('touchpad'));
 }
 
 $('start-btn').addEventListener('click', async () => {
+  unlockPhoneAudio(); // sound needs a tap to start, like motion
   $('start-btn').disabled = true;
   $('start-btn').textContent = 'Starting…';
   const result = await motion.start();
@@ -200,24 +224,66 @@ $('start-btn').addEventListener('click', async () => {
   if (result.ok) swing.start();
   applyMode(); // a wheel game may already be running
   requestWakeLock();
-  if (result.reason === 'denied') {
-    showTouchpad('Motion access was denied. To fix it: Settings → Apps → Safari → '
-      + 'Clear History and Website Data, then reload this page. For now, use the touchpad.');
-  } else if (result.reason === 'unsupported') {
-    showTouchpad('This phone/browser has no motion sensors here. Use the touchpad instead.');
+  // No motion: say exactly why and how to fix it, and give a touchpad meanwhile
+  const WHY = {
+    insecure: `Motion needs a secure page, and this one is ${location.protocol}//${location.host}. `
+      + 'On the laptop, open the https:// address that `npm start` prints (see "Local setup" in README.md), '
+      + 'or use the cloudflared tunnel link, then scan the new QR code. For now, use the touchpad.',
+    denied: 'Motion access was denied. To fix it on iPhone: Settings → Apps → Safari → '
+      + 'Clear History and Website Data, then reload this page. On Android: Chrome → ⋮ → Settings → '
+      + 'Site settings → Motion sensors → Allow. For now, use the touchpad.',
+    unsupported: 'This browser has no motion sensors. Use the touchpad instead.',
+    silent: 'Motion is allowed, but the sensors send nothing (a computer, or sensors blocked in the browser settings). '
+      + 'On Android: Chrome → ⋮ → Settings → Site settings → Motion sensors → Allow. For now, use the touchpad.',
+  };
+  if (WHY[result.reason]) {
+    showTouchpad(WHY[result.reason]);
   } else if (DEBUG) {
     showTouchpad(); // handy for testing even when motion works
   }
 });
 
 $('recenter').addEventListener('click', () => {
-  motion.recenter();
+  touchpad?.recenter();
   wheel.recenter();
   emit(EV.INPUT_RECENTER);
 });
 
-socket.on(EV.FEEDBACK_SETTINGS, (s) => motion.setRanges(s));
-socket.on(EV.FEEDBACK_RUMBLE, ({ ms }) => navigator.vibrate?.(Math.min(Number(ms) || 0, 1000)));
+// Game feedback for this player: vibrate (Android) and a small sound from the phone itself
+// (iPhones can't vibrate from a web page, so there the sound is the feedback).
+let phoneSounds = true;
+socket.on(EV.FEEDBACK_SETTINGS, (s) => { if (typeof s?.phoneSounds === 'boolean') phoneSounds = s.phoneSounds; });
+socket.on(EV.FEEDBACK_RUMBLE, ({ ms }) => {
+  ms = Math.min(Number(ms) || 0, 1000);
+  navigator.vibrate?.(ms);
+  if (phoneSounds) phoneSound(ms);
+});
+
+// ---------- Phone sounds (Web Audio, no files) ----------
+// The size of the rumble picks the sound: a tap for small things, a hit, or a thud.
+
+let actx = null;
+function unlockPhoneAudio() {
+  try {
+    actx ??= new (window.AudioContext || window.webkitAudioContext)();
+    actx.resume();
+  } catch { /* no audio: fine */ }
+}
+function phoneSound(ms) {
+  if (!actx || actx.state !== 'running') return;
+  const t = actx.currentTime, osc = actx.createOscillator(), gain = actx.createGain();
+  const [f0, f1, dur, vol, type] = ms <= 60 ? [1400, 900, 0.05, 0.08, 'triangle']
+    : ms <= 150 ? [520, 260, 0.1, 0.14, 'square']
+      : [160, 50, 0.28, 0.22, 'sine'];
+  osc.type = type;
+  osc.frequency.setValueAtTime(f0, t);
+  osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  gain.gain.setValueAtTime(vol, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(gain).connect(actx.destination);
+  osc.start(t);
+  osc.stop(t + dur + 0.02);
+}
 
 // ---------- Keep the screen awake ----------
 
@@ -255,8 +321,8 @@ if (DEBUG) {
     const s = motion.stats;
     const w = swing.stats;
     box.textContent = `alpha ${fmt(s.alpha)}  beta ${fmt(s.beta)}  gamma ${fmt(s.gamma)}\n`
-      + `mag ${fmt(w.mag ?? s.mag)}  msgs/s ${rate}  ping ${pingMs} ms\n`
+      + `gyro ${s.gyro ? 'yes' : 'no'}  mag ${fmt(w.mag ?? s.mag)}  msgs/s ${rate}  ping ${pingMs} ms\n`
       + `swings ${w.swings}  last power ${w.lastPower == null ? '–' : w.lastPower.toFixed(2)}\n`
-      + `mode ${mode}  steer ${wheel.stats.steer.toFixed(2)}`;
+      + `mode ${mode}  steer ${(kartPad.tilt ? wheel.stats.steer : kartPad.steer).toFixed(2)}${kartPad.tilt ? ' (tilt)' : ''}`;
   }, 100);
 }

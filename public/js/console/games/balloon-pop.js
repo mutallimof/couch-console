@@ -200,6 +200,16 @@ function text(str, x, y, size, color, align = 'center') {
   ctx.fillStyle = color; ctx.fillText(str, x, y);
 }
 
+// HUD text on a white pill, like the score boxes in the 3D games
+function chip(str, x, y, size, color, align = 'center') {
+  ctx.font = `900 ${size * scale}px Nunito, sans-serif`;
+  const w = ctx.measureText(str).width, padX = 18 * scale, h = size * scale * 1.35;
+  const left = align === 'left' ? x - padX : align === 'right' ? x - w - padX : x - w / 2 - padX;
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.beginPath(); ctx.roundRect(left, y - h / 2, w + padX * 2, h, 16 * scale); ctx.fill();
+  text(str, x, y, size, color, align);
+}
+
 function panel(lines, bg = 'rgba(255,255,255,0.88)') {
   ctx.fillStyle = bg;
   const w = 560 * scale, h = 340 * scale;
@@ -240,45 +250,48 @@ function drawHud() {
   const timeColor = timeLeft <= 10 ? '#E03131' : '#2b3445';
   const top = 44 * scale, edge = 32 * scale;
   if (mode() === 'versus') {
-    // Split scoreboard: P1 on the left, P2 on the right, timer in the middle.
-    const [a, b] = [...scores.keys()];
-    if (a) text(`P${a}  ${scores.get(a)}`, edge, top, 44, colorFor(a), 'left');
-    if (b) text(`${scores.get(b)}  P${b}`, W - edge, top, 44, colorFor(b), 'right');
-    text(`${Math.ceil(timeLeft)}`, W / 2, top, 48, timeColor);
+    // Split scoreboard, timer in the middle: P1 (and P3) on the left, P2 (and P4) on the right.
+    const ids = [...scores.keys()], step = 200 * scale;
+    ids.forEach((id, n) => {
+      const right = n % 2 === 1, inward = Math.floor(n / 2) * step;
+      chip(right ? `${scores.get(id)}  P${id}` : `P${id}  ${scores.get(id)}`,
+        right ? W - edge - inward : edge + inward, top, 44, colorFor(id), right ? 'right' : 'left');
+    });
+    chip(`${Math.ceil(timeLeft)}`, W / 2, top, 48, timeColor);
   } else if (mode() === 'coop') {
-    text(`Team ${score} / ${COOP_TARGET}`, edge, top, 40, '#2b3445', 'left');
+    chip(`Team ${score} / ${COOP_TARGET}`, edge, top, 40, '#2b3445', 'left');
     // progress bar toward the target
     const bw = 260 * scale, bx = edge, by = top + 32 * scale;
     ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.roundRect(bx, by, bw, 14 * scale, 7 * scale); ctx.fill();
     ctx.fillStyle = '#9B51E0'; ctx.beginPath();
     ctx.roundRect(bx, by, bw * Math.max(0, Math.min(1, score / COOP_TARGET)), 14 * scale, 7 * scale); ctx.fill();
-    text(`${Math.ceil(timeLeft)}`, W - edge, top, 48, timeColor, 'right');
+    chip(`${Math.ceil(timeLeft)}`, W - edge, top, 48, timeColor, 'right');
   } else {
-    text(`Score ${score}`, edge, top, 40, '#2b3445', 'left');
-    text(`${Math.ceil(timeLeft)}`, W - edge, top, 48, timeColor, 'right');
+    chip(`Score ${score}`, edge, top, 40, '#2b3445', 'left');
+    chip(`${Math.ceil(timeLeft)}`, W - edge, top, 48, timeColor, 'right');
   }
 }
 
 function drawReady() {
   const goal = {
     solo: 'Point and press A to pop!',
-    versus: 'Versus: pop more than your rival!',
+    versus: 'Versus: pop the most balloons!',
     coop: `Co-op: pop ${COOP_TARGET} together in ${ROUND_SECONDS} s!`,
   }[mode()];
   const tip = mode() === 'coop' ? 'Pop at the same time for a combo' : 'Golden +3 · Spiky −2';
-  panel([['Balloon Pop', 52, '#2b3445'], [goal, 26, '#5c677a'], [tip, 24, '#8a94a6'], ['A = start   ·   B = menu', 28, '#2F80ED']]);
+  panel([['Balloon Pop', 52, '#2b3445'], [goal, 26, '#5c677a'], [tip, 24, '#5F6B80'], ['A = start   ·   B = menu', 28, '#2F80ED']]);
 }
 
 function drawOver() {
   const again = ['A = play again   ·   B = menu', 28];
   if (mode() === 'versus') {
-    const [a, b] = [...scores.keys()];
-    const sa = scores.get(a) ?? 0, sb = scores.get(b) ?? 0;
-    const winner = sa === sb ? null : sa > sb ? a : b;
+    // Highest score wins; a shared top score is a tie
+    const ranked = [...scores].sort((x, y) => y[1] - x[1]);
+    const winner = ranked.length > 1 && ranked[0][1] === ranked[1][1] ? null : ranked[0]?.[0];
     const title = winner ? `P${winner} wins!` : 'It\'s a tie!';
     // The winner screen is in the winner's color.
-    panel([[title, 56, '#fff'], [`P${a} ${sa}   ·   P${b ?? '?'} ${sb}`, 36, '#fff'], ['', 10, '#fff'], [...again, '#fff']],
-      winner ? colorFor(winner) : '#8A94A6');
+    panel([[title, 56, '#fff'], [ranked.map(([id, s]) => `P${id} ${s}`).join('   ·   '), 36, '#fff'], ['', 10, '#fff'], [...again, '#fff']],
+      winner ? colorFor(winner) : '#5F6B80'); // (a tie: dark enough for white text)
   } else if (mode() === 'coop') {
     const won = score >= COOP_TARGET;
     panel([[won ? 'You did it!' : 'So close!', 52, '#2b3445'],
@@ -316,10 +329,10 @@ function onButton({ playerId, button, state: s }) {
 export default {
   id: 'balloon-pop',
   title: 'Balloon Pop',
-  color: '#FF6B6B',
+  color: '#E0548F',
   icon: ICON,
   minPlayers: 1,
-  maxPlayers: 2,
+  maxPlayers: 4,
   modes: ['solo', 'versus', 'coop'],
   mount(container, gameApi) {
     api = gameApi;

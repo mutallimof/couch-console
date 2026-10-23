@@ -284,6 +284,54 @@ Still original: no Nintendo characters, tracks, items or names.
 
 ### Phase 20: Real 3D models
 - Free CC0 model packs (downloaded by the user) replace the code-built karts, characters and props where available, with code-built fallbacks.
+- Packs in `public/assets/`: Kenney Toy Car Kit (8 cars, item box, coin, trees), Kenney Racing Kit (grandstands, banners, light posts, tents, flags), Quaternius Pirate Kit (6 animated pirates, palms, rocks, houses, ships, a sea monster).
+- 14 characters (6 pirates + 8 code-built animals), 8 cars, and a 5th track: **Pirate Cove** (an island in the sea).
+- Pirates are animated: idle while driving, a hit reaction when spun out, waving at the finish.
+
+# 🟫 MILESTONE 5: OpenWii-inspired upgrades + kart controller
+
+OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from it keeps its notice in `THIRD_PARTY_NOTICES.md`. Nothing from its Nintendo-themed folders is used.
+
+### Phase 21: OpenWii-inspired upgrades (built; waiting for the real-phone test)
+- **21a New pointer:** phones stream raw sensors (`input:motion` `{alpha, beta, gamma, motion:{rx, ry, rz}}`), the console runs OpenWii's gyro pointer per player: learns each phone's gyro axes (no calibration), heals drift when the hand is still, draws slightly ahead to hide lag. Touchpad still uses `input:pointer`. Tests: `npm test`.
+- **21b Feel and polish:** menu aim assist, cursor trail, menu/transition/sound polish (original look).
+- **21c Up to 4 players** (colors P3 green, P4 yellow), 4-player Balloon Pop / Draw / Target Range, per-player phone sounds (the phone plays a sound when its own `feedback:rumble` arrives; on/off sent as `feedback:settings {phoneSounds}`).
+- **21d Mouse and keyboard fallback** when no phone is connected.
+- **21e Games from manifests** (`<name>.game.json`), each loaded on its own; a broken game shows a "couldn't load" tile.
+- **21f Game rules separate from rendering**, with `node:test` tests (kart physics, Air Hockey, pointer).
+- **21g Reliability:** always-fresh files (`Cache-Control: no-cache`, models cached a day), phone diagnostics (insecure page / denied / no sensors), laptop fps in `?debug=1`.
+
+### Phase 22: Kart controller (built)
+- Buttons-only controller (`remote/kart-pad.js`, steering via `input:wheel`, DRIFT = new button `R`): steering strip (10% dead zone, visible thumb marker), GAS, separate DRIFT button (new button `R`), ITEM; DRIFT and ITEM keep accelerating; thumb can slide between buttons; tilt steering as an option.
+
+### Phase 23: Kart visual upgrade (procedural, no downloads)
+- Per-track reflections (environment made from the track's sky/ground colors), a sky with a sun that matches the shadow light, asphalt and grass noise textures, racing-line wear.
+- Screen effects (`karts-look.js`): bloom on very bright things only (boost flame, sparks, neon), vignette, one effect chain per split-screen view; switch off automatically under ~40 fps; `?fx=on|off` to force.
+- Speed lines at the screen edges while boosting.
+
+### Phase 24: Kart features
+- Glide ramps (one per track, before its biggest drop, outside tunnels): launch + glider (slow fall, free steering, follows the road's bends), glider wing on the kart, higher camera.
+- Tricks: tap DRIFT in the air (players only, once per jump; quick taps count) = barrel roll, boost on landing, "Trick!".
+- Rules in karts-rules.js with tests (52 in total).
+
+### Phase 25: Character select with animated poses
+- 3D showroom per player panel (`karts-showroom.js`): character on a podium (idle; wave when picked, cheer when ready), chosen kart on a turntable with the character driving, sliding stat bars. Compact layout for short screens.
+
+### Phase 26: Design pass on all games
+- impeccable audit → polish + Emil's animation review: contrast fixes, panel/message entrances, layout-free animations, consistent HUD pills. Details in DECISIONS.md.
+
+### Phase 27: More kart items
+- Lightning Bolt (shrinks everyone ahead; Shield blocks), Triple Slick (3 charges), Magnet (original: coin reach + slipstream). Rules in `karts-items.js` with tests.
+
+### Phase 28: Glide-ramp track
+- 6th track **Cloud Gardens** (theme `sky`): one full-width glide ramp down a hill plus two **shortcut ramps** (`glides: [{ at, to }]`): narrow, on one side of the road; the flight goes straight across a gap (hoops mark the way, an invisible arc keeps the glider up) and lands further along the lap. Lap counting and race places follow the flight (`flightAt` in kart-path.js). CPUs take shortcuts about 45 % of the time. Tests for launch side, landing, time saved and lap counting.
+
+### Phase 29: Boot animation + 2 channels
+- New boot: original logo (a TV with a couch inside, one cushion per player color) draws in, lights up, name rises; 2.7 s, skippable (click / key / phone button), reduced-motion version, `?noboot=1` still turns it off.
+- **Timer** channel (Clock / Timer / Stopwatch, offline; rules in `channels/timer-logic.js` with tests in `tests/channels.test.mjs`) and **On This Day** channel (Wikipedia's free "On this day" feed, no key).
+
+### Later
+- 4-player split screen for Turbo Karts.
 
 ---
 
