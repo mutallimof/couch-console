@@ -43,17 +43,19 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
+  justify-content: safe center; /* (more rows than the screen is tall: the focused row scrolls into view) */
+  gap: min(14px, 1.6vh);
+  padding: 2vh 0;
+  overflow-y: auto;
   background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
 }
-.settings h1 { margin: 0 0 12px; font-size: 48px; font-weight: 900; }
+.settings h1 { margin: 0 0 4px; font-size: min(48px, 5vh); font-weight: 900; }
 .set-row {
   width: min(720px, 90vw);
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 18px 26px;
+  padding: min(18px, 1.5vh) 26px;
   border-radius: 16px;
   background: var(--card);
   box-shadow: var(--shadow);
@@ -64,16 +66,16 @@ html, body {
 .set-btn {
   font: 900 24px 'Nunito', sans-serif;
   min-width: 52px;
-  height: 52px;
+  height: min(52px, 5.6vh);
   padding: 0 14px;
   border: none;
   border-radius: 12px;
-  background: #eef2f7;
+  background: var(--surface-2);
   color: var(--text);
 }
 .set-btn.wide { min-width: 180px; }
 .levels { display: flex; gap: 5px; }
-.lvl { width: 14px; height: 30px; border-radius: 4px; background: #dfe6ef; }
+.lvl { width: 14px; height: 30px; border-radius: 4px; background: var(--surface-3); }
 .lvl.on { background: #2F80ED; }
 .set-hint { margin: 8px 0 0; color: var(--muted); font-size: 18px; font-weight: 700; }
 
@@ -89,7 +91,8 @@ html, body {
   gap: 6px;
   padding: 10px 20px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--text);
   box-shadow: var(--shadow);
   white-space: nowrap;
 }
@@ -175,8 +178,8 @@ html, body {
 }
 .slot-state { font-size: 20px; font-weight: 700; }
 
-.pairing-close { margin: 0; font-size: 20px; font-weight: 700; color: #1A5CC8; } /* darker blue: readable on the light background */
-.status { margin: 0; min-height: 1.4em; color: #c0392b; font-weight: 700; }
+.pairing-close { margin: 0; font-size: 20px; font-weight: 700; color: var(--link); }
+.status { margin: 0; min-height: 1.4em; color: var(--danger); font-weight: 700; }
 
 /* ---------- Cursors ---------- */
 .cursors { position: fixed; inset: 0; pointer-events: none; z-index: 100; overflow: hidden; }
@@ -301,10 +304,10 @@ html, body {
 .kart-msg { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(56px, 12vh, 120px); font-weight: 900; }
 .kart-minimap { position: absolute; right: 14px; top: 14px; width: 150px; height: 150px; border-radius: 16px; background: rgba(30, 50, 80, 0.35); }
 .kart-results { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(20, 30, 50, 0.45); }
-.kart-card { position: relative; background: #fff; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); min-width: 460px; text-align: center; }
+.kart-card { position: relative; background: var(--surface); color: var(--text); border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); min-width: 460px; text-align: center; }
 .kart-card h1 { margin: 0; padding: 22px 32px; color: #fff; font-size: 40px; font-weight: 900; }
 .kart-card table { width: 100%; border-collapse: collapse; font-size: 22px; font-weight: 700; }
-.kart-card td { padding: min(8px, 1vh) 24px; border-bottom: 1px solid #EEF2F7; text-align: left; }
+.kart-card td { padding: min(8px, 1vh) 24px; border-bottom: 1px solid var(--line); text-align: left; }
 .kart-card .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; background: var(--c); }
 .kart-card p { margin: 14px 0 18px; padding: 0 20px; color: #2F80ED; font-weight: 900; font-size: 20px; }
 
@@ -478,7 +481,7 @@ html, body {
 .kart-item svg { width: 56px; height: 56px; display: block; }
 .kart-coins { position: absolute; left: 112px; top: 82px; font-size: 28px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
 .coin { width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFF3BF, #FCC419 55%, #E8A400); box-shadow: 0 0 0 2px #fff; }
-.kart-card td img { width: 30px; height: 30px; vertical-align: middle; margin-right: 8px; border-radius: 50%; background: #EEF2F7; }
+.kart-card td img { width: 30px; height: 30px; vertical-align: middle; margin-right: 8px; border-radius: 50%; background: var(--surface-2); }
 
 /* Turbo Karts select screen */
 .kart-select { position: absolute; inset: 0; z-index: 5; padding: 18px 28px; overflow: hidden; color: #fff;
@@ -530,14 +533,14 @@ html, body {
 .kart-progress { width: min(420px, 70vw); height: 18px; margin-top: 14px; border-radius: 9px; background: rgba(43, 52, 69, 0.2); overflow: hidden; }
 .kart-progress i { display: block; width: 100%; height: 100%; background: #2F80ED; transform-origin: left; transform: scaleX(var(--p, 0));
   transition: transform 200ms var(--ease-out); }
-.join-warning { margin-top: 10px !important; padding: 10px 14px; border-radius: 12px; background: #FFF3BF; color: #7A4D00; font-size: 14px; font-weight: 700; max-width: 380px; }
+.join-warning { margin-top: 10px !important; padding: 10px 14px; border-radius: 12px; background: var(--warn-bg); color: var(--warn-text); font-size: 14px; font-weight: 700; max-width: 380px; }
 .join-warning code { font-size: 12px; }
 
 /* Cursor trail (drawn on a canvas under the cursors) */
 .cursor-trail { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* Mouse & keyboard mode (no phone): our own cursor replaces the system one */
-.use-mouse { font: 700 18px 'Nunito', sans-serif; color: #1A5CC8; background: none; border: 2px solid currentColor;
+.use-mouse { font: 700 18px 'Nunito', sans-serif; color: var(--link); background: none; border: 2px solid currentColor;
   border-radius: 12px; padding: 8px 16px; cursor: pointer; transition: transform 120ms var(--ease-out); }
 .use-mouse:active { transform: scale(0.97); }
 body.desk-mode, body.desk-mode * { cursor: none !important; }
@@ -547,7 +550,7 @@ body.desk-mode, body.desk-mode * { cursor: none !important; }
   gap: 12px; padding: 24px; text-align: center; background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom)); }
 .broken-app h1 { margin: 0; font-size: 44px; }
 .broken-app p { margin: 0; font-size: 20px; font-weight: 700; color: var(--muted); max-width: 640px; }
-.broken-app code { max-width: 760px; padding: 10px 14px; border-radius: 10px; background: #fff; color: #c0392b; font-size: 15px; white-space: pre-wrap; }
+.broken-app code { max-width: 760px; padding: 10px 14px; border-radius: 10px; background: var(--surface); color: var(--danger); font-size: 15px; white-space: pre-wrap; }
 
 /* Turbo Karts speed lines: thin white streaks rushing in from the screen edges while boosting */
 .kart-hud::before {

@@ -6,6 +6,7 @@
 import { graphics } from './graphics-prefs.js';
 import { party } from './party.js';
 import { PHOTO_LIMITS_GB } from '../shared/protocol.js';
+import { nextChoice } from '../shared/theme.js';
 
 const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round">
   <path d="M8 14h32M8 24h32M8 34h32"/>
@@ -13,8 +14,9 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 </svg>`;
 
 // prefs: { getSensitivity(), setSensitivity(n), getPhoneSounds(), setPhoneSounds(on), showQR() } from main.js
-const MAIN_ACTIONS = ['sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'party', 'qr'];
+const MAIN_ACTIONS = ['theme', 'sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'party', 'qr'];
 const PARTY_ACTIONS = ['rename', 'new-party', 'approve', 'limit-up', 'music-pause', 'download', 'end-party', 'back'];
+const THEME_LABELS = { light: 'Light', dark: 'Dark', auto: 'Auto' };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export function createSettings(prefs) {
@@ -29,27 +31,29 @@ export function createSettings(prefs) {
     const on = (v) => (v ? 'On' : 'Off');
     return `
         <h1>Settings</h1>
-        <div class="set-row" data-row="0">
+        <div class="set-row" data-row="0"><span class="set-label">Theme</span>
+          <button class="set-btn wide" data-action="theme">${THEME_LABELS[prefs.getTheme()]}</button></div>
+        <div class="set-row" data-row="1">
           <span class="set-label">Pointer speed</span>
           <button class="set-btn" data-action="sens-down">−</button>
           <span class="levels">${bars}</span>
           <button class="set-btn" data-action="sens-up">+</button>
         </div>
-        <div class="set-row" data-row="1"><span class="set-label">Sound</span>
+        <div class="set-row" data-row="2"><span class="set-label">Sound</span>
           <button class="set-btn wide" data-action="mute">${api.sound.muted ? 'Off' : 'On'}</button></div>
-        <div class="set-row" data-row="2"><span class="set-label">Phone sounds</span>
+        <div class="set-row" data-row="3"><span class="set-label">Phone sounds</span>
           <button class="set-btn wide" data-action="phone-sounds">${on(prefs.getPhoneSounds())}</button></div>
-        <div class="set-row" data-row="3"><span class="set-label">Steady cursor</span>
+        <div class="set-row" data-row="4"><span class="set-label">Steady cursor</span>
           <button class="set-btn wide" data-action="steady">${on(prefs.getSteady())}</button></div>
-        <div class="set-row" data-row="4"><span class="set-label">Cartoon look (karts)</span>
+        <div class="set-row" data-row="5"><span class="set-label">Cartoon look (karts)</span>
           <button class="set-btn wide" data-action="cartoon">${on(graphics.cartoon)}</button></div>
-        <div class="set-row" data-row="5"><span class="set-label">Soft shadows (karts)</span>
+        <div class="set-row" data-row="6"><span class="set-label">Soft shadows (karts)</span>
           <button class="set-btn wide" data-action="ao">${on(graphics.ao)}</button></div>
-        <div class="set-row" data-row="6"><span class="set-label">Party</span>
+        <div class="set-row" data-row="7"><span class="set-label">Party</span>
           <button class="set-btn wide" data-action="party">Open ›</button></div>
-        <div class="set-row" data-row="7"><span class="set-label">Add a phone</span>
+        <div class="set-row" data-row="8"><span class="set-label">Add a phone</span>
           <button class="set-btn wide" data-action="qr">Show QR code</button></div>
-        <p class="set-hint">Steady cursor: turn it On if the cursor wanders or shakes. Cartoon look and soft shadows make Turbo Karts prettier; turn them Off if it runs slowly. D-pad to choose · A to press · B to go back</p>`;
+        <p class="set-hint">Theme: Light, Dark or Auto (follows this laptop); the phones follow it too. Steady cursor: turn it On if the cursor wanders or shakes. Cartoon look and soft shadows make Turbo Karts prettier; turn them Off if it runs slowly. D-pad to choose · A to press · B to go back</p>`;
   }
 
   function renderParty() {
@@ -80,6 +84,7 @@ export function createSettings(prefs) {
   function render() {
     root.innerHTML = `<div class="settings">${page === 'main' ? renderMain() : renderParty()}</div>`;
     root.querySelectorAll('.set-row').forEach((r, i) => r.classList.toggle('focused', i === row));
+    root.querySelector('.set-row.focused')?.scrollIntoView({ block: 'nearest' });
   }
 
   async function partyAction(action) {
@@ -114,7 +119,7 @@ export function createSettings(prefs) {
           message = 'Everything was deleted. A new, empty party has started.';
         }
       } else if (action === 'back') {
-        page = 'main'; row = 6; endStep = 0; message = '';
+        page = 'main'; row = 7; endStep = 0; message = '';
       }
     } catch (err) {
       message = 'That did not work. Is the laptop server still running?';
@@ -125,7 +130,10 @@ export function createSettings(prefs) {
 
   function act(action) {
     if (page === 'party') { api.sound.play('select'); return partyAction(action); }
-    if (action === 'sens-down' || action === 'sens-up') {
+    if (action === 'theme') {
+      prefs.setTheme(nextChoice(prefs.getTheme()));
+      api.sound.play('select');
+    } else if (action === 'sens-down' || action === 'sens-up') {
       const next = prefs.getSensitivity() + (action === 'sens-up' ? 1 : -1);
       if (next < 1 || next > 10) return;
       prefs.setSensitivity(next);
@@ -156,7 +164,7 @@ export function createSettings(prefs) {
   function onButton({ playerId, button, state }) {
     if (state !== 'down') return;
     if (button === 'B') {
-      if (page === 'party') { page = 'main'; row = 6; endStep = 0; message = ''; return render(); }
+      if (page === 'party') { page = 'main'; row = 7; endStep = 0; message = ''; return render(); }
       return api.exit();
     }
     const rows = actions().length;
@@ -167,7 +175,8 @@ export function createSettings(prefs) {
       return render();
     }
     if (button === 'LEFT' || button === 'RIGHT') {
-      if (page === 'main' && row === 0) act(button === 'RIGHT' ? 'sens-up' : 'sens-down');
+      if (page === 'main' && row === 0) act('theme');
+      else if (page === 'main' && row === 1) act(button === 'RIGHT' ? 'sens-up' : 'sens-down');
       return;
     }
     if (button === 'A') {

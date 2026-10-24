@@ -63,6 +63,20 @@ import * as photosPane from './photos.js';
 import * as musicPane from './music.js';
 import * as presentPane from './present.js';
 import * as activityPane from './activity.js';
+import { applyTheme, systemPrefersDark } from '../shared/theme.js';
+
+// Theme: the TV decides (Settings -> Theme) and sends 'light' or 'dark'. Before that arrives we
+// use the last one we saw, or this phone's own setting, so the join screen is never a bright flash.
+function followTheme(theme) {
+  if (theme !== 'light' && theme !== 'dark') return;
+  applyTheme(theme);
+  try { localStorage.setItem('couch.tvTheme', theme); } catch { /* ignore */ }
+}
+{
+  let saved = null;
+  try { saved = localStorage.getItem('couch.tvTheme'); } catch { /* ignore */ }
+  applyTheme(saved || (systemPrefersDark() ? 'dark' : 'light'));
+}
 party.registerPane('photos', 'Photos', '📸', photosPane);
 party.registerPane('music', 'Music', '🎵', musicPane);
 party.registerPane('present', 'Present', '🖥️', presentPane);
@@ -114,6 +128,7 @@ function join() {
     setConnected(true, `Room ${room}`);
     $('join-form').hidden = true;
     $('welcome').hidden = true;
+    followTheme(res.theme);
     setLayout(res.layout, 'join'); // the layout the console wants right now (e.g. the kart pad mid-race)
     party.onJoined(res);
     applyMode();
@@ -348,7 +363,10 @@ $('recenter').addEventListener('click', () => {
 // Game feedback for this player: vibrate (Android) and a small sound from the phone itself
 // (iPhones can't vibrate from a web page, so there the sound is the feedback).
 let phoneSounds = true;
-socket.on(EV.FEEDBACK_SETTINGS, (s) => { if (typeof s?.phoneSounds === 'boolean') phoneSounds = s.phoneSounds; });
+socket.on(EV.FEEDBACK_SETTINGS, (s) => {
+  if (typeof s?.phoneSounds === 'boolean') phoneSounds = s.phoneSounds;
+  followTheme(s?.theme);
+});
 socket.on(EV.FEEDBACK_RUMBLE, ({ ms }) => {
   ms = Math.min(Number(ms) || 0, 1000);
   navigator.vibrate?.(ms);
