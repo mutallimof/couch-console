@@ -4,6 +4,7 @@ import { players } from './players.js';
 import { party } from './party.js';
 import { socket } from './socket.js';
 import { musicPlayer } from './music-hub.js';
+import { createSlides } from './slides.js';
 import { createPointers } from './pointer.js';
 import { createGyroPointers } from './pointer/engine.js';
 import { createMenu } from './menu.js';
@@ -19,6 +20,7 @@ const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoo
 // Games and channels, from their .game.json files (each loads on its own; see apps.js).
 // Loaded before connecting, so no server message can arrive before we're listening.
 const gameApps = await loadApps();
+const slides = createSlides({ socket, party });
 const folders = await fetch('/js/console/folders.json').then((r) => r.json()).catch(() => ({}));
 const pointers = createPointers($('cursors'));
 const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
@@ -107,6 +109,7 @@ function onConnect() {
     party.setRoom(res);
     showRoom(res.room);
     party.call('GET', '/music').then((s) => musicPlayer.onState(s)).catch(() => {}); // (a song may already be queued)
+    slides.init(); // (a presentation may already be running)
   });
 }
 socket.on('connect', onConnect);
@@ -132,6 +135,8 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
 socket.on(EV.PARTY_ROSTER, (r) => { party.onRoster(r); renderGuests(); });
 socket.on(EV.PARTY_PHOTO, (e) => party.emitPhoto(e));
 socket.on(EV.MUSIC_STATE, (s) => musicPlayer.onState(s));
+socket.on(EV.PRESENT_DECK, (e) => { party.emitDeck(e); if (e.kind !== 'removed') slides.processDeck(e.deck); }); // (PDFs: count the pages, make little pictures)
+socket.on(EV.PRESENT_MOTION, (e) => { if ([e.alpha, e.beta, e.gamma].every(Number.isFinite)) gyro.feed('laser', { alpha: e.alpha, beta: e.beta, gamma: e.gamma, motion: e.motion && [e.motion.rx, e.motion.ry, e.motion.rz].every(Number.isFinite) ? e.motion : null }); });
 socket.on(EV.PLAYER_LEFT, ({ playerId }) => {
   players.leave(playerId);
   sound.play('leave');
@@ -183,6 +188,7 @@ players.onChange(() => {
 // current = { app, handlers, allowed: Set<playerId>, missing: Set<playerId>, mounted }
 
 let current = null;
+slides.setGameOpen(() => !!current && current.app.id !== 'present'); // (a running game covers the slides)
 // Phones show the normal remote ('pointer'), a steering wheel ('wheel') or a text box ('keyboard')
 let controllerMode = 'pointer', controllerPrompt = '';
 function setController(mode, prompt = '') {
@@ -216,6 +222,7 @@ function openApp(app) {
   stage.style.setProperty('--tile', app.color);
   // Games (not the hubs and channels) pause the party music, unless Settings -> Party says otherwise
   musicPlayer.setGameActive(!['music', 'photos', 'present', 'settings'].includes(app.id) && app.folder !== 'channels');
+  queueMicrotask(() => slides.refresh()); // (a running game covers the slides)
   menu.press();
   stage.hidden = false;
   const anim = REDUCED_MOTION
@@ -254,6 +261,7 @@ function closeApp() {
   if (current.mounted) current.app.unmount();
   if (controllerMode !== 'pointer') setController('pointer');
   musicPlayer.setGameActive(false);
+  queueMicrotask(() => slides.refresh());
   pointers.setStyle('arrow');
   hidePicker();
   hidePause();
@@ -373,6 +381,7 @@ socket.on(EV.INPUT_MOTION, (e) => {
 });
 (function gyroLoop(now) {
   for (const { playerId, x, y } of gyro.frame(now)) {
+    if (playerId === 'laser') { slides.laser(x, y); continue; } // (the presenter's laser dot, not a cursor)
     pointers.move(playerId, x * 2 - 1, y * 2 - 1, colorFor(playerId), true);
   }
   requestAnimationFrame(gyroLoop);
@@ -412,6 +421,16 @@ function onInputButton(e) {
   // Paused because a phone dropped: anyone still here can press B to quit.
   if (current?.missing.size) {
     if (down && (button === 'B' || button === 'HOME')) closeApp();
+    return;
+  }
+  // While slides are on screen the remote turns pages: A / RIGHT next, LEFT back, B black screen, HOME ends the show
+  if (slides.active && !slides.el.hidden) {
+    if (down) {
+      if (button === 'HOME') slides.end();
+      else if (button === 'A' || button === 'RIGHT' || button === 'DOWN') slides.next();
+      else if (button === 'LEFT' || button === 'UP') slides.prev();
+      else if (button === 'B') slides.black();
+    }
     return;
   }
   // HOME always goes back to the menu (only the driver opens and closes things).

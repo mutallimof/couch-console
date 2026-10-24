@@ -58,7 +58,7 @@ html, body {
   container-type: inline-size; /* lets the icon and title scale with the tile */
   transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
 }
-.toasts { position: fixed; left: 24px; bottom: 96px; z-index: 50; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toasts { position: fixed; left: 24px; bottom: 96px; z-index: 80; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .toast { padding: 10px 18px; border-radius: 16px; background: rgba(30, 40, 60, 0.92); color: #fff; font-weight: 800; font-size: 22px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); animation: tile-in 260ms var(--ease-out) backwards; }
 .guest-list { margin: 8px 0 0; font-size: 22px; font-weight: 800; color: var(--muted, #5F6B80); text-align: center; max-width: 80vw; }
 .crumb { text-align: center; font-size: 22px; font-weight: 900; color: var(--muted, #5F6B80); margin: 0 0 8px; }
@@ -845,7 +845,7 @@ img.qr-img:not([src]) { visibility: hidden; }
 .photo-empty img { width: min(40vh, 360px); background: #fff; padding: 10px; border-radius: 16px; margin: 12px 0; }
 
 /* The party's music card (Phase 45): big in the Music screen, small in the corner elsewhere. YouTube needs 200x200 px or more, always visible. */
-#music-dock { position: fixed; z-index: 40; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: #111; color: #fff; box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4); transition: opacity 200ms; }
+#music-dock { position: fixed; z-index: 60; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: #111; color: #fff; box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4); transition: opacity 200ms; }
 #music-dock.paused .md-video { filter: grayscale(0.6) brightness(0.7); }
 #music-dock .md-video { flex: 1; min-height: 0; position: relative; background: #000; }
 #music-dock .md-slot, #music-dock iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -874,3 +874,24 @@ img.qr-img:not([src]) { visibility: hidden; }
 .mu-join { display: flex; align-items: center; gap: 14px; margin-top: auto; font-size: 20px; font-weight: 700; }
 .mu-join img { width: 96px; background: #fff; padding: 5px; border-radius: 10px; }
 .mu-help { margin: 0; font-size: 18px; font-weight: 700; opacity: 0.7; }
+
+/* Slides on the TV (Phase 46) */
+#slides { position: fixed; inset: 0; z-index: 70; background: #000; color: #fff; }
+.sl-layer { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; transition: opacity 150ms linear; }
+.sl-layer.on { opacity: 1; }
+.sl-img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+canvas.sl-img { width: 100%; height: 100%; object-fit: contain; }
+.sl-black { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 120ms; }
+.sl-black.on { opacity: 1; }
+.sl-tag { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 8px 20px; border-radius: 18px; background: rgba(0, 0, 0, 0.7); font-size: 24px; font-weight: 800; }
+.sl-laser { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.sl-laser::after { content: ''; position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%; background: radial-gradient(#ff2a2a 0 35%, rgba(255, 42, 42, 0.5) 55%, transparent 72%); box-shadow: 0 0 22px 8px rgba(255, 30, 30, 0.6); }
+@media (prefers-reduced-motion: reduce) { .sl-layer { transition: none; } }
+.deck-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; padding: 16px 48px 48px; }
+.deck-tile { border-radius: 14px; overflow: hidden; background: #0003; border: 4px solid transparent; transition: transform 160ms var(--ease-out); }
+.deck-tile.focused { border-color: #fff; transform: scale(1.04); }
+.deck-tile .thumb { aspect-ratio: 16 / 10; background: #111; display: grid; place-items: center; }
+.deck-tile img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.deck-tile b { display: block; padding: 8px 12px 0; font-size: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deck-tile span { display: block; padding: 0 12px 10px; font-size: 15px; opacity: 0.7; }
+.channel.present.drop { outline: 6px dashed #fff; outline-offset: -12px; }

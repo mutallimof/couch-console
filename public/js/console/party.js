@@ -18,10 +18,19 @@ function toast(text) {
 
 // Photo notices (new photo, removed...) go to whoever is listening; if the Photos app is not open, a toast
 const photoListeners = new Set();
+const deckListeners = new Set();
 
 export const party = {
   toast,
   photosOpen: false,
+  onDeck(fn) { deckListeners.add(fn); return () => deckListeners.delete(fn); },
+  emitDeck(e) { deckListeners.forEach((fn) => fn(e)); },
+  // Upload slides from the laptop (a form, so no JSON header)
+  async upload(path, form) {
+    const { 'content-type': _skip, ...headers } = party.headers();
+    const res = await fetch(`/api/party${path}`, { method: 'POST', headers, body: form });
+    return { ok: res.ok, data: await res.json().catch(() => ({})) };
+  },
   onPhoto(fn) { photoListeners.add(fn); return () => photoListeners.delete(fn); },
   emitPhoto(e) {
     photoListeners.forEach((fn) => fn(e));

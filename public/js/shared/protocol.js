@@ -55,6 +55,9 @@ export const EV = {
   MUSIC_STATE: 'music:state',       // server -> TV + phones: { now, queue, paused, skips, skipNeeded, added?, skipped?, error? }
   MUSIC_ENDED: 'music:ended',       // TV -> server: { videoId } the song finished
   MUSIC_ERROR: 'music:error',       // TV -> server: { videoId, code } YouTube could not play it
+  PRESENT_STATE: 'present:state',   // server -> TV + phones: { active, deck, page, black, presenter, laser, notes }
+  PRESENT_DECK: 'present:deck',     // server -> TV + phones: { kind: 'added' | 'updated' | 'removed', deck }
+  PRESENT_MOTION: 'present:motion', // presenter's phone -> server -> TV: raw sensors for the laser dot (only while the laser is on)
   REMOTE_PROFILE: 'remote:profile', // phone -> server, with ack: { name, emoji } -> { ok }
 };
 
