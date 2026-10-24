@@ -87,7 +87,7 @@ test('three phones queue songs; the TV plays them fairly; skip and blocked links
     await cem.tap('.tab[data-tab="remote"]');
     await tv.waitForSelector('.tile:not(.empty)');
     const press = (b) => cem.evaluate((x) => { const el = document.querySelector(`#controller [data-button="${x}"]`); el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); }, b).then(() => tv.waitForTimeout(350));
-    await focusOn(tv, press, 'dock:music');
+    await focusOn(tv, press, 'music');
     await press('A');
     await tv.waitForSelector('.channel.music .mu-queue');
     assert.match(await tv.textContent('.mu-queue'), /bbbbbbbbbb1/);

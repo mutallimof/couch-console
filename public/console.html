@@ -13,16 +13,13 @@
   <link rel="stylesheet" href="/css/home.css">
 </head>
 <body>
-  <!-- Home menu (Phase 55): status bar, side buttons, recently played, a frosted panel with the open folder, folder tiles, a dock -->
+  <!-- Home menu (Phase 55): a top bar and ONE grid of big tiles; a folder opens as its own screen -->
   <main class="menu theme-bg">
     <header class="status glass">
-      <button class="who" type="button" data-focus="action:profile" id="who"><span class="who-face" id="who-face">🙂</span><span id="who-name">Guest</span></button>
       <div class="when"><b id="clock" class="clock"></b><span id="date" class="date"></span></div>
       <span id="sound-hint" class="sound-hint">Click this page once to turn on sound</span>
       <span class="status-right">
         <span id="bar-players" class="bar-players"></span>
-        <span id="phones" class="phones" title="Phones connected"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/></svg><b id="phones-n">0</b></span>
-        <svg id="wifi" class="wifi" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-label="Connected"><path d="M2 9a15 15 0 0 1 20 0"/><path d="M5.5 12.8a10 10 0 0 1 13 0"/><path d="M9 16.4a5 5 0 0 1 6 0"/><circle cx="12" cy="19.6" r="1.2" fill="currentColor"/></svg>
         <!-- Small QR so another phone can join while you're in the menu -->
         <span id="mini-join" class="mini-join" hidden>
           <img class="qr-img" alt="QR code to join">
@@ -30,26 +27,12 @@
         </span>
       </span>
     </header>
-
-    <nav id="side" class="side" aria-label="Console"></nav>
-
     <section class="home">
-      <div class="hero-wrap"><h2 class="sec">Recently played</h2><div id="hero" class="hero"></div></div>
-      <div class="mid">
-        <div class="panel glass">
-          <header class="panel-head"><h2 id="crumb" class="crumb"></h2><span id="pager" class="pager"></span></header>
-          <div id="tiles" class="tiles"></div>
-          <footer class="panel-hint"><span><kbd>A</kbd> Open</span><span><kbd>B</kbd> Back</span><span><kbd>+</kbd> Options</span></footer>
-        </div>
-        <div id="folders" class="folders"></div>
-      </div>
+      <h2 id="crumb" class="crumb" hidden></h2>
+      <div id="tiles" class="tiles"></div>
+      <p class="panel-hint"><span><kbd>A</kbd> Open</span><span class="back-hint"><kbd>B</kbd> Back</span></p>
     </section>
-
-    <nav id="dock" class="dock glass" aria-label="Dock"></nav>
-    <div id="tooltip" class="tooltip" hidden></div>
   </main>
-  <div id="sleep" class="sleep" hidden><span>Sleeping… press any button</span></div>
-  <section id="overlay" class="overlay-panel" hidden></section>
 
   <!-- An open app (game or settings) zooms out of its tile into this layer -->
   <div id="stage" class="stage" hidden>
