@@ -3,7 +3,12 @@
 // are our own (the original drew Nintendo-themed sponsors and lettering).
 import * as THREE from "three";
 // Deterministic, local pavement maps. No remote asset request or random per frame.
+// Real pavement pictures (Poly Haven) can replace the generated ones: { map, normalMap, roughnessMap }
+let override = null;
+export function setStadiumPavement(maps) { override = maps; }
+
 export function pavementMaps() {
+  if (override) return override;
   const size = 512,
     height = new Float32Array(size * size);
   let seed = 28971;

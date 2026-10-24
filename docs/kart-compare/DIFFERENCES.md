@@ -1,9 +1,9 @@
 # Turbo Karts vs OpenWii's kart game: what differs (Phase 40)
 
-Reference = OpenWii run locally **with** its own asset pack (reference screenshots only; nothing from the pack is in
-this project). Ours = Turbo Karts, same screen size (960x540), same staged moments (countdown, drift, boost, item hit,
-all on the night stadium). Images in this folder: three columns, **reference | ours before | ours after**.
-Reference screenshots show Nintendo-derived artwork: keep this folder private.
+Reference = OpenWii run locally with its own asset pack, used only to look at (nothing from that pack is in this project,
+and the reference screenshots were deleted again). Ours = Turbo Karts, same screen size (960x540), same staged moments
+(countdown, drift, boost, item hit, all on the night stadium). The pictures in this folder are ours only:
+`ours-before-after-*.png` (before and after the fixes below), `start-ambient-occlusion-on.png` and `cartoon/` (look on and off).
 
 | # | Difference | Kind | Status |
 |---|---|---|---|

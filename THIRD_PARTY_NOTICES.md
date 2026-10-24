@@ -88,3 +88,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Poly Haven (CC0)
+HDRIs: kloofendal_48d_partly_cloudy, snowy_field, cloud_layers, solitude_night, rogland_moonlit_night. Textures: asphalt_03, concrete_pavement_03 and ground sets. https://polyhaven.com, CC0.
