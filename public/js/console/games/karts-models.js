@@ -8,6 +8,11 @@ export function setThree(t) { THREE = t; }
 
 const CAR_SCALE = 3.2;      // Toy Car Kit cars are tiny; this makes them kart-sized (~2.8 m long)
 const PIRATE_HEIGHT = 1.45;  // pirates are scaled to this height (m) to fit the cars
+// A character's glTF: its own `path` (Quaternius pack) or a Pirate Kit model
+const modelPath = (c) => c.path || (c.model && PIRATE(c.model));
+// The Quaternius clips have other names than the Pirate Kit's: the same moments, mapped
+const QUATERNIUS_HEIGHT = 1.8; // (measured in the browser, see DECISIONS.md)
+const ANIM_ALIASES = { Wave: 'Victory', Yes: 'Victory', HitReact: 'RecieveHit' };
 
 const std = (color, rough = 0.55, metal = 0, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
 const mesh = (geo, mat, x = 0, y = 0, z = 0, cast = true) => {
@@ -148,13 +153,14 @@ function assetKart(gltf, kart) {
 }
 
 // A pirate driver (animated), or null if the model isn't loaded
-function assetDriver(gltf) {
+function assetDriver(gltf, height = 1.55) {
   const c = cloneOf(gltf);
   if (!c) return null;
   const obj = c.object;
-  obj.scale.setScalar(PIRATE_HEIGHT / 1.55); // pirates are about 1.55 m tall in the pack
+  obj.scale.setScalar(PIRATE_HEIGHT / height); // `height` = how tall the model is in its own units
   const mixer = new THREE.AnimationMixer(obj);
   const actions = Object.fromEntries(c.animations.map((a) => [a.name, mixer.clipAction(a)]));
+  for (const [alias, real] of Object.entries(ANIM_ALIASES)) if (!actions[alias] && actions[real]) actions[alias] = actions[real];
   let current = actions.Idle;
   current?.play();
   mixer.update(Math.random() * 2); // don't all bob in sync
@@ -176,8 +182,8 @@ function assetDriver(gltf) {
 // A character standing on its own (select-screen showroom): a pirate with its animations,
 // or a code-built animal. Returns { object, anim } (anim = null for the animals).
 export function makeStandingCharacter(character, assets) {
-  const pirate = character.model && assets?.get(PIRATE(character.model));
-  const anim = pirate ? assetDriver(pirate) : null;
+  const pirate = assets?.get(modelPath(character));
+  const anim = pirate ? assetDriver(pirate, character.path ? QUATERNIUS_HEIGHT : undefined) : null;
   return { object: anim ? anim.object : makeCharacter(character), anim };
 }
 
@@ -185,8 +191,8 @@ export function makeStandingCharacter(character, assets) {
 export function makeRacer(character, kart, color, assets) {
   const carModel = kart.model && assets?.get(CAR(kart.model));
   const k = carModel ? assetKart(carModel, kart) : makeKart(kart, color);
-  const pirate = character.model && assets?.get(PIRATE(character.model));
-  const anim = pirate ? assetDriver(pirate) : null;
+  const pirate = assets?.get(modelPath(character));
+  const anim = pirate ? assetDriver(pirate, character.path ? QUATERNIUS_HEIGHT : undefined) : null;
   const driver = anim ? anim.object : makeCharacter(character);
   driver.position.set(0, k.seatY, k.seatZ);
   if (!anim) driver.scale.setScalar(carModel ? 0.85 : 0.95);
@@ -340,15 +346,15 @@ export function makePortraits(renderer, characters, assets) {
   const ctx = canvas.getContext('2d');
   const out = {};
   for (const c of characters) {
-    const pirate = c.model && assets?.get(PIRATE(c.model));
-    const anim = pirate ? assetDriver(pirate) : null;
+    const pirate = assets?.get(modelPath(c));
+    const anim = pirate ? assetDriver(pirate, c.path ? QUATERNIUS_HEIGHT : undefined) : null;
     const ch = anim ? anim.object : makeCharacter(c);
     if (anim) {
       // frame the pirate's head: find its top in the idle pose
       anim.mixer.setTime(0.5);
       ch.updateMatrixWorld(true);
       const top = new THREE.Box3().setFromObject(ch, true).max.y;
-      cam.position.set(0.55, top - 0.1, 2.2); cam.lookAt(0, top - 0.3, 0);
+      cam.position.set(0.55, top - 0.15, 2.7); cam.lookAt(0, top - 0.4, 0);
     } else {
       cam.position.set(0.6, 1.25, 2.6); cam.lookAt(0, 0.95, 0);
     }
