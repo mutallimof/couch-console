@@ -27,7 +27,7 @@ function render() {
         <span class="mu-who" style="background:${q.byColor}">${esc(q.byEmoji)} ${esc(q.byName)}</span>${q.votes.length ? `<span class="mu-votes">👍 ${q.votes.length}</span>` : ''}</li>`).join('')
       : '<li class="mu-none">The queue is empty</li>'}</ol>
     ${queue.length > 6 ? `<p class="muted">…and ${queue.length - 6} more</p>` : ''}
-    <div class="mu-join">${qr ? `<img src="${qr}" alt="">` : ''}<span>Scan to add songs<br><b>${esc(party.room)}</b></span></div>
+    <div class="mu-join">${qr ? `<img src="${qr}" alt="">` : ''}<span>Scan to add songs<br><b>${esc(party.room)}</b><br><small>Already joined? Open the Music tab on your phone.</small></span></div>
     <p class="mu-help">${esc(note) || 'A = pause · PLUS = skip · ▲▼ choose · MINUS = remove · ◀ ▶ move · B = back'}</p>`;
 }
 

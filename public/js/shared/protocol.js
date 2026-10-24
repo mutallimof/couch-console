@@ -30,6 +30,7 @@ export const RECONNECT_GRACE_MS = 30_000;
 export const EV = {
   CONSOLE_CREATE: 'console:create',
   REMOTE_JOIN: 'remote:join',
+  REMOTE_REPLACED: 'remote:replaced', // server -> an older tab of the same phone: a newer tab took over
   PLAYER_JOINED: 'player:joined',
   PLAYER_LEFT: 'player:left',
   CONSOLE_DISCONNECTED: 'console:disconnected',

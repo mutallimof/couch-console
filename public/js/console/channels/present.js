@@ -17,7 +17,7 @@ function render() {
   if (!decks.length) {
     head.innerHTML = '<h1>Present</h1>';
     const qr = document.querySelector('#qr')?.src || '';
-    box.innerHTML = `<div class="photo-empty"><h1>No slides yet</h1><p>On your phone: <b>Present → Upload slides</b></p><p>or drop a PDF or pictures onto this screen.</p>${qr ? `<img src="${qr}" alt="QR code to join">` : ''}<p class="muted">B = menu</p></div>`;
+    box.innerHTML = `<div class="photo-empty"><h1>No slides yet</h1><p>On your phone: <b>Present → Upload slides</b></p><p>or drop a PDF or pictures onto this screen.</p>${qr ? `<img src="${qr}" alt="QR code to join">` : ''}<p class="muted"><b>Already joined?</b> Open the Present tab on your phone.</p><p class="muted">B = menu</p></div>`;
     grid = null;
     return;
   }
