@@ -28,9 +28,8 @@ Couch Console includes code adapted from the projects below.
     is adapted from `logic.test.mjs`
   - `public/js/console/games/ow-kart/stadium/` (the Grand Stadium scenery, from `world.js`,
     `atmosphere.js`, `materials.js`, `stadium-*.js`) and its turf texture `art/turf-v1.png`.
-    Signs, sponsors, lettering and the tower statue were replaced with original ones. The course
-    *layout* (control points) is OpenWii's, which is itself modelled on a real-game course; swap
-    `stadium/stadium-def.js` if you would rather have an original shape.
+    Signs, sponsors, lettering and the tower statue were replaced with original ones, and the
+    course layout (`stadium/stadium-def.js`) is our own original shape, not OpenWii's.
 - Only OpenWii's MIT-licensed code and its own generated turf texture were used. None of its
   Nintendo-derived models, character art, item art, names or sounds are included or imitated.
 - License: MIT
