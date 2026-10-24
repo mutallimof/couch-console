@@ -197,3 +197,7 @@ Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "ever
 - Karts: 4 left (Speedster, Roadster, Dragster, Racer; they share the same toy-car style). Characters: 8 (Anne, Suki, Merlo, Bjorn, Glint, Grub, Biscuit, Daisy). The unused glTF/GLB files (Monster, Hauler, Trekker, Coupe, other characters) are still on disk: tell me if you want them deleted.
 - Before/after: `docs/screenshots/character-select-before-after.png`.
 - Tests: random ports now avoid Chrome's blocked ports (4045, 6000, 6566, 6665-6669 caused ERR_UNSAFE_PORT flakes).
+
+### Style guide (Phase 55 step 1): "toy-box living room at dusk"
+- `docs/STYLE.md` + `docs/style-board.html` (screenshot `docs/screenshots/style-board.png`). Fredoka (display) + Nunito (text); Night Den/Plum background with Cushion orange as the primary and the four player colors Sky, Pop, Mint, Butter. Waiting for the user's OK before applying it (logo, home, karts, 2D games, sounds, results).
+- Lottie files: `public/assets/lottie/` is not on origin/main yet (only the Kenney sounds arrived). Will use them as soon as they are pulled.
