@@ -152,9 +152,8 @@ When a phone joins, it takes over as P1.
 
 **Boot animation:** a short intro (about 3 seconds) plays when the console page opens: the Couch Console logo, a TV with a couch inside whose four cushions are the player colors, draws itself and lights up. Click, press any key or press any phone button to skip it. To turn it off completely, add `?noboot=1` to the laptop link.
 
-**Debug mode:** add `?debug=1` to the end of the laptop link (for example `https://…trycloudflare.com/console.html?debug=1`).
-On the phone, add `&debug=1` to the end of its link. You'll see live sensor numbers, messages per second and ping times.
-On the laptop, the debug box also shows how many frames per second the laptop draws (below about 50 means it's struggling), each phone's motion messages per second and what the pointer has learned about the phone (`learning…` at first, then a line like `x←x+1.00 y←y+1.00 z←z+1.00` once it trusts the gyroscope). Press **L** on the laptop keyboard to switch the cursor prediction off and on, to compare how it feels.
+**Debug mode:** on the laptop press **F3**, or turn on **Settings → Debug readout**. (A `?debug` in the laptop link no longer turns it on.) On the phone, add `&debug=1` to the end of its link (it is not remembered: a refresh or a new scan turns it off). You'll see live sensor numbers, messages per second and ping times.
+On the laptop, the debug box shows how many frames per second the laptop draws (below about 50 means it's struggling), each phone's motion messages per second and what the pointer has learned about the phone (`learning…` at first, then a line like `x←x+1.00 y←y+1.00 z←z+1.00` once it trusts the gyroscope). Press **L** on the laptop keyboard to switch the cursor prediction off and on, to compare how it feels.
 
 **Turbo Karts looks:** reflections, a sky with a sun, textured roads and grass, a soft glow on bright things (boost flames, drift sparks, neon) and speed lines while boosting. If your laptop can't keep up, the glow effects switch themselves off. To force them, add `?fx=on` (always on) or `?fx=off` (always off) to the laptop link, for example `…/console.html?fx=off`.
 
