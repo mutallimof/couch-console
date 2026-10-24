@@ -10,7 +10,7 @@ const STATS = [['speed', 'Speed'], ['accel', 'Acceleration'], ['handling', 'Hand
 const HINTS = { char: 'D-pad: character · A = pick', kart: '◀ ▶ kart · A = ready · B = back', ready: 'Ready! · B = change' };
 
 // onCelebrate(playerId, 'pick' | 'ready'): a character was picked / a player is ready
-export function createSelect({ root, players, portraits, previous, sound, onDone, onExit, onCelebrate = () => {} }) {
+export function createSelect({ root, players, portraits, previous, sound, onDone, onExit, onCelebrate = () => {}, tracks = TRACKS }) {
   // One "seat" per human player: what they're choosing and what they picked
   const seats = players.map((p, n) => ({
     playerId: p.playerId, color: p.color,
@@ -55,7 +55,7 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
   }
 
   function buildTrack() {
-    el.innerHTML = `<h1>Choose a track</h1><div class="ks-tracks">${TRACKS.map((t, i) => `
+    el.innerHTML = `<h1>Choose a track</h1><div class="ks-tracks">${tracks.map((t, i) => `
       <div class="ks-track ${i === track ? 'focused' : ''}" style="--a:${t.sky[0]};--b:${t.ground}">
         <b>${t.name}</b><span>${t.blurb}</span></div>`).join('')}</div>
       <p class="ks-hint">P${seats[0].playerId}: ◀ ▶ choose · A = race! · B = back</p>`;
@@ -65,7 +65,7 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
     if (state !== 'down') return;
     if (stage === 'track') {
       if (playerId !== seats[0].playerId) return;
-      const n = TRACKS.length;
+      const n = tracks.length;
       if (button === 'LEFT' || button === 'UP') { track = (track + n - 1) % n; sound.play('hover'); }
       else if (button === 'RIGHT' || button === 'DOWN') { track = (track + 1) % n; sound.play('hover'); }
       else if (button === 'A') { sound.play('start'); return finish(); }

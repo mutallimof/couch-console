@@ -4,7 +4,7 @@ import { makeScenery, makeItemBox, makeCoin } from './karts-models.js';
 import { CAR, cloneOf, fit } from './karts-assets.js';
 import { decorate } from './karts-decor.js';
 import { roadMaterial } from './karts-materials.js';
-import { trackPath, ROAD_HALF, WALL, SAMPLES, SHORTCUT_HALF, SHORTCUT_ARC } from './kart-path.js';
+import { trackPath, ROAD_HALF as ROAD_HALF0, WALL as WALL0, SAMPLES, SHORTCUT_HALF, SHORTCUT_ARC } from './kart-path.js';
 
 // Track data and the center line live in kart-path.js (no graphics, testable)
 export { ROAD_HALF, WALL, TRACKS } from './kart-path.js';
@@ -38,8 +38,11 @@ function noiseTexture(THREE, { size = 256, base = 225, spread = 30, specks = 250
 }
 
 // assets (optional): loaded models (Map path -> glTF) for item boxes, coins and trackside decor
-export function buildTrack(THREE, def, assets = null) {
-  const path = trackPath(THREE, def);
+// opts.path: a ready-made center line (the ported kart rules' track model: see ow-kart/render-path.js),
+// which also sets the road and barrier width; opts.noPickups: leave out item boxes and coins (that game draws its own)
+export function buildTrack(THREE, def, assets = null, opts = {}) {
+  const path = opts.path || trackPath(THREE, def);
+  const ROAD_HALF = path.roadHalf ?? ROAD_HALF0, WALL = path.wallHalf ?? WALL0;
   const { pts, tan, nor, length, at, locate } = path;
   const edge = (i, off, dy = 0) => pts[i].clone().addScaledVector(nor[i], off).add(new THREE.Vector3(0, dy, 0));
   const group = new THREE.Group();
@@ -265,12 +268,12 @@ export function buildTrack(THREE, def, assets = null) {
     g.children[0].position.y -= (box.min.y + box.max.y) / 2; // spin around the middle
     return g;
   };
-  const boxes = def.boxes.flatMap((t) => [-6, -2, 2, 6].map((side) => {
+  const boxes = opts.noPickups ? [] : def.boxes.flatMap((t) => [-6, -2, 2, 6].map((side) => {
     const i = at(t * SAMPLES), mesh = model(CAR('item-box'), 1.6, makeItemBox), p = edge(i, side, 1.4);
     mesh.position.copy(p); group.add(mesh);
     return { i, side, mesh, p, respawn: 0 };
   }));
-  const coins = def.coins.flatMap((t, n) => Array.from({ length: 6 }, (_, j) => {
+  const coins = opts.noPickups ? [] : def.coins.flatMap((t, n) => Array.from({ length: 6 }, (_, j) => {
     const i = at(t * SAMPLES + j * 5), side = (n % 2 ? -3 : 3), mesh = model(CAR('item-coin-gold'), 1.1, makeCoin), p = edge(i, side, 1.1);
     mesh.position.copy(p); group.add(mesh);
     return { i, side, mesh, p, respawn: 0 };

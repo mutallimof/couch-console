@@ -342,6 +342,9 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 ### Phase 32: Games ported from OpenWii
 - **Juicy Slash** (OpenWii fruit-ninja: 3D wall, painted fruit, juice splats, blade ribbons; 4 blades) and **Alien Strike** (OpenWii alien-attack: toy-box space shooter), with the rules in `juicy-slash-rules.js` / `alien-strike-rules.js` and the original tests (`tests/juicy-slash.test.mjs`, `tests/alien-strike.test.mjs`). `ow-audio.js` = OpenWii's synthesized sounds. Shooting Range was not ported (ours is richer). Credits in THIRD_PARTY_NOTICES.md.
 
+### Phase 36: Turbo Karts GP (ported OpenWii kart engine + Grand Stadium)
+New game next to Turbo Karts: OpenWii physics, items, computer drivers, camera, HUD; our kart pad and split screen; seven tracks. Done; waiting for the user's real-phone test. Next: swap in Quaternius characters if downloaded.
+
 ### Phase 34: Cursor and kart-mechanics fixes after the first real test
 - **Steady cursor** switch (Settings, or G on the laptop): `Pointer.steady` skips the learned gyro map and uses the fused orientation only. Test: with a noise gyro, steady = exactly a no-gyro phone.
 - Alien Strike: how-to-play screen first (goal, controls, lives), hold A to keep firing.
