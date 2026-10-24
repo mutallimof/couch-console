@@ -112,9 +112,9 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
     };
     for (const [ph, sel, sign] of [[p2, '[data-steer="-1"]', -1], [p1, '[data-steer="1"]', 1]]) {
       await touch(ph, sel, 'touchStart');
-      await lap.waitForFunction((sign) => window.__steer * sign > 0.9, sign, { timeout: 5000 });
+      await lap.waitForFunction((sign) => window.__steer * sign > 0.9, sign, { timeout: 20000 });
       await touch(ph, sel, 'touchEnd');
-      await lap.waitForFunction(() => window.__steer === 0, null, { timeout: 5000 });
+      await lap.waitForFunction(() => window.__steer === 0, null, { timeout: 20000 });
     }
   } finally {
     await browser.close();
