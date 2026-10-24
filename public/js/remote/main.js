@@ -138,7 +138,7 @@ function afterRoleChange(res) {
   role = res.role === 'guest' ? 'guest' : 'player';
   setPlayer(res.playerId, res.color);
   party.onJoined({ role, person: undefined, slotsFree: undefined });
-  if (role === 'player' && !started) $('start').hidden = false;
+  if (role === 'player') party.setTab('remote'); // a new player lands on the controller
   applyMode();
 }
 socket.on('disconnect', () => setConnected(false, 'Reconnecting…'));
