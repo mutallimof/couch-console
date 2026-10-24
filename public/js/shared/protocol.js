@@ -25,10 +25,8 @@ export const ROOM_CODE_LENGTH = 4;
 // A phone that reconnects within this time gets its old slot back.
 export const RECONNECT_GRACE_MS = 30_000;
 
-// R = DRIFT on the kart pad (Phase 22)
-export const BUTTONS = ['A', 'B', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'HOME', 'PLUS', 'MINUS', 'R'];
 
-// Socket event names (see PLAN.md, section 5).
+// Socket event names (see docs/PLAN.md, section 5).
 export const EV = {
   CONSOLE_CREATE: 'console:create',
   REMOTE_JOIN: 'remote:join',

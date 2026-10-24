@@ -277,7 +277,7 @@ function closeApp() {
   anim.onfinish = () => { stage.hidden = true; busy = false; setPairing(); };
 }
 
-// The `api` object every game gets in mount(). See PLAN.md, Phase 4.
+// The `api` object every game gets in mount(). See docs/PLAN.md, Phase 4.
 function makeApi(cur, mode) {
   const { handlers, allowed } = cur;
   return {

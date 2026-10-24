@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { GP_CHARACTERS } from '../public/js/console/games/ow-kart/characters.js';
+import { GP_CHARACTERS } from '../public/js/console/games/turbo-karts/ow-kart/characters.js';
 
 test('every GP racer has a Quaternius model with Idle and Victory (and a hit) animation', () => {
   assert.equal(new Set(GP_CHARACTERS.map((c) => c.id)).size, GP_CHARACTERS.length, 'unique ids');

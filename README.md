@@ -6,12 +6,11 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started: **Turbo Karts**, **Table Tennis**, **Target Range**, **Air Hockey**, **Gem Dungeon**, a boot animation, local HTTPS, and the **Photos**, **Weather**, **Video**, **Timer** and **On This Day** channels are in. See `PLAN.md` for the roadmap.
+> **What is built:** the console and phone remote, 4 players, 14 games and channels, **Turbo Karts**, local HTTPS, and the **party mode** (guests, Photos album, Music queue, Present slides). See `docs/PLAN.md` and `docs/PLAN-PARTY.md` for the roadmap and `docs/DECISIONS.md` for why things are the way they are.
 >
-> **After pulling new code, run `npm install` again.** Turbo Karts uses the `three` 3D library, which needs to be downloaded once.
+> **After pulling new code, run `npm install` again** (the 3D library `three`, `pdfjs-dist` for slides and a few others are downloaded once).
 >
-> **3D models:** Turbo Karts uses free CC0 model packs in `public/assets/` (Kenney *Toy Car Kit* and *Racing Kit*, Quaternius *Pirate Kit*). They load with a progress bar when you open the game and when you pick a track. If a model is missing, the game draws a simple built-in version instead, so it always works.
-
+> **3D models and characters:** free CC0 packs in `public/assets/` (Kenney *Toy Car Kit* and *Racing Kit*, Quaternius *Pirate Kit* and *Animated Characters*). They load with a progress bar when you open Turbo Karts. If a model is missing, the game draws a simple built-in version instead, so it always works. Credits are in `THIRD_PARTY_NOTICES.md`.
 ---
 
 ## What you need (one-time setup)
@@ -217,16 +216,28 @@ The `certs` folder holds a private key: it is **never** uploaded to GitHub (it's
 ## Project layout
 
 ```
-server.js          the Node server (static files + real-time relay)
-public/            everything the browser loads
-  console.html     the laptop page
-  remote.html      the phone page
-  css/             styles for both pages
-  js/shared/       constants both sides use (event names, player colors)
-  js/console/      laptop code
-  js/remote/       phone code
-PLAN.md            the full spec and phase list
-CLAUDE.md          working rules for the AI assistant
+server.js             the Node server: serves the pages, relays phone input, hosts the party API
+server/               party features on the server: people (players/guests), events (saved data),
+                      photos, music, present (slides)
+public/               everything the browser loads
+  console.html        the laptop (TV) page
+  remote.html         the phone page
+  css/                styles for both pages
+  js/shared/          constants both sides use (event names, player colors, limits)
+  js/console/         laptop code: main.js (the menu and router), menu, settings, party, slides,
+                      music player, pointer/ (the gyro cursor), games/ and channels/ (one file per game,
+                      each with a .game.json), folders.json (the home folders)
+  js/console/games/turbo-karts/   everything of Turbo Karts except its entry file: models, tracks, select screen,
+                      effects, and ow-kart/ (the rules ported from OpenWii, track model, characters, stadium scenery)
+  js/remote/          phone code: main.js, party.js (join, tabs), photos / music / present tabs, kart pad
+  assets/             3D models (Kenney, Quaternius) and optional Poly Haven files
+tests/                automatic tests (npm test)
+docs/                 plans (PLAN.md, PLAN-PARTY.md), DECISIONS.md, kart-art-options.md, screenshots
+data/                 your parties (photos, slides): created on first run, never in git
+photos/               pictures that also show in the Photos app (optional, never in git)
+scripts/              make-certs.js (local https certificate)
+CLAUDE.md             working rules for the AI assistant
+THIRD_PARTY_NOTICES.md  credits and licenses
 ```
 
 ### Adding, hiding or reordering games
@@ -238,7 +249,7 @@ Every game and channel lives in `public/js/console/games/` or `public/js/console
 
 - **Reorder the menu:** change `order` (lower numbers come first).
 - **Hide a game:** set `"hidden": true` (its files stay; it just isn't on the menu).
-- **Add a game:** put `my-game.js` and `my-game.game.json` in the `games` folder and refresh the laptop page.
+- **Add a game:** put `my-game.js` and `my-game.game.json` in the `games` folder and refresh the laptop page. Add `"folder": "arcade"` (or `"channels"`, see `folders.json`) to put it inside a home folder.
 
 If a game has a bug and can't load, only its tile shows **Couldn't load…**; the rest of the console keeps working.
 
