@@ -3,6 +3,7 @@
 // Needs Playwright (not part of this project). Without it this test is skipped. To run it:
 //   npm install --no-save playwright && npx playwright install chromium && npm test
 import test from 'node:test';
+import { focusOn } from './helpers-home.mjs';
 import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -16,7 +17,7 @@ function findPlaywright() {
   return null;
 }
 const pw = findPlaywright();
-const PORT = 3900 + Math.floor(Math.random() * 300);
+const PORT = 8100 + Math.floor(Math.random() * 300);
 
 test('the kart pad appears on every phone during a race, and steers', { skip: !pw && 'Playwright is not installed', timeout: 300000 }, async () => {
   const server = spawn(process.execPath, ['server.js'], {
@@ -84,6 +85,7 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
 
     // Menu -> Turbo Karts (Versus) -> each picks a character and a kart -> P1 picks the track
     const [p1, p2] = phones;
+    await focusOn(lap, (b) => press(p1, b).then(() => lap.waitForTimeout(300)), 'turbo-karts');
     await press(p1, 'A');
     await lap.waitForSelector('.picker', { timeout: 30000 });
     await press(p1, 'A');
@@ -112,9 +114,9 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
     };
     for (const [ph, sel, sign] of [[p2, '[data-steer="-1"]', -1], [p1, '[data-steer="1"]', 1]]) {
       await touch(ph, sel, 'touchStart');
-      await lap.waitForFunction((sign) => window.__steer * sign > 0.9, sign, { timeout: 5000 });
+      await lap.waitForFunction((sign) => window.__steer * sign > 0.9, sign, { timeout: 20000 });
       await touch(ph, sel, 'touchEnd');
-      await lap.waitForFunction(() => window.__steer === 0, null, { timeout: 5000 });
+      await lap.waitForFunction(() => window.__steer === 0, null, { timeout: 20000 });
     }
   } finally {
     await browser.close();

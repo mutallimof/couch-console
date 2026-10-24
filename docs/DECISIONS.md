@@ -101,7 +101,7 @@ not to stop for questions). Each entry says what was decided and why. Newest at 
 - The old shortcut ramps of Cloud Gardens are not part of the OpenWii engine and are gone with the old rules.
 
 ## Phase 40: Visual comparison loop with OpenWii
-- Ran OpenWii locally **with** its pack only to take reference screenshots (kept in a scratch folder outside the repo; none of its assets are copied). The side-by-sides in `docs/kart-compare/` contain Nintendo-derived pixels (the reference column) since the user asked for them: private repo only, delete the folder if the repo ever goes public.
+- Ran OpenWii locally **with** its pack only to take reference screenshots (kept in a scratch folder outside the repo; none of its assets are copied). (The side-by-sides first had a reference column with Nintendo-derived pixels; that column was deleted afterwards, see the Poly Haven entry below.)
 - Full difference list, with "code fix" vs "needs better art", in `docs/kart-compare/DIFFERENCES.md`. All code-side items fixed: stadium light rig and exposure (mean brightness 55-65 -> 70-90 vs the reference's 90-100), moving floodlights, exponential fog, ambient occlusion (GTAO, `?ao=off`), gold HUD lettering, calmer boost, gold hit burst.
 - Per-track light rig (`def.lighting`): only the stadium uses it; the day tracks keep their defaults.
 - Ambient occlusion is on by default; if the laptop is slow, the existing automatic effects-off switch (under 40 fps) turns all screen effects off. In the headless test the software renderer is far too slow with AO, so the capture scripts use `?ao=off` except one sample (`start-ambient-occlusion-on.png`).
@@ -175,3 +175,68 @@ Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "ever
 - **Folders tidied:** the Turbo Karts files that sat among the games (`karts-*.js`, `kart-*.js`) and the `ow-kart/` engine folder now live in `public/js/console/games/turbo-karts/` (the entry file `games/turbo-karts.js` stays where the menu looks for games). All imports were rewritten by a script and the tests and browser checks re-run. README has a short "what is where" section.
 - **Notices:** `THIRD_PARTY_NOTICES.md` now lists only what is still used: Quaternius (characters and Pirate Kit), Kenney, three.js, pdf.js, Nunito, YouTube, Poly Haven (optional), OpenWii.
 - **Not built (by instruction):** PLAN-PARTY phases 47-52 (Party Games and the camera games) were left out; the run covered Milestone 3 (roles, photos, music, present). They stay in `docs/PLAN-PARTY.md`.
+
+## Poly Haven wired in; reference screenshots removed
+- The OpenWii reference screenshots (they showed Nintendo-derived art) were deleted from `docs/kart-compare/`; the comparison pictures there are now ours only (before and after). They stay in git history.
+
+### Poly Haven wiring (details)
+- Sky: HDRI dome per theme (park/pirate/desert kloofendal, snow snowy_field, sky cloud_layers, city solitude_night, stadium rogland_moonlit_night). Roads: asphalt_03 / concrete_pavement_03 (stadium); ground textures for desert/snow/city.
+- `?polyhaven=off` shows the old look. Listing at `/api/polyhaven`.
+- Before/after: `docs/screenshots/polyhaven-before-after-track0.png` (left = before) and `-track6.png`.
+- Known: stadium lane paint is a bit saturated against the concrete; tune later.
+
+### Phone: tabs reachable, re-scan and two tabs (bug from a real test)
+- Cause found: on a player's phone the full-screen "Tap to start" overlay covered the Photos/Music/Present tabs until the player tapped it. It now leaves the tab bar free and only shows on the Remote tab.
+- Same clientId joining again (QR scanned on the same phone, a second tab) never disconnects the player: the slot and name are kept, the NEWEST tab becomes live, the older tab gets `remote:replaced` (new protocol event, requested by the user), stops reconnecting and shows "Opened in another tab" with a "Use this tab" button.
+- TV hint "Already joined? Open the Photos/Music/Present tab on your phone." on those screens. Tabs are bigger.
+- Test: `tests/party-retab.e2e.test.mjs`.
+
+### Character select fixed (black faces, seated racer, fewer karts and characters)
+- Black faces: the Quaternius pack's "Skin" material is almost black (baseColor 0.013 linear) in every glTF; each driver now gets its own cloned materials and a skin tone from `skin` in `ow-kart/characters.js` (thumbnails, preview and race all go through `assetDriver`). Animals and the goblin keep their own.
+- The preview is ONE showroom: the racer is SEATED in the chosen kart (last frame of the pack's SitDown clip, held), on one podium, idle bounce, a hop + spin + cheer on Ready. Warmer, brighter lights.
+- Karts: 4 left (Speedster, Roadster, Dragster, Racer; they share the same toy-car style). Characters: 8 (Anne, Suki, Merlo, Bjorn, Glint, Grub, Biscuit, Daisy). The unused glTF/GLB files (Monster, Hauler, Trekker, Coupe, other characters) are still on disk: tell me if you want them deleted.
+- Before/after: `docs/screenshots/character-select-before-after.png`.
+- Tests: random ports now avoid Chrome's blocked ports (4045, 6000, 6566, 6665-6669 caused ERR_UNSAFE_PORT flakes).
+
+### Style guide (Phase 55 step 1): "toy-box living room at dusk"
+- `docs/STYLE.md` + `docs/style-board.html` (screenshot `docs/screenshots/style-board.png`). Fredoka (display) + Nunito (text); Night Den/Plum background with Cushion orange as the primary and the four player colors Sky, Pop, Mint, Butter. Waiting for the user's OK before applying it (logo, home, karts, 2D games, sounds, results).
+- Lottie files: `public/assets/lottie/` is not on origin/main yet (only the Kenney sounds arrived). Will use them as soon as they are pulled.
+
+### Phase 55 (visual upgrade) step 1: light glossy style (replaces the dusk-plum draft)
+- New direction from the user's reference images (style only, nothing copied): light, clean, glossy; frosted glass panels, glossy tiles, isometric toy-diorama icons, bright toy 3D. `docs/STYLE.md`, `docs/style-board.html`, shared `public/css/theme.css` (`.theme-bg`, `.glass`, `.gloss`, `.round-btn`).
+- Dependencies approved by the user and installed with `--legacy-peer-deps`: gsap, howler, lottie-web, pixi.js, pixi-filters, postprocessing@6.36.0 (last release that supports three r160), three.quarks@0.10.18 (the newest ones need three >= r165/r182; we stay on r160). Served from node_modules under `/vendor/*`; importmap in console.html.
+
+### Phase 55 step 2: new home screen
+- Layout (all in `public/js/console/menu.js`, `public/css/home.css`, markup in console.html): status bar (profile chip, time/date, P1-P4 chips, phones count, Wi-Fi icon, small join QR) · six round side buttons (Profile, Activity, Photos, Players, Settings, Sleep) · "Recently played" (Turbo Karts pinned first, then the last games played from `localStorage couch.recent`) · frosted panel with the open folder's games (12 per page; dots and arrows appear with more pages) · four folder tiles with a 2x2 preview · dock (Photos, Music, Present, Party Games, Camera, Join) · tooltip bubble · hint line.
+- Navigation: every focusable thing has `data-focus`; the D-pad uses spatial navigation (nearest in that direction, overlap preferred), the pointer focuses what it hovers, A opens, B hops from the panel back to its folder tile. A on a folder tile shows its games in the panel (no more sub-menu). Empty folders (Party Games, Camera) show "is empty for now".
+- Profile and Activity open small info panels for now (who is here / nothing yet); they get real content in step 4. Sleep blanks the screen until any button. "Players" and "Join" open the QR screen.
+- Animation: GSAP (loaded on the side; the menu works without it) for the entrance, the press squash and the tooltip pop; focus lift/glow is CSS (`.gloss.is-focus`).
+- Tests: new `tests/home.e2e.test.mjs`; `party-ui.e2e` adapted. Before/after: `docs/screenshots/home-before-after.png`, `home.png`.
+
+### Phase 55 step 3: isometric toy-diorama icons
+- 22 icons (11 games, 3 hubs, 4 channels, 4 folders) in `public/assets/icons/<id>.png`, rendered by `node scripts/render-icons.mjs [id...]` from `public/js/tools/icon-scenes.js` (shapes only, no downloads) with ONE camera, ONE soft studio light and the same tiled base (`public/icons.html` + `icon-render.js` crop the empty margins). A new game gets an icon by adding a scene and its id to `scripts/icon-ids.mjs`; games without a PNG keep their SVG icon. The menu asks `/api/icons` which PNGs exist.
+- Screenshots: `docs/screenshots/icons-all.png`, `icons-before-after.png`.
+
+### Phase 55 step 4: profiles (avatars) and the activity feed
+- Avatar: small whole numbers (face, skin, hair, hair color, eyes, mouth, extra, background), drawn as SVG by `public/js/shared/avatar.js` so the phone and the TV draw the same face. The phone has a maker (steppers + "Surprise me") in the welcome card and the Me sheet, saved per phone (localStorage `couch.profile`), sent in `remote:join` / `remote:profile` (server cleans every part to a valid range; nothing else can get through). The roster, photo credits ("by Ben"), the status-bar chip, the Profile panel, lobbies' feed and the Turbo Karts results show it. The emoji stays as the fallback. All faces are original drawings.
+- Activity: `server/activity.js` keeps the newest 60 lines per room in memory (a party is short and the lines are only "who did what"); lines from the same person and kind within 45 s merge ("Ana added 3 photos"). Sources: join, photo upload (not held for approval), song queued, started presenting, and the TV reporting a winner (`activity:game`, TV only; phones cannot claim wins; Turbo Karts reports its winner). Live to the TV (also as a note) and to the phones (new Activity tab), `GET /api/party/activity` for a screen that just opened.
+- Tests: `tests/profile-activity.test.mjs`; screenshots `docs/screenshots/profile-*.png`, `activity-tv.png`.
+
+### Phase 55 step 5 (part): Neon Avenue and three.quarks particles
+- New track "Neon Avenue" (`karts-avenue.js`, def in `kart-path.js`): night street with lit towers (merged geometry, windows keep their size), made-up neon signs, a big start/finish arch with chaser lights, painted starting boxes, crosswalks, street lamps with glow, striped barriers and cones. Min corner radius checked (36 m) and the existing "every track can be raced / drivers stay on the road" tests cover it.
+- three.quarks (v0.10.18, works with three r160): exhaust puffs, boost flames, drift sparks (tier colors), dust (off-road, landings, walls) per kart, confetti where a human finishes. `?quarks=off` or a failed load falls back to the old point effects.
+- postprocessing 6.36 (`karts-look.js`): our own chain (outlines, AO, bloom for HDR, cartoon + tone mapping) now draws into a buffer, and the library finishes it: mipmap-blur bloom (stronger at night: 0.95, 0.3 by day), a little saturation/contrast, then SMAA. Our final pass outputs linear and the library does the sRGB encoding. `?pp=off` switches it off (also: if it fails to load or build, the old chain is used). Software GL is slow with it (headless tests), a real GPU is not; the low-fps guard still switches all effects off.
+- Fixed on the way: mowed-grass stripes made brown "patches" on the night street; street-lamp glow discs removed (bloom does it).
+- Screenshots: `docs/screenshots/neon-avenue-*.png`, `kart-effects-before-after.png`.
+
+### Home simplified (user feedback): one grid, one way to everything
+- Removed: the sidebar, the dock, "Recently played", the inline folder panel, the Join tile, the "Guest" chip, phones count, Wi-Fi icon, tooltip bubbles, Sleep, and the TV's Profile/Activity panels (they were reachable twice or duplicated the tiles; profiles and the Activity tab live on the phone, activity lines still pop up on the TV as notes; the QR is in the top bar and in Settings).
+- Now: top bar (clock + date, P1-P4 chips, small QR + room code) and ONE grid: Turbo Karts as the hero, then Arcade, Channels, Photos, Music, Present, Settings. A folder opens as its own screen (B = back). Folders without games (Party Games, Camera) are not shown until they have games.
+- Style: STYLE.md and the first board were the dark "plum" look, the menu was light. Both are now real: `?theme=dark` (class `theme-dark` in theme.css). Screenshots of both for the user to choose; until then light is the default.
+
+### Phase 55 step 6: polish
+- Phone remote in the same glossy look (theme.css + a block at the end of remote.css): glossy A/B and D-pad buttons, gradient room, Fredoka on buttons and tabs. It follows the light look; it gets the dark one if that is chosen.
+- 2D games: `public/js/console/pixi-layer.js` shows a game's canvas through PixiJS (a touch more color with pixi-filters' AdjustmentFilter) and draws glowing spark bursts on top; Balloon Pop uses it (the other 2D games keep their own canvas for now; opting in is 3 lines). Tried bloom on the whole picture: it washed out the pale sky, and on the sparks: it drew a pale box, so the sparks are just big soft additive dots. `?pixi=off` shows the plain canvas.
+- Sounds: Kenney CC0 packs through howler for the 20 game sounds (`sound-map.js`); the old synth sounds are the fallback and still do the engine hum. Test: `tests/sound-map.test.mjs`.
+- Results: `results.js` makes an animated podium (GSAP) plus confetti; Turbo Karts shows it above the result table (with the players' avatars). GSAP runs without lag smoothing so slow frames don't stall it. The Lottie files are NOT in the repository yet (`public/assets/lottie/` is missing on main), so the confetti is made in code; lottie-web is installed and served at `/vendor/lottie-web` for when they arrive.
+- Logo: `public/assets/logo.svg` and `logo-flat.svg` (one color); the boot animation is a GSAP timeline (cushions bounce in, the play triangle pops and glows, the name slides up). The pairing screen follows the same look.

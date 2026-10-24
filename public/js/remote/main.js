@@ -62,9 +62,11 @@ let motionOk = false, laserEmit = false;
 import * as photosPane from './photos.js';
 import * as musicPane from './music.js';
 import * as presentPane from './present.js';
+import * as activityPane from './activity.js';
 party.registerPane('photos', 'Photos', '📸', photosPane);
 party.registerPane('music', 'Music', '🎵', musicPane);
 party.registerPane('present', 'Present', '🖥️', presentPane);
+party.registerPane('activity', 'Activity', '🔔', activityPane);
 
 function setConnected(on, text) {
   $('dot').classList.toggle('on', on);
@@ -100,7 +102,7 @@ function join() {
   }
   setConnected(false, 'Joining…');
   const p = party.profile;
-  socket.emit(EV.REMOTE_JOIN, { room, clientId, name: p.name, emoji: p.emoji, role: p.role === 'guest' ? 'guest' : 'player' }, (res) => {
+  socket.emit(EV.REMOTE_JOIN, { room, clientId, name: p.name, emoji: p.emoji, avatar: p.avatar, role: p.role === 'guest' ? 'guest' : 'player' }, (res) => {
     if (!res?.ok) {
       setConnected(false, 'Not joined');
       return showJoinForm(ERRORS[res?.error] || 'Could not join.');
@@ -138,10 +140,28 @@ function afterRoleChange(res) {
   role = res.role === 'guest' ? 'guest' : 'player';
   setPlayer(res.playerId, res.color);
   party.onJoined({ role, person: undefined, slotsFree: undefined });
-  if (role === 'player' && !started) $('start').hidden = false;
+  if (role === 'player') party.setTab('remote'); // a new player lands on the controller
   applyMode();
 }
 socket.on('disconnect', () => setConnected(false, 'Reconnecting…'));
+
+// Another tab of this phone joined (e.g. the QR was scanned again): that tab is now the live one.
+// This tab stops reconnecting by itself and offers to take over again.
+let replaced = false;
+socket.on(EV.REMOTE_REPLACED, () => {
+  replaced = true;
+  joined = false;
+  socket.io.opts.reconnection = false;
+  socket.disconnect();
+  setConnected(false, 'Open in another tab');
+  $('replaced').hidden = false;
+});
+$('replaced-btn').addEventListener('click', () => {
+  replaced = false;
+  $('replaced').hidden = true;
+  socket.io.opts.reconnection = true;
+  socket.connect(); // 'connect' joins again, and this tab is the newest
+});
 
 socket.on(EV.CONSOLE_DISCONNECTED, () => {
   setConnected(false, 'Not joined');
@@ -238,6 +258,8 @@ window.addEventListener('orientationchange', onTurned);
 
 function applyMode() {
   if (!joined) return;
+  // "Tap to start" belongs to the Remote tab: Photos, Music and Present stay reachable without it
+  $('start').hidden = started || role !== 'player' || party.tab !== 'remote';
   // Guests have no controller: the kart pad and the keyboard are for players. Tabs other than Remote hide the controller.
   const isPlayer = role === 'player';
   const isKart = isPlayer && mode === 'wheel', isKeys = isPlayer && mode === 'keyboard';

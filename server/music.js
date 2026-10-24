@@ -100,7 +100,7 @@ export function moveSong(state, songId, dir) {
 }
 
 // ---------- HTTP + sockets ----------
-export function createMusic({ app, io, rooms, party }) {
+export function createMusic({ app, io, rooms, party, activity }) {
   const { events, need } = party;
   const states = new Map(); // event id -> music state (the queue is live; it starts empty when the laptop restarts)
   const stateOf = () => { const id = events.current().id; if (!states.has(id)) states.set(id, createMusicState()); return states.get(id); };
@@ -145,6 +145,7 @@ export function createMusic({ app, io, rooms, party }) {
     if (out.error === 'TOO_MANY') return res.status(429).json({ error: out.error, message: `You already have ${MAX_WAITING_PER_PERSON} songs waiting. Wait for one to play.` });
     if (out.error === 'ALREADY') return res.status(409).json({ error: out.error, message: 'That song is already in the queue.' });
     broadcast(req.auth.code, { added: { id: out.item.id, byName: who.name } });
+    if (req.auth.person) activity?.add(req.auth.code, req.auth.person, 'music');
     res.json({ ok: true, song: out.item.title });
   });
 

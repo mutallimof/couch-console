@@ -1,45 +1,55 @@
-// Boot animation shown when the console page opens (about 2.7 s).
-// The logo: a TV screen with a little couch inside, one cushion per player color. The screen
-// draws itself, the cushions settle onto the couch, the screen lights up and the name rises in.
-// Click, press a key, or press any phone button to skip it.
-import { PLAYER_COLORS } from '../shared/protocol.js';
+// Boot animation shown when the console page opens (about 2.6 s), made with GSAP (Phase 55).
+// The logo (original artwork): a glossy sofa, two cushions and a backrest, with a play triangle above it.
+// The cushions bounce in one after the other, the triangle pops and glows, the name slides up.
+// Click, press a key, or press any phone button to skip it. Without GSAP (or with reduced motion) it just fades.
 
-const DURATION_MS = 2700;
-const REDUCED_MS = 1200;
+const DURATION_MS = 2600;
+const REDUCED_MS = 1100;
 
-// The logo as an inline SVG (original artwork, also usable at other sizes)
+// The logo as an inline SVG (the same drawing as public/assets/logo.svg)
 export function logoSvg(size = 250) {
-  const cushions = PLAYER_COLORS.map((c, i) =>
-    `<rect class="boot-cushion" style="--i:${i}" x="${52 + i * 25}" y="86" width="22" height="20" rx="6" fill="${c}"/>`).join('');
-  return `<svg class="boot-logo" viewBox="0 0 200 170" width="${size}" height="${size * 0.85}" aria-hidden="true">
-    <path class="boot-antenna" d="M78 22 L100 40 L122 22" fill="none" stroke="#2B3445" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect class="boot-screen-fill" x="22" y="40" width="156" height="108" rx="26" fill="#E7F0FD"/>
-    <rect class="boot-glow" x="22" y="40" width="156" height="108" rx="26" fill="url(#boot-light)"/>
-    <rect class="boot-frame" x="22" y="40" width="156" height="108" rx="26" fill="none" stroke="#2B3445" stroke-width="8" pathLength="1"/>
-    <g class="boot-couch">
-      <path d="M48 84 v-8 a10 10 0 0 1 10 -10 h84 a10 10 0 0 1 10 10 v8" fill="#2B3445"/>
-      <rect x="38" y="84" width="14" height="30" rx="7" fill="#2B3445"/>
-      <rect x="148" y="84" width="14" height="30" rx="7" fill="#2B3445"/>
-      <rect x="46" y="104" width="108" height="12" rx="5" fill="#2B3445"/>
-      ${cushions}
+  return `<svg class="boot-logo" viewBox="0 0 170 150" width="${size}" height="${size * 150 / 170}" aria-hidden="true">
+    <defs><linearGradient id="logo-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB36E"/><stop offset=".6" stop-color="#FF8A3D"/><stop offset="1" stop-color="#E86F22"/></linearGradient></defs>
+    <circle class="logo-halo" cx="85" cy="30" r="32" fill="#3FA9FF" opacity=".22"/>
+    <path class="logo-play" d="M72 14 104 31 72 48z" fill="#3FA9FF" transform="translate(4 -1)"/>
+    <g class="logo-sofa">
+      <rect class="logo-back" x="12" y="62" width="146" height="62" rx="26" fill="url(#logo-g)"/>
+      <rect class="logo-arm" x="0" y="82" width="38" height="60" rx="18" fill="url(#logo-g)"/>
+      <rect class="logo-arm" x="132" y="82" width="38" height="60" rx="18" fill="url(#logo-g)"/>
+      <rect class="logo-cushion" x="38" y="84" width="46" height="40" rx="16" fill="#FFC48A"/>
+      <rect class="logo-cushion" x="86" y="84" width="46" height="40" rx="16" fill="#FFC48A"/>
+      <rect x="18" y="68" width="134" height="16" rx="8" fill="#fff" opacity=".35"/>
+      <rect x="22" y="132" width="14" height="14" rx="5" fill="#C65E1B"/><rect x="134" y="132" width="14" height="14" rx="5" fill="#C65E1B"/>
     </g>
-    <defs><radialGradient id="boot-light" cx="0.5" cy="0.35" r="0.7">
-      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs>
   </svg>`;
 }
 
 export function playBoot({ sound } = {}) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const el = document.createElement('div');
-  el.className = 'boot';
-  const title = 'Couch Console';
+  el.className = 'boot theme-bg';
   el.innerHTML = `
-    ${logoSvg()}
-    <h1 class="boot-title" aria-label="${title}">${[...title].map((ch, i) => `<span style="--i:${i}">${ch === ' ' ? '&nbsp;' : ch}</span>`).join('')}</h1>
+    ${logoSvg(260)}
+    <h1 class="boot-title" aria-label="couch console"><span class="w1">couch</span> <span class="w2">console</span></h1>
     <p class="boot-tag">Grab your phone</p>
     <p class="boot-skip">Press any button to skip</p>`;
   document.body.append(el);
-  // A short chime as the screen lights up, if the browser already allows sound
+  let tl = null;
+  if (!reduced) {
+    import('gsap').then(({ gsap }) => {
+      if (done) return;
+      const q = (s) => el.querySelectorAll(s);
+      tl = gsap.timeline({ defaults: { ease: 'back.out(1.7)' } });
+      tl.from(q('.logo-back, .logo-arm'), { scale: 0.4, opacity: 0, transformOrigin: '50% 100%', duration: 0.5, stagger: 0.08 })
+        .from(q('.logo-cushion'), { y: -70, opacity: 0, duration: 0.55, stagger: 0.18, ease: 'bounce.out' }, 0.25)
+        .from(q('.logo-play'), { scale: 0, rotation: -60, opacity: 0, transformOrigin: '50% 50%', duration: 0.5 }, 0.95)
+        .from(q('.logo-halo'), { scale: 0.2, opacity: 0, transformOrigin: '50% 50%', duration: 0.7 }, 1.0)
+        .to(q('.logo-halo'), { opacity: 0.45, scale: 1.2, transformOrigin: '50% 50%', duration: 0.5, yoyo: true, repeat: 1, ease: 'sine.inOut' }, 1.4)
+        .from(q('.boot-title span'), { y: 40, opacity: 0, duration: 0.5, stagger: 0.12 }, 1.05)
+        .from(q('.boot-tag'), { y: 16, opacity: 0, duration: 0.4, ease: 'power2.out' }, 1.5);
+    }).catch(() => {});
+  }
+  // A short chime as the logo lands, if the browser already allows sound
   const chime = setTimeout(() => sound?.play('start'), reduced ? 0 : 900);
 
   let done = false;
@@ -47,6 +57,7 @@ export function playBoot({ sound } = {}) {
     if (done) return;
     done = true;
     clearTimeout(chime);
+    tl?.kill();
     el.classList.add('boot-out');
     setTimeout(() => el.remove(), 320);
     removeEventListener('pointerdown', finish);

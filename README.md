@@ -213,6 +213,12 @@ The `certs` folder holds a private key: it is **never** uploaded to GitHub (it's
 
 ---
 
+## Look and feel (Phase 55)
+- The look is written down in `docs/STYLE.md` (colors, fonts, motion, sound). The home screen is one grid of big tiles; a folder (like Arcade) opens as its own screen and **B** goes back.
+- Two looks exist, light (default) and dark. Try the dark one by adding `&theme=dark` to the console address.
+- The little 3D tile pictures are made by a script, no downloads: `node scripts/render-icons.mjs` (needs Playwright, see Tests). Add a scene in `public/js/tools/icon-scenes.js` and its name in `scripts/icon-ids.mjs` for a new game.
+- Sounds are the free Kenney packs in `public/assets/sounds/kenney/` (mapped in `public/js/console/sound-map.js`). Add `?fx=off`, `?pp=off`, `?quarks=off` or `?pixi=off` to the console address to switch off the screen effects, the extra post-processing, the particles or the PixiJS layer when testing.
+
 ## Project layout
 
 ```

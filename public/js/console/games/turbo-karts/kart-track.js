@@ -5,6 +5,7 @@ import { CAR, cloneOf, fit } from './karts-assets.js';
 import { decorate } from './karts-decor.js';
 import { roadMaterial } from './karts-materials.js';
 import { ROAD_HALF as ROAD_HALF0, WALL as WALL0, SAMPLES } from './kart-path.js';
+import { buildAvenue } from './karts-avenue.js';
 
 // Track data and the center line live in kart-path.js (no graphics, testable)
 export { ROAD_HALF, WALL, TRACKS } from './kart-path.js';
@@ -39,7 +40,7 @@ function noiseTexture(THREE, { size = 256, base = 225, spread = 30, specks = 250
 
 // assets (optional): loaded models (Map path -> glTF) for item boxes, coins and trackside decor
 // opts.path: the center line of the kart rules' track model (see ow-kart/render-path.js), which also sets the road
-// and barrier width; opts.noPickups: leave out item boxes and coins (the game draws its own)
+// and barrier width; opts.groundMaps: a ground picture instead of the generated one; opts.noPickups: leave out item boxes and coins
 export function buildTrack(THREE, def, assets = null, opts = {}) {
   const path = opts.path;
   const ROAD_HALF = path.roadHalf ?? ROAD_HALF0, WALL = path.wallHalf ?? WALL0;
@@ -111,8 +112,11 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
     group.add(sea);
   }
   const groundR = island ? island.r : 800;
-  const groundTex = noiseTexture(THREE, { base: 222, spread: 16, specks: 1800, speckSize: 2, repeat: [groundR / 6, groundR / 6] });
-  const groundMat = new THREE.MeshStandardMaterial({ color: def.ground, map: groundTex, roughness: 1 });
+  // A real ground picture (Poly Haven, see karts-polyhaven.js) if given, tiled about every 5 m; otherwise generated grit
+  const gm = opts.groundMaps;
+  if (gm) for (const t of [gm.map, gm.normalMap, gm.roughnessMap]) t?.repeat.set(groundR / 2.5, groundR / 2.5);
+  const groundTex = gm ? gm.map : noiseTexture(THREE, { base: 222, spread: 16, specks: 1800, speckSize: 2, repeat: [groundR / 6, groundR / 6] });
+  const groundMat = new THREE.MeshStandardMaterial({ color: gm ? (def.night ? '#4E5584' : '#ffffff') : def.ground, map: groundTex, roughness: 1, ...(gm?.normalMap ? { normalMap: gm.normalMap } : {}) });
   // Mowed stripes: wide bands of lighter and darker grass, like a groomed race venue
   groundMat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vGround;')
@@ -120,7 +124,7 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vGround;')
       .replace('#include <map_fragment>', `#include <map_fragment>
         float band = smoothstep(-0.15, 0.15, sin((vGround.x * 0.72 + vGround.y * 0.69) * 0.32));
-        diffuseColor.rgb *= ${def.theme === 'city' ? '1.0' : 'mix(0.86, 1.08, band)'};`);
+        diffuseColor.rgb *= ${def.theme === 'city' || def.theme === 'avenue' ? '1.0' : 'mix(0.86, 1.08, band)'};`);
   };
   const ground = new THREE.Mesh(new THREE.CircleGeometry(groundR, 64), groundMat);
   ground.rotation.x = -Math.PI / 2; ground.position.set(island?.x ?? 0, -0.05, island?.z ?? 0); ground.receiveShadow = true;
@@ -156,6 +160,9 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
     group.add(inst);
   }
 
+  // Neon Avenue brings its own start arch (with chaser lights), buildings, signs, lamps and cones
+  const avenue = def.theme === 'avenue' ? buildAvenue(THREE, def, path, group) : null;
+
   // Start line (checkered) with an arch over it
   const checker = document.createElement('canvas'); checker.width = 64; checker.height = 8;
   const cx = checker.getContext('2d');
@@ -171,7 +178,7 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
   banner.position.set(0, 8.5, -0.52); banner.rotation.y = Math.PI; startG.add(banner);
   startG.position.copy(pts[0]);
   startG.rotation.y = Math.atan2(tan[0].x, tan[0].z);
-  group.add(startG);
+  if (!avenue) group.add(startG);
 
   // Tunnel: a row of arches over part of the track
   if (def.tunnel) {
@@ -272,12 +279,12 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
   // Real models (grandstands, trees, palms...) when loaded; simple shapes otherwise.
   // The city keeps its glowing code-built towers and Cloud Gardens its clouds either way.
   let mixers = [];
-  if (assets) {
+  if (assets && !avenue) {
     const decor = decorate(THREE, { pts, tan, nor, SAMPLES, def, island }, assets, spots);
     group.add(decor.group);
     mixers = decor.mixers;
   }
-  if (!assets || def.theme === 'city' || def.theme === 'sky') group.add(makeScenery(def.theme === 'pirate' ? 'park' : def.theme, spots));
+  if (!avenue && (!assets || def.theme === 'city' || def.theme === 'sky')) group.add(makeScenery(def.theme === 'pirate' ? 'park' : def.theme, spots));
 
-  return { ...path, group, boxes, coins, mixers };
+  return { ...path, group, boxes, coins, mixers, update: avenue?.update };
 }

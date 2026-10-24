@@ -44,6 +44,16 @@ export const TRACKS = [
     pads: [0.15, 0.55], boxes: [0.08, 0.36, 0.72], coins: [0.24, 0.46, 0.86], glides: [0.512], tunnel: null,
   },
   {
+    id: 'avenue', name: 'Neon Avenue', theme: 'avenue', blurb: 'A night race down a glowing city street, under the big lit arch. Mind the cones!',
+    sky: ['#0A0F2C', '#4A2C7A'], fog: [140, 520], ground: '#161A34', road: '#34384F', curb: ['#FF4D9D', '#FFE14D'], wall: ['#FF4D9D', '#38E8FF'],
+    grip: 1, scale: 1.25, night: true,
+    lighting: { key: 1.0, keyColor: '#A9B8FF', hemi: 1.0, hemiSky: '#8E7BFF', hemiGround: '#2A1F4A', fill: 0.6, env: 0.9, exposure: 1.15 },
+    // a long main street, a wide right-hander, a back street and a sweeping left onto the start straight
+    points: [[0, 0, 0], [60, 0, 0], [120, 0, 5], [165, 0, 35], [175, 0, 80], [150, 0, 115], [105, 0, 125], [65, 0, 105], [25, 0, 115], [-15, 0, 145],
+      [-60, 0, 150], [-100, 0, 120], [-105, 0, 70], [-85, 0, 25], [-45, 0, 0]],
+    pads: [0.2, 0.58], boxes: [0.12, 0.4, 0.74], coins: [0.27, 0.5, 0.88], glides: [0.34], tunnel: null,
+  },
+  {
     id: 'pirate', name: 'Pirate Cove', theme: 'pirate', blurb: 'A wooden boardwalk around a palm island. Watch out for the sea monster!',
     sky: ['#3FA9F5', '#C6ECFF'], fog: [180, 600], ground: '#EBD9A8', road: '#9C7650', curb: ['#6B3F22', '#F1E3C2'], wall: ['#7C4A2D', '#D9B88F'],
     water: '#1C8FC9', grip: 0.95, scale: 1.4,

@@ -24,93 +24,9 @@ html, body {
   cursor: default;
 }
 
-/* ---------- Home menu ---------- */
-.menu {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.tiles {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)); /* columns may shrink below their text */
-  align-content: center;
-  gap: clamp(12px, 2vw, 24px);
-  /* fit 3 rows of 16:10 tiles on short laptop screens too */
-  width: min(92vw, (100vh - 170px) * 4.8 / var(--rows, 3)); /* shrink tiles when there are more rows */
-  margin: 0 auto;
-  padding: 24px 0;
-}
-
-.tile {
-  aspect-ratio: 16 / 10;
-  border-radius: 18px;
-  /* lit from above, like a backlit panel; the shadow takes the tile's own color */
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%), var(--tile);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 22px color-mix(in srgb, var(--tile) 32%, transparent);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  color: #fff;
-  container-type: inline-size; /* lets the icon and title scale with the tile */
-  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
-}
 .toasts { position: fixed; left: 24px; bottom: 96px; z-index: 80; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .toast { padding: 10px 18px; border-radius: 16px; background: rgba(30, 40, 60, 0.92); color: #fff; font-weight: 800; font-size: 22px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); animation: tile-in 260ms var(--ease-out) backwards; }
 .guest-list { margin: 8px 0 0; font-size: 22px; font-weight: 800; color: var(--muted, #5F6B80); text-align: center; max-width: 80vw; }
-.crumb { text-align: center; font-size: 22px; font-weight: 900; color: var(--muted, #5F6B80); margin: 0 0 8px; }
-/* A folder tile shows a 2x2 preview of the games inside it */
-.mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2px, 2cqw, 8px); width: clamp(44px, 32cqw, 100px); }
-.tile.folder { gap: 2px; }
-.mini-grid span { display: grid; place-items: center; background: rgba(255, 255, 255, 0.18); border-radius: 12%; padding: 6%; }
-.tile-icon .mini-grid svg { width: 100%; height: auto; filter: none; }
-.tile.empty {
-  background: rgba(255, 255, 255, 0.35);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
-}
-.tile.focused {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 4px #fff, 0 0 0 8px var(--ring),
-    0 20px 38px color-mix(in srgb, var(--tile) 45%, transparent);
-}
-/* A pressed for real: sink in, then the game zooms out of it */
-.tile.pressed { transform: scale(0.97); transition-duration: 100ms; }
-.tile-icon svg { display: block; width: clamp(34px, 30cqw, 96px); height: auto; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15)); }
-.tile-title { font-weight: 900; font-size: clamp(13px, 11cqw, 26px); white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
-
-/* The menu's one entrance: tiles rise in, one after another, when the menu first appears */
-.tiles.enter .tile { animation: tile-in 420ms var(--ease-out) backwards; animation-delay: calc(var(--i) * 35ms); }
-@keyframes tile-in { from { opacity: 0; transform: translateY(14px) scale(0.96); } }
-
-@media (prefers-reduced-motion: reduce) {
-  .tile, .tile.focused, .tile.pressed { transform: none; transition: box-shadow 120ms ease; }
-  .tiles.enter .tile { animation: tile-fade 200ms ease backwards; }
-  @keyframes tile-fade { from { opacity: 0; } }
-}
-
-.bar {
-  display: flex;
-  align-items: baseline;
-  gap: 18px;
-  padding: 18px 40px 26px;
-  border-top: 2px solid rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.4);
-}
-.clock { font-size: 40px; font-weight: 900; }
-.date { font-size: 20px; color: var(--muted); font-weight: 700; }
-.sound-hint {
-  margin-left: auto;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: #fff4e5;
-  color: #8a5300;
-  font-weight: 700;
-  font-size: 15px;
-}
-
 /* ---------- Stage (open app) ---------- */
 .stage {
   position: fixed;
@@ -385,7 +301,7 @@ html, body {
 .kart-msg { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(56px, 12vh, 120px); font-weight: 900; }
 .kart-minimap { position: absolute; right: 14px; top: 14px; width: 150px; height: 150px; border-radius: 16px; background: rgba(30, 50, 80, 0.35); }
 .kart-results { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(20, 30, 50, 0.45); }
-.kart-card { background: #fff; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); min-width: 460px; text-align: center; }
+.kart-card { position: relative; background: #fff; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); min-width: 460px; text-align: center; }
 .kart-card h1 { margin: 0; padding: 22px 32px; color: #fff; font-size: 40px; font-weight: 900; }
 .kart-card table { width: 100%; border-collapse: collapse; font-size: 22px; font-weight: 700; }
 .kart-card td { padding: min(8px, 1vh) 24px; border-bottom: 1px solid #EEF2F7; text-align: left; }
@@ -432,47 +348,15 @@ html, body {
 .dungeon-bar .heart { color: #D5DBE3; font-size: 28px; }
 .dungeon-bar .heart.on { color: #E03131; }
 
-/* ---------- Boot animation ---------- */
-/* Timeline (ease-out, no bounce): frame draws 0-0.6 s · cushions settle 0.35-0.95 s ·
-   screen lights up 0.85 s · name rises 1.0-1.5 s · tagline 1.5 s · fades out at 2.7 s */
-.boot {
-  --boot-ease: cubic-bezier(.22, 1, .36, 1);
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: radial-gradient(circle at 50% 42%, #ffffff 0%, #EEF3FA 50%, #DCE6F3 100%);
-  transition: opacity 300ms ease-out, transform 300ms ease-out;
-}
+/* ---------- Boot animation (GSAP does the motion, see boot.js) ---------- */
+.boot { position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; transition: opacity 300ms ease-out, transform 300ms ease-out; }
 .boot.boot-out { opacity: 0; transform: scale(1.02); pointer-events: none; }
-.boot-logo { overflow: visible; }
-.boot-frame { stroke-dasharray: 1.05; stroke-dashoffset: 1.05; stroke-linecap: round; animation: boot-draw 600ms var(--boot-ease) forwards; }
-@keyframes boot-draw { to { stroke-dashoffset: 0; } }
-.boot-antenna { opacity: 0; transform-origin: 100px 40px; animation: boot-rise 400ms 450ms var(--boot-ease) both; }
-.boot-screen-fill { opacity: 0; animation: boot-fade 300ms 250ms ease-out both; }
-.boot-glow { opacity: 0; animation: boot-glow 700ms 850ms ease-out both; }
-@keyframes boot-glow { 0% { opacity: 0; } 35% { opacity: 1; } 100% { opacity: 0.35; } }
-.boot-couch > :not(.boot-cushion) { opacity: 0; animation: boot-fade 250ms 300ms ease-out both; }
-.boot-cushion { opacity: 0; animation: boot-cushion 450ms var(--boot-ease) both; animation-delay: calc(400ms + var(--i) * 70ms); }
-@keyframes boot-cushion { from { opacity: 0; transform: translateY(-26px); } to { opacity: 1; transform: none; } }
-@keyframes boot-fade { to { opacity: 1; } }
-@keyframes boot-rise { from { opacity: 0; transform: translateY(8px) scale(0.9); } to { opacity: 1; transform: none; } }
-.boot-title { margin: 0; font-size: clamp(40px, 7vw, 84px); font-weight: 900; color: #2B3445; display: flex; letter-spacing: -0.01em; }
-.boot-title span { display: inline-block; animation: boot-letter 420ms var(--boot-ease) both; animation-delay: calc(1000ms + var(--i) * 28ms); }
-@keyframes boot-letter { from { transform: translateY(24px); opacity: 0; filter: blur(4px); } to { transform: none; opacity: 1; filter: none; } }
-.boot-tag { margin: 0; font-size: 22px; font-weight: 700; color: var(--muted); animation: boot-letter 400ms 1500ms var(--boot-ease) both; }
-.boot-skip { position: absolute; bottom: 28px; margin: 0; font-size: 15px; font-weight: 700; color: var(--muted); opacity: 0; animation: boot-fade 300ms 800ms ease-out both; }
-@media (prefers-reduced-motion: reduce) {
-  /* everything simply appears, then the screen fades */
-  .boot-frame { stroke-dashoffset: 0; animation: none; }
-  .boot-antenna, .boot-screen-fill, .boot-couch > *, .boot-cushion, .boot-glow, .boot-title span, .boot-tag, .boot-skip {
-    animation: boot-fade 200ms ease-out both; animation-delay: 0ms; transform: none; filter: none; }
-  .boot-glow { opacity: 0.35; animation: none; }
-}
+.boot-logo { overflow: visible; filter: drop-shadow(0 12px 18px rgba(60, 80, 130, 0.25)); }
+.boot-title { margin: 0; font: 700 clamp(44px, 7.5vw, 92px) / 1 var(--display); color: var(--ink); display: flex; gap: 0.25em; letter-spacing: -0.02em; }
+.boot-title .w2 { color: var(--cushion); }
+.boot-title span { display: inline-block; }
+.boot-tag { margin: 0; font: 600 24px var(--display); color: var(--muted); }
+.boot-skip { position: absolute; bottom: 28px; margin: 0; font-size: 15px; font-weight: 700; color: var(--muted); }
 
 /* ---------- Channels (Photos, Weather, Video) ---------- */
 .channel { position: absolute; inset: 0; overflow: hidden; color: #fff; background: linear-gradient(160deg, #2B3445, #1B2130); }
@@ -612,7 +496,7 @@ html, body {
 .ks-kart-name { margin-left: auto; opacity: 0.75; font-weight: 800; font-size: 18px; }
 /* the 3D showroom is drawn behind this box (turbo-karts.js), so it stays see-through */
 .ks-stage { flex: 1; min-height: 120px; border-radius: 16px; background: radial-gradient(ellipse at 50% 85%, rgba(255, 255, 255, 0.10), transparent 65%); }
-.ks-chars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; opacity: 0.5; transition: opacity 160ms ease-out; }
+.ks-chars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; opacity: 0.5; transition: opacity 160ms ease-out; }
 .ks-chars img { width: 100%; aspect-ratio: 1; max-height: 9vh; object-fit: contain; border-radius: 12px; background: rgba(255, 255, 255, 0.85);
   border: 3px solid transparent; box-sizing: border-box; transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), border-color 140ms ease-out; }
 .ks-chars img.focused { border-color: var(--c); transform: scale(1.08); }

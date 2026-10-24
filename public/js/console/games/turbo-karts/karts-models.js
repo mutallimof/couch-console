@@ -154,29 +154,43 @@ function assetKart(gltf, kart) {
 }
 
 // An animated driver, or null if the model isn't loaded
-function assetDriver(gltf) {
+// opts.skin: repaint the "Skin" material (the pack's is almost black) · opts.sit: hold the seated pose
+function assetDriver(gltf, { skin, sit = false } = {}) {
   const c = cloneOf(gltf);
   if (!c) return null;
   const obj = c.object;
+  // Own copies of the materials (clones share them), so a repaint never leaks to another racer
+  obj.traverse((o) => {
+    if (!o.isMesh) return;
+    o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
+    for (const m of [].concat(o.material)) {
+      if (skin && m.name === 'Skin') m.color.set(skin);
+      m.roughness = Math.min(m.roughness, 0.6);
+    }
+  });
   obj.scale.setScalar(DRIVER_HEIGHT / MODEL_HEIGHT);
   const mixer = new THREE.AnimationMixer(obj);
   const actions = Object.fromEntries(c.animations.map((a) => [a.name, mixer.clipAction(a)]));
   for (const [alias, real] of Object.entries(ANIM_ALIASES)) if (!actions[alias] && actions[real]) actions[alias] = actions[real];
-  let current = actions.Idle;
-  current?.play();
-  mixer.update(Math.random() * 2); // don't all bob in sync
+  // Seated: the last frame of SitDown, held (the pack has no sitting loop)
+  const rest = sit && actions.SitDown ? 'SitDown' : 'Idle';
+  const hold = (a) => { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.play(); a.time = a.getClip().duration; };
+  let current = actions[rest];
+  if (rest === 'SitDown') { hold(current); mixer.update(0); } else { current?.play(); mixer.update(Math.random() * 2); } // (don't all bob in sync)
   // Switch to another animation (smoothly). One-shot animations go back to Idle when done.
   const play = (name, loop = false) => {
     const next = actions[name];
     if (!next || next === current) return;
-    next.reset();
-    next.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
-    next.clampWhenFinished = !loop;
     current?.fadeOut(0.15);
-    next.fadeIn(0.15).play();
+    if (next === actions[rest] && rest === 'SitDown') { hold(next); next.fadeIn(0.15); } else {
+      next.reset();
+      next.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+      next.clampWhenFinished = !loop;
+      next.fadeIn(0.15).play();
+    }
     current = next;
   };
-  mixer.addEventListener('finished', (e) => { if (e.action === current) play('Idle', true); });
+  mixer.addEventListener('finished', (e) => { if (e.action === current && current !== actions[rest]) play(rest, true); });
   return { object: obj, mixer, actions, play };
 }
 
@@ -184,7 +198,7 @@ function assetDriver(gltf) {
 // or a code-built animal. Returns { object, anim } (anim = null for the animals).
 export function makeStandingCharacter(character, assets) {
   const gltf = assets?.get(modelPath(character));
-  const anim = gltf ? assetDriver(gltf) : null;
+  const anim = gltf ? assetDriver(gltf, { skin: character.skin }) : null;
   return { object: anim ? anim.object : makeCharacter(character), anim };
 }
 
@@ -193,7 +207,7 @@ export function makeRacer(character, kart, color, assets) {
   const carModel = kart.model && assets?.get(CAR(kart.model));
   const k = carModel ? assetKart(carModel, kart) : makeKart(kart, color);
   const gltf = assets?.get(modelPath(character));
-  const anim = gltf ? assetDriver(gltf) : null;
+  const anim = gltf ? assetDriver(gltf, { skin: character.skin, sit: true }) : null;
   const driver = anim ? anim.object : makeCharacter(character);
   driver.position.set(0, k.seatY, k.seatZ);
   if (!anim) driver.scale.setScalar(carModel ? 0.85 : 0.95);
@@ -349,7 +363,7 @@ export function makePortraits(renderer, characters, assets) {
   const out = {};
   for (const c of characters) {
     const gltf = assets?.get(modelPath(c));
-    const anim = gltf ? assetDriver(gltf) : null;
+    const anim = gltf ? assetDriver(gltf, { skin: c.skin }) : null;
     const ch = anim ? anim.object : makeCharacter(c);
     if (anim) {
       // frame the character's head: find its top in the idle pose

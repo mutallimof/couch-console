@@ -66,11 +66,13 @@ export function roadMaterial(THREE, { night = false } = {}) {
     vertexColors: true, side: THREE.DoubleSide, ...maps,
     normalScale: new THREE.Vector2(0.5, 0.5), roughness: 0.68, metalness: 0.06,
     ...(night ? { emissive: '#14182c' } : {}),
+    ...(override ? { color: new THREE.Color(2.4, 2.4, 2.4) } : {}), // (a real photo of asphalt is much darker than the generated one)
   });
+  const tiles = (maps.map?.repeat?.x || 3).toFixed(1); // how many times the picture tiles across the road
   // Darker worn lanes where tyres run, and soft resurfacing patches along the lap
   mat.onBeforeCompile = (shader) => {
     shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
-      float lane = vMapUv.x / 3.0;
+      float lane = vMapUv.x / ${tiles};
       float tyre = pow(abs(sin(lane * 19.0)), 26.0);
       float wear = 1.0 - smoothstep(0.32, 0.5, abs(lane - 0.5));
       float resurfaced = sin(vMapUv.y * 0.6) * sin(vMapUv.y * 0.13); // ('patch' is a reserved word in GLSL)

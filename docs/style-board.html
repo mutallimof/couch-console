@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Couch Console style board</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../public/css/theme.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;width:1400px;padding:44px;color:var(--ink);font:400 22px/1.4 var(--font)}
+h1,h2,.f{font-family:var(--display);font-weight:600;letter-spacing:-.01em;margin:0}
+h2{font-size:28px;margin-bottom:14px}
+.row{display:grid;gap:26px;margin-bottom:28px}
+.p{padding:26px}
+.logo{display:flex;align-items:center;gap:22px}
+.word{font:700 72px/1 var(--display);letter-spacing:-.02em;color:var(--ink)}.word small{display:block;font:600 34px var(--display);color:var(--cushion)}
+.sw{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.sw div{border-radius:22px;height:92px;padding:12px;font:700 16px/1.2 var(--font);color:#fff;box-shadow:var(--shadow),inset 0 2px 0 rgba(255,255,255,.6)}
+.sw .d{color:var(--ink)}
+.tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:22px;padding:14px}
+.tile{height:150px;padding:16px;font:600 28px var(--display);display:flex;align-items:flex-end;text-shadow:0 2px 4px rgba(0,0,0,.2)}
+.btn{display:inline-block;padding:12px 28px;border-radius:22px;font:700 26px var(--display);color:#fff;--tile:var(--cushion);margin-right:10px}
+.chip{display:inline-flex;padding:6px 16px;border-radius:14px;font:700 22px var(--display);color:#fff;margin:4px 8px 4px 0;box-shadow:inset 0 2px 0 rgba(255,255,255,.5)}
+.small{font-size:18px;color:var(--muted)}
+img.shot{width:100%;border-radius:22px;display:block}
+ul{margin:0;padding-left:22px}li{margin:4px 0}
+</style></head><body class="theme-bg">
+<div class="row" style="grid-template-columns:1.1fr 1fr">
+ <div class="glass p"><div class="logo">
+  <svg width="170" height="150" viewBox="0 0 170 150" aria-label="logo">
+   <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB36E"/><stop offset=".6" stop-color="#FF8A3D"/><stop offset="1" stop-color="#E86F22"/></linearGradient></defs>
+   <circle cx="85" cy="30" r="32" fill="#3FA9FF" opacity=".22"/>
+   <path d="M72 14 104 31 72 48z" fill="#3FA9FF" transform="translate(4 -1)"/>
+   <rect x="12" y="62" width="146" height="62" rx="26" fill="url(#g)"/><rect x="0" y="82" width="38" height="60" rx="18" fill="url(#g)"/><rect x="132" y="82" width="38" height="60" rx="18" fill="url(#g)"/>
+   <rect x="38" y="84" width="46" height="40" rx="16" fill="#FFC48A"/><rect x="86" y="84" width="46" height="40" rx="16" fill="#FFC48A"/>
+   <rect x="18" y="68" width="134" height="16" rx="8" fill="#fff" opacity=".35"/>
+   <rect x="22" y="132" width="14" height="14" rx="5" fill="#C65E1B"/><rect x="134" y="132" width="14" height="14" rx="5" fill="#C65E1B"/></svg>
+  <div class="word">couch<small>console</small></div></div>
+  <p class="small" style="margin:16px 0 0">Glossy sofa glyph with a floating play triangle. One-color version for 24 px.</p></div>
+ <div class="glass p"><h2>A bright toy-box on frosted glass</h2><ul><li>Soft pastel room, frosted panels, glossy tiles</li><li>Isometric toy-diorama icons; saturated toy 3D in games</li><li>Round, springy, big targets for the couch</li></ul></div>
+</div>
+<div class="glass p row"><h2 style="margin:0">Color</h2><div class="sw">
+ <div class="d" style="background:#F3F6FB">Cloud<br>#F3F6FB</div><div style="background:#25304A">Ink<br>#25304A</div><div style="background:#FF8A3D">Cushion<br>#FF8A3D</div><div style="background:#66728C">Muted<br>#66728C</div>
+ <div style="background:#3FA9FF">Sky · P1<br>#3FA9FF</div><div style="background:#FF5C8A">Pop · P2<br>#FF5C8A</div><div style="background:#2FD6A4">Mint · P3<br>#2FD6A4</div><div class="d" style="background:#FFC93C">Butter · P4<br>#FFC93C</div></div></div>
+<div class="row" style="grid-template-columns:1fr 1fr"><div class="glass p"><h2>Fredoka + Nunito</h2><div style="font:700 68px/1 var(--display)">Race night</div><div style="font:600 38px/1.1 var(--display);margin:10px 0">Who is on the couch?</div><p style="margin:0">Nunito for text and hints: friendly and easy to read from the sofa. Sentence case.</p></div>
+ <div class="glass p"><h2>Glossy buttons, chips, round buttons</h2><span class="btn gloss">Play</span><span class="btn gloss" style="--tile:var(--sky)">Join</span><span class="round-btn" style="display:inline-grid;vertical-align:middle">⚙️</span><span class="round-btn is-focus" style="display:inline-grid;vertical-align:middle;margin-left:14px">📸</span><br><br>
+ <span class="chip" style="background:var(--sky)">P1 Ana</span><span class="chip" style="background:var(--pop)">P2 Ben</span><span class="chip" style="background:var(--mint)">P3 Cem</span><span class="chip" style="background:var(--butter);color:var(--ink)">P4 Di</span></div></div>
+<div class="glass tiles row"><div class="tile gloss is-focus" style="--tile:#FF8A3D">Turbo Karts</div><div class="tile gloss" style="--tile:#3FA9FF">Bowling</div><div class="tile gloss" style="--tile:#2FD6A4">Photos</div><div class="tile gloss" style="--tile:#FF5C8A">Music</div><div class="tile gloss" style="--tile:#9B7BFF">Present</div></div>
+<div class="row" style="grid-template-columns:1.2fr 1fr"><div class="glass p"><h2>3D: bright toy plastic</h2><img class="shot" src="screenshots/style-3d-sample.png" alt=""></div>
+ <div class="glass p"><h2>Motion</h2><ul><li>GSAP: <b>back.out(1.6)</b> in, <b>power2.in</b> out</li><li>Tiles lift and glow on hover and focus</li><li>Squash on press; only transform and opacity</li></ul><h2 style="margin-top:18px">Sound</h2><ul><li>Kenney CC0 clicks, soft impacts, short jingles</li><li>Menu quiet, choices medium, wins loud</li></ul><h2 style="margin-top:18px">3D lighting</h2>
+ <span class="chip" style="background:var(--butter);color:var(--ink)">Day</span><span class="chip" style="background:var(--cushion)">Dusk</span><span class="chip" style="background:#5B6BFF">Night</span><span class="chip" style="background:var(--mint)">Studio</span></div></div>
+</body></html>

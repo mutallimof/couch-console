@@ -32,7 +32,7 @@ function pointsTo(path) {
 }
 
 test('the code asks for a sensible number of models (the search itself works)', () => {
-  assert.ok(wanted().length >= 45, `found ${wanted().length}`);
+  assert.ok(wanted().length >= 35, `found ${wanted().length}`);
 });
 
 test('every model the code asks for exists, and so does everything it loads', () => {

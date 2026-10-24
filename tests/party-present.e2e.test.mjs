@@ -15,7 +15,7 @@ function findPlaywright() {
   return null;
 }
 const pw = findPlaywright();
-const PORT = 6400 + Math.floor(Math.random() * 300);
+const PORT = 8500 + Math.floor(Math.random() * 300);
 
 test('a PDF from a phone is presented on the TV, with page turns, black screen, laser and help for PowerPoint', { skip: !pw && 'Playwright is not installed', timeout: 240000 }, async () => {
   const server = spawn(process.execPath, ['server.js'], {
@@ -37,6 +37,7 @@ test('a PDF from a phone is presented on the TV, with page turns, black screen, 
     await ph.goto(`${B}/remote.html?room=${room}`);
     await ph.waitForSelector('.tab[data-tab="present"]'); await ph.tap('.tab[data-tab="present"]');
     await ph.waitForSelector('#pr-file', { state: 'attached' });
+    await ph.waitForTimeout(1500); // (the pane's first refresh re-renders the page; under load it can swallow a file picked too early)
 
     // PowerPoint: help, no upload
     await ph.setInputFiles('#pr-file', [{ name: 'Talk.pptx', mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', buffer: Buffer.from('PK pretend') }]);

@@ -3,6 +3,7 @@
 // Modes: solo · versus (same sky, each player scores for themselves)
 //        · co-op (shared score, reach 40 in time; popping within 0.5 s of each other = combo)
 import { colorFor } from '../../shared/protocol.js';
+import { createPixiLayer } from '../pixi-layer.js';
 
 const ROUND_SECONDS = 60;
 const COOP_TARGET = 40;
@@ -18,7 +19,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
   <ellipse cx="19.5" cy="13" rx="3" ry="4.5" fill="rgba(0,0,0,0.12)"/>
 </svg>`;
 
-let api, canvas, ctx, frame, resizeObserver;
+let api, canvas, ctx, frame, resizeObserver, px; // px: the PixiJS glow + particles layer (null if it can't start)
 let W = 0, H = 0, scale = 1;
 let state, balloons, particles, floaters, clouds, score, timeLeft, spawnIn, lastT, shake, lastTick, overAt;
 let scores = new Map();   // versus: playerId -> score
@@ -89,6 +90,7 @@ function spawn() {
 }
 
 function burst(x, y, color, count) {
+  if (px) { px.burst(x, y, color, count, scale); return; } // (Pixi draws the glowing sparks)
   for (let i = 0; i < count; i++) {
     const a = Math.random() * Math.PI * 2, s = rand(120, 420) * scale;
     particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rand(0.4, 0.8), color, size: rand(3, 7) * scale });
@@ -348,6 +350,8 @@ export default {
     lastT = null;
     api.onButton(onButton);
     frame = requestAnimationFrame(loop);
+    const mine = canvas;
+    createPixiLayer(canvas).then((layer) => { if (canvas === mine) px = layer; else layer?.destroy(); });
   },
   pause() { paused = true; },
   resume() { paused = false; },
@@ -355,6 +359,7 @@ export default {
     paused = false;
     cancelAnimationFrame(frame);
     resizeObserver?.disconnect();
+    px?.destroy(); px = null;
     canvas?.remove();
     api = canvas = ctx = resizeObserver = null;
   },

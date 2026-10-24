@@ -8,8 +8,11 @@
 // Race rules adapted from OpenWii's games/mario-kart (MIT, Copyright (c) 2026 Patrick Sun; see
 // THIRD_PARTY_NOTICES.md).
 import { colorFor } from '../../shared/protocol.js';
+import { party } from '../party.js';
+import { avatarSvg } from '../../shared/avatar.js';
 import { graphics } from '../graphics-prefs.js';
-import { skyFor, asphalt } from './turbo-karts/karts-polyhaven.js';
+import { skyFor, skyDome, SKY_GAIN, roadTextures, stadiumRoadTextures, groundTextures } from './turbo-karts/karts-polyhaven.js';
+import { setStadiumPavement } from './turbo-karts/ow-kart/stadium/materials.js';
 import { setPavementOverride } from './turbo-karts/karts-materials.js';
 import { buildTrack, TRACKS, SUN_DIR } from './turbo-karts/kart-track.js';
 import { STADIUM } from './turbo-karts/ow-kart/stadium/stadium-def.js';
@@ -23,7 +26,9 @@ import { setThree, makeRacer, makeItemMesh, makePortraits } from './turbo-karts/
 import { createSelect } from './turbo-karts/karts-select.js';
 import { createShowroom, setShowroomThree } from './turbo-karts/karts-showroom.js';
 import { kartInput } from './turbo-karts/ow-kart/input.js';
-import { createRaceFx, makeExhaust, updateExhaust } from './turbo-karts/karts-fx.js';
+import { createRaceFx, makeExhaust, updateExhaust, TIER_COLORS } from './turbo-karts/karts-fx.js';
+import { createQuarks } from './turbo-karts/karts-quarks.js';
+import { podiumHtml, playPodium } from '../results.js';
 import { CAR, loadAll } from './turbo-karts/karts-assets.js';
 import { THEME_MODELS } from './turbo-karts/karts-decor.js';
 import { Race, ITEMS, ordinal, formatTime } from './turbo-karts/ow-kart/rules.js';
@@ -50,7 +55,7 @@ let objectMeshes = new Map(); // item projectiles/slicks on the road: race objec
 let boxMeshes = [], coinMeshes = [];
 let stopGraphics = null;
 let state, shown, overAt, paused = false, alive = 0, lastCount = 0;
-let portraits, select, selection, look, fx;
+let portraits, select, selection, look, fx, qfx; // qfx: the three.quarks particles (null if the library can't load)
 const showrooms = new Map(); // playerId -> 3D preview on the select screen (karts-showroom.js)
 const assets = new Map();    // loaded 3D models: path -> glTF (missing = use the code-built ones)
 const input = new Map();     // playerId -> { steer, gas, brake, left, right, drift, item }
@@ -83,7 +88,7 @@ function showSelect() {
 // ---------- Race setup ----------
 
 function clearRace() {
-  for (const v of views) scene.remove(v.mesh.root, v.mesh.shadow);
+  for (const v of views) { scene.remove(v.mesh.root, v.mesh.shadow); if (v.mesh.q) qfx?.detach(v.mesh.q); }
   for (const m of objectMeshes.values()) scene.remove(m);
   objectMeshes.clear();
   for (const m of [...boxMeshes, ...coinMeshes]) scene.remove(m);
@@ -131,7 +136,10 @@ async function startRace() {
     }
     state = 'loading';
     if (!(await loadModels([...THEME_MODELS.common, ...(THEME_MODELS[def.theme] || [])]))) return;
-    setPavementOverride(await asphalt(THREE)); // (real asphalt if the Poly Haven files are there)
+    // Real asphalt, concrete and ground pictures (Poly Haven) if the files are there; otherwise the generated ones
+    setPavementOverride(await roadTextures(THREE));
+    setStadiumPavement(await stadiumRoadTextures(THREE));
+    const groundMaps = await groundTextures(THREE, def.theme, 1);
     if (def.stadium) {
       // The Grand Stadium: OpenWii's procedural world, collected in one group so it can be removed again
       const model = stadiumTrack.model, before = new Set(scene.children);
@@ -148,7 +156,7 @@ async function startRace() {
     } else {
       const model = createTrackModel(def);
       const path = renderPath(THREE, model);
-      track = buildTrack(THREE, def, assets, { path, noPickups: true });
+      track = buildTrack(THREE, def, assets, { path, noPickups: true, groundMaps });
       track.model = model;
       scene.add(track.group);
       scene.fog = new THREE.Fog(def.sky[1], def.fog[0] * 1.3, def.fog[1] * 1.3);
@@ -157,9 +165,9 @@ async function startRace() {
     applyLighting(def);
     // A real sky picture (Poly Haven HDRI) if there is one for this track; otherwise the generated sky stays
     const sky = await skyFor(THREE, def.theme);
-    scene.background = sky || null;
+    scene.background = null;
     track.group.traverse((o) => { if (o.userData.isSky) o.visible = !sky; });
-    if (sky) look.setSkyTexture(sky);
+    if (sky) { track.group.add(skyDome(THREE, sky, SKY_GAIN[def.theme] ?? 1)); look.setSkyTexture(sky); }
     mapBox = null;
   }
   const T = track.model;
@@ -178,6 +186,7 @@ async function startRace() {
     mesh.flame.visible = false; mesh.sparks.forEach((sp) => { sp.visible = false; });
     mesh.exhaust = makeExhaust(THREE);
     mesh.body.add(mesh.exhaust);
+    mesh.q = qfx?.attach(mesh.body) || null;
     scene.add(mesh.root, mesh.shadow);
     return { racer, mesh, kart: k.kart, char: k.char, playerId: k.playerId, color: k.color || color, fxKart: {}, bounce: null };
   });
@@ -243,8 +252,8 @@ function onRaceEvent(e) {
     case 'drift': if (mine && e.tier) { api.sound.play('tick'); } break;
     case 'hit': v.mesh.anim?.play('HitReact'); sfx('bomb'); rumble(300);
       fx.burst(v.racer.x, v.racer.y + 1.1, v.racer.z, ['#FFE066', '#FFD43B', '#FFF3BF', '#FFA94D']); break; // gold stars, like OpenWii
-    case 'wall': sfx('wall'); rumble(120); break;
-    case 'land': v.bounce = 0; sfx('wall'); rumble(60); break;
+    case 'wall': sfx('wall'); rumble(120); if (v.mesh.q) qfx.puffDust(v.mesh.q, performance.now() / 1000, 0.2); break;
+    case 'land': v.bounce = 0; sfx('wall'); rumble(60); if (v.mesh.q) qfx.puffDust(v.mesh.q, performance.now() / 1000, 0.4); break;
     case 'glider': sfx('clear'); rumble(60); break;
     case 'contact': rumble(40); break;
     case 'useItem': sfx(e.item === 'turbo' || e.item === 'star' ? 'select' : 'shot'); break;
@@ -252,7 +261,9 @@ function onRaceEvent(e) {
     case 'finalLap': v.finalLapAt = race.raceTime; sfx('start'); break;
     case 'finish':
       v.mesh.anim?.play(race.position(v.racer) <= 3 ? 'Wave' : 'Yes', true);
-      sfx(race.position(v.racer) === 1 ? 'strike' : 'end'); rumble(250); break;
+      sfx(race.position(v.racer) === 1 ? 'strike' : 'end'); rumble(250);
+      if (mine && qfx) qfx.confetti(v.racer.x, v.racer.y + 1.2, v.racer.z); // confetti where a human crosses the line
+      break;
     default: break;
   }
 }
@@ -288,6 +299,7 @@ function update(dt) {
 function syncMeshes(t, dt) {
   const T = track.model;
   if (!paused) track.mixers.forEach((mx) => mx.update(dt));
+  track.update?.(performance.now() / 1000); // (Neon Avenue's chaser lights and flickering signs)
   for (const v of views) {
     const r = v.racer, m = v.mesh;
     if (!paused) m.anim?.mixer.update(dt);
@@ -323,7 +335,8 @@ function syncMeshes(t, dt) {
     // Drift sparks from the rear wheels (blue → orange → purple) and the boost flame (karts-fx.js)
     if (!paused) {
       Object.assign(v.fxKart, { x: r.x, y: r.y, z: r.z, heading: yawOf(r.heading), drifting: !!r.drift, air: r.gliding, v: r.speed });
-      fx.drift(v.fxKart, r.drift ? r.tier : 0, dt);
+      if (m.q) qfx.state(m.q, { speed: r.speed, boost: r.boost, drift: r.drift ? r.tier : -1, air: r.gliding, offroad: !r.gliding && Math.abs(r.lateral) > T.roadHalf + 0.2, color: tierColor }, t / 1000);
+      else fx.drift(v.fxKart, r.drift ? r.tier : 0, dt);
     }
     updateExhaust(m.exhaust, r.boost, t / 1000);
     m.shield.visible = r.star > 0;
@@ -487,15 +500,29 @@ function showResults() {
   } else {
     const w = order[0];
     banner = `${w.playerId ? `P${w.playerId}` : w.char.name} wins!`;
-    if (w.playerId) color = w.color;
+    if (w.playerId) { color = w.color; api.reportWin?.(w.playerId); }
   }
-  const rows = order.map((v, i) => `<tr><td>${ordinal(i + 1)}</td><td><img src="${portraits[v.char.id]}" alt="">${v.playerId ? `<b style="color:${v.color}">P${v.playerId}</b> ` : ''}${v.char.name}</td>
+  const rows = order.map((v, i) => `<tr><td>${ordinal(i + 1)}</td><td><img src="${portraits[v.char.id]}" alt="">${v.playerId ? `<b style="color:${v.color}">P${v.playerId}</b> ${personFace(v.playerId)}` : ''}${v.char.name}</td>
     <td>${v.kart.name}</td><td>${formatTime(v.racer.finishTime)}</td>${api.mode === 'coop' ? `<td>${POINTS[i]} pts</td>` : ''}</tr>`).join('');
   const el = document.createElement('div');
   el.className = 'kart-results';
-  el.innerHTML = `<div class="kart-card"><h1 style="background:${color}">${banner}</h1><table>${rows}</table>
+  const podium = podiumHtml(order.slice(0, 3).map((v) => ({
+    face: v.playerId && party.personOfPlayer(v.playerId)?.avatar ? avatarSvg(party.personOfPlayer(v.playerId).avatar, 84) : `<img src="${portraits[v.char.id]}" alt="">`,
+    name: v.playerId ? `P${v.playerId} ${party.personOfPlayer(v.playerId)?.name || ''}`.trim() : v.char.name, sub: formatTime(v.racer.finishTime), color: v.playerId ? v.color : '#8E99B3',
+  })));
+  el.innerHTML = `<div class="kart-card"><h1 style="background:${color}">${banner}</h1>${podium}<table>${rows}</table>
     <p>A = race again · B = change racers/track · HOME = menu</p></div>`;
   root.append(el);
+  playPodium(el.querySelector('.kart-card')); // the podium rises and confetti falls (GSAP)
+}
+
+// A drift tier's spark color for three.quarks (above 1 so it glows)
+const tierColor = (tier) => { const c = new THREE.Color(TIER_COLORS[tier]); return new THREE.Vector4(c.r * 2.6, c.g * 2.6, c.b * 2.6, 1); };
+
+// A player's little face (their avatar) for the results table
+function personFace(playerId) {
+  const p = party.personOfPlayer(playerId);
+  return p?.avatar ? `<span class="res-face">${avatarSvg(p.avatar, 30)}</span>` : '';
 }
 
 // ---------- Loop & input ----------
@@ -503,7 +530,7 @@ function showResults() {
 function loop(t) {
   const dt = Math.min(0.05, (t - (lastT ?? t)) / 1000);
   lastT = t;
-  if (!paused) { update(dt); fx?.update(dt); }
+  if (!paused) { update(dt); fx?.update(dt); qfx?.update(dt); }
   if (state === 'select') showrooms.forEach((room) => room.update(dt));
   if (race && views.length) {
     syncMeshes(t, dt);
@@ -587,6 +614,7 @@ async function init(token) {
   applyGraphics();
   stopGraphics = graphics.onChange(applyGraphics);
   fx = createRaceFx(THREE, scene);
+  qfx = new URLSearchParams(location.search).get('quarks') === 'off' ? null : await createQuarks(THREE, scene);
   if (token !== alive) return;
   portraits = makePortraits(renderer, CHARACTERS, assets);
   resizeObserver = new ResizeObserver(resize);
@@ -634,6 +662,7 @@ export default {
     stopGraphics?.(); stopGraphics = null;
     look?.dispose();
     fx?.dispose();
+    qfx?.dispose(); qfx = null;
     renderer?.dispose();
     root?.remove();
     api = root = renderer = look = scene = track = resizeObserver = select = fx = race = null;

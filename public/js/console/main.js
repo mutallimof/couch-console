@@ -14,6 +14,8 @@ import { playBoot } from './boot.js';
 import { loadApps } from './apps.js';
 
 const $ = (id) => document.getElementById(id);
+// Look: light (default) or the dark option (?theme=dark), for choosing between them
+if (new URLSearchParams(location.search).get('theme') === 'dark') document.documentElement.classList.add('theme-dark'), document.body.classList.add('theme-dark');
 const DEBUG = new URLSearchParams(location.search).has('debug');
 // Boot animation (skip it with ?noboot=1)
 const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoot({ sound });
@@ -22,6 +24,7 @@ const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoo
 const gameApps = await loadApps();
 const slides = createSlides({ socket, party });
 const folders = await fetch('/js/console/folders.json').then((r) => r.json()).catch(() => ({}));
+const icons = await fetch('/api/icons').then((r) => r.json()).catch(() => []);
 const pointers = createPointers($('cursors'));
 const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
 const ZOOM_MS = 320;       // opening a game: the one big motion in the menu
@@ -74,7 +77,7 @@ const prefs = {
 
 const apps = [...gameApps, createSettings(prefs)]; // Settings is built in, always last
 const menu = createMenu({
-  grid: $('tiles'), clock: $('clock'), date: $('date'), crumb: $('crumb'), apps, folders,
+  grid: $('tiles'), clock: $('clock'), date: $('date'), crumb: $('crumb'), apps, folders, icons,
   onFocusChange: (column) => sound.play('hover', { step: column }),
 });
 
@@ -133,6 +136,7 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
   }
 });
 socket.on(EV.PARTY_ROSTER, (r) => { party.onRoster(r); renderGuests(); });
+socket.on(EV.PARTY_ACTIVITY, ({ entry }) => party.emitActivity(entry)); // (shown as a note on the TV; the Activity tab is on the phones)
 socket.on(EV.PARTY_PHOTO, (e) => party.emitPhoto(e));
 socket.on(EV.MUSIC_STATE, (s) => musicPlayer.onState(s));
 socket.on(EV.PRESENT_DECK, (e) => { party.emitDeck(e); if (e.kind !== 'removed') slides.processDeck(e.deck); }); // (PDFs: count the pages, make little pictures)
@@ -295,6 +299,8 @@ function makeApi(cur, mode) {
     pointer: (playerId) => pointers.position(playerId),
     rumble: (playerId, ms) => socket.emit(EV.FEEDBACK_RUMBLE, { playerId, ms }),
     sound,
+    // Tell the activity feed a player won ("Cem won Turbo Karts")
+    reportWin: (playerId) => socket.emit(EV.ACTIVITY_GAME, { playerId, game: cur.app.title, what: 'won' }),
     exit: closeApp,
   };
 }
@@ -455,11 +461,10 @@ function onInputButton(e) {
   else if (button === 'B' && menu.back()) sound.play('back');
 }
 
-// A on the focused tile: a game opens, a folder zooms in, the Back tile goes back
+// A on the focused tile: a game opens, a folder opens as its own screen
 function pressTile() {
   const tile = menu.focusedApp();
   if (!tile) return;
-  if (tile.isBack) { menu.press(); menu.back(); sound.play('back'); return; }
   if (tile.isFolder) { menu.press(); menu.openFolder(tile.id); sound.play('select'); return; }
   openApp(tile);
 }
@@ -468,7 +473,7 @@ socket.on(EV.INPUT_BUTTON, onInputButton);
 // Aim assist: only on menu tiles and the mode picker, never inside a game.
 pointers.setAssist((x, y) => {
   if (busy || !$('pairing').hidden || (current && !picker)) return null;
-  const el = document.elementFromPoint(x, y)?.closest?.(picker ? '[data-mode]' : '[data-tile]');
+  const el = document.elementFromPoint(x, y)?.closest?.(picker ? '[data-mode]' : '.menu [data-focus]');
   if (!el) return null;
   const r = el.getBoundingClientRect();
   return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: Math.hypot(r.width, r.height) / 2 };

@@ -8,7 +8,8 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232F80ED'/%3E%3Ccircle cx='32' cy='32' r='12' fill='white'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/remote.css">
 </head>
 <body>
@@ -105,7 +106,8 @@
     <h1 class="w-title">Join the party</h1>
     <label for="w-name" class="muted">What's your name?</label>
     <input id="w-name" class="room-input w-name" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name">
-    <div id="w-emoji" class="emoji-row" role="group" aria-label="Pick an emoji"></div>
+    <div id="w-avatar"></div>
+    <div id="w-emoji" class="emoji-row" role="group" aria-label="Pick an emoji" hidden></div>
     <button id="w-play" class="join-btn" type="submit" value="player">🎮 Play</button>
     <button id="w-guest" class="join-btn ghost" type="submit" value="guest">👀 Just join (photos, music, slides)</button>
     <p id="w-note" class="muted w-note"></p>
@@ -115,6 +117,7 @@
     <div id="pane-photos" class="pane" hidden></div>
     <div id="pane-music" class="pane" hidden></div>
     <div id="pane-present" class="pane" hidden></div>
+    <div id="pane-activity" class="pane" hidden></div>
   </section>
   <nav id="tabs" class="tabs" hidden aria-label="Sections"></nav>
 
@@ -122,12 +125,21 @@
     <div class="sheet-card">
       <h2 class="sheet-title">Me</h2>
       <input id="s-name" class="room-input w-name" maxlength="20" autocomplete="off" placeholder="Your name">
-      <div id="s-emoji" class="emoji-row"></div>
+      <div id="s-avatar"></div>
+      <div id="s-emoji" class="emoji-row" hidden></div>
       <button id="s-save" class="join-btn" type="button">Save</button>
       <button id="s-role" class="join-btn ghost" type="button"></button>
       <button id="s-invite" class="join-btn ghost" type="button">📲 Invite someone (show QR)</button>
       <img id="s-qr" class="s-qr" alt="" hidden>
       <button id="s-close" class="join-btn ghost" type="button">Close</button>
+    </div>
+  </div>
+
+  <div id="replaced" class="sheet" hidden>
+    <div class="sheet-card">
+      <h2 class="sheet-title">Opened in another tab</h2>
+      <p class="muted">This phone joined from a newer tab, so this one stepped aside. Nothing was lost.</p>
+      <button id="replaced-btn" class="join-btn" type="button">Use this tab</button>
     </div>
   </div>
 

@@ -28,7 +28,7 @@ export function sniff(buf) {
   return null;
 }
 
-export function createPhotos({ app, io, rooms, party }) {
+export function createPhotos({ app, io, rooms, party, activity }) {
   const { events, need, who } = party;
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_FILE_BYTES, files: 2, fields: 8 } });
   const rate = new Map(); // personKey -> [timestamps]
@@ -42,7 +42,7 @@ export function createPhotos({ app, io, rooms, party }) {
   const thumbOf = (id, p) => join(events.dirOf(id), 'thumbs', `${p.id}.jpg`);
 
   // What a phone may see: shown photos plus its own waiting ones. The host sees everything (with flags).
-  const view = (p) => ({ id: p.id, by: p.by, byName: p.byName, byEmoji: p.byEmoji, byColor: p.byColor, at: p.at, w: p.w, h: p.h, size: p.size, noPreview: !!p.noPreview, hidden: !!p.hidden, pending: !!p.pending, ext: p.ext });
+  const view = (p) => ({ id: p.id, by: p.by, byName: p.byName, byEmoji: p.byEmoji, byAvatar: p.byAvatar, byColor: p.byColor, at: p.at, w: p.w, h: p.h, size: p.size, noPreview: !!p.noPreview, hidden: !!p.hidden, pending: !!p.pending, ext: p.ext });
   const visibleTo = (a) => (p) => a.host || (!p.hidden && (!p.pending || p.by === a.person?.id));
 
   // Tell the TV (always) and the phones (only about photos that are visible) that the album changed
@@ -85,7 +85,7 @@ export function createPhotos({ app, io, rooms, party }) {
       const w = Math.min(20000, Math.max(0, parseInt(req.body?.w, 10) || 0)), h = Math.min(20000, Math.max(0, parseInt(req.body?.h, 10) || 0));
       const p = {
         id, ext: kind.ext, hash, size: full.length, w, h, at: Date.now(),
-        by: a.person?.id || 'host', byName: a.person?.name || 'TV', byEmoji: a.person?.emoji || '📺',
+        by: a.person?.id || 'host', byName: a.person?.name || 'TV', byEmoji: a.person?.emoji || '📺', byAvatar: a.person?.avatar || null,
         byColor: a.person ? (a.person.playerId ? ['#2F80ED', '#EB5757', '#27AE60', '#D99A00'][a.person.playerId - 1] : a.person.guestColor) : '#5B6577',
         hidden: false, pending: !!event.settings.approvePhotos && !a.host, noPreview: !kind.preview,
       };
@@ -97,6 +97,7 @@ export function createPhotos({ app, io, rooms, party }) {
       list.push(p);
       save(event.id, list);
       announce(a.code, 'added', p);
+      if (!p.pending && a.person) activity?.add(a.code, a.person, 'photos');
       res.json({ ok: true, photo: view(p) });
     });
   });

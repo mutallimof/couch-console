@@ -171,6 +171,7 @@ body {
 }
 
 /* ---------- Overlays ---------- */
+#start { bottom: calc(env(safe-area-inset-bottom) + 92px); } /* leaves the tabs tappable */
 .overlay {
   position: fixed;
   inset: 0;
@@ -295,9 +296,9 @@ body.kart-mode .top { display: none; }
 .pane { display: flex; flex-direction: column; gap: 12px; }
 .pane h2 { margin: 4px 0; font-size: 24px; font-weight: 900; }
 .tabs { display: flex; gap: 6px; padding: 8px 0 0; }
-.tab { flex: 1; min-height: 56px; border: 0; border-radius: 16px; background: #fff; color: var(--muted); font: 800 13px/1.1 'Nunito', system-ui, sans-serif;
+.tab { flex: 1; min-height: 64px; border: 0; border-radius: 16px; background: #fff; color: var(--text); font: 900 14px/1.1 'Nunito', system-ui, sans-serif;
   display: grid; place-items: center; gap: 2px; padding: 6px 2px; touch-action: manipulation; box-shadow: 0 1px 3px rgba(20, 30, 50, 0.12); }
-.tab b { font-size: 22px; line-height: 1; }
+.tab b { font-size: 26px; line-height: 1; }
 .tab[aria-selected='true'] { background: var(--player); color: #fff; }
 body.kart-mode .tabs, body.kart-mode .panes { display: none; }
 .sheet { position: fixed; inset: 0; z-index: 20; display: grid; align-items: end; background: rgba(20, 30, 50, 0.45); }
@@ -397,3 +398,39 @@ body.kart-mode .tabs, body.kart-mode .panes { display: none; }
 .pr-laser.on { background: #e03131; color: #fff; }
 .pr-black.on { background: #222; color: #fff; }
 .pr-notes { min-height: 90px; border: 2px solid #d5dce8; border-radius: 14px; padding: 10px; font: 600 15px 'Nunito', system-ui, sans-serif; resize: none; user-select: text; -webkit-user-select: text; touch-action: pan-y; }
+
+/* ---------- Avatar maker and Activity (Phase 55) ---------- */
+.av-edit { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 360px; }
+.av-preview svg { width: 112px; height: 112px; border-radius: 50%; box-shadow: 0 6px 18px rgba(60, 80, 130, 0.25); }
+.av-rows { width: 100%; display: grid; gap: 6px; }
+.av-row { display: grid; grid-template-columns: 1fr 44px 96px 44px; align-items: center; gap: 6px; font-weight: 800; font-size: 15px; }
+.av-row button { height: 44px; border: 0; border-radius: 14px; background: #fff; font: 900 24px var(--display, 'Nunito'); color: var(--text); box-shadow: 0 1px 4px rgba(20, 30, 50, 0.15); touch-action: manipulation; }
+.av-row b { text-align: center; font-size: 14px; }
+.av-row i { display: inline-block; width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2); vertical-align: middle; }
+.me-btn svg { border-radius: 50%; display: block; }
+.act-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.act-item { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 18px; padding: 8px 12px; box-shadow: 0 1px 4px rgba(20, 30, 50, 0.12); }
+.act-face { font-size: 30px; line-height: 1; display: grid; place-items: center; }
+.act-face svg { border-radius: 50%; display: block; }
+.act-text { font-weight: 800; font-size: 16px; display: grid; }
+.act-text small { font-weight: 700; color: var(--muted); font-size: 13px; }
+.act-empty { text-align: center; padding: 20px; }
+
+/* ---------- Glossy look (Phase 55, docs/STYLE.md): the same room, tiles and buttons as the TV ---------- */
+html, body { background: transparent; }
+html { background:
+  radial-gradient(700px 500px at 8% 0%, rgba(255, 214, 140, 0.55), transparent 60%),
+  radial-gradient(700px 600px at 100% 25%, rgba(120, 190, 255, 0.5), transparent 60%),
+  linear-gradient(160deg, #EEF4FC, #E4ECF9); }
+.btn { background: linear-gradient(180deg, #fff, #E6EEF9); box-shadow: 0 5px 0 #C5D2E6, 0 8px 16px rgba(60, 80, 130, 0.2), inset 0 2px 0 #fff; font-family: var(--display); }
+.btn.pressed { background: linear-gradient(180deg, #E6EEF9, #D5E0F2); transform: translateY(4px); box-shadow: 0 1px 0 #C5D2E6, 0 2px 6px rgba(60, 80, 130, 0.2), inset 0 2px 0 #fff; }
+.a, .b { position: relative; overflow: hidden; }
+.a { background: linear-gradient(180deg, color-mix(in srgb, var(--player) 70%, #fff), var(--player) 55%, color-mix(in srgb, var(--player) 85%, #000)); box-shadow: 0 6px 0 color-mix(in srgb, var(--player) 60%, #000), 0 10px 18px rgba(60, 80, 130, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.7); }
+.b { background: linear-gradient(180deg, #8E99B3, #5B6577 60%, #4B5568); box-shadow: 0 6px 0 #3C4556, 0 10px 18px rgba(60, 80, 130, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.5); }
+.a::before, .b::before { content: ''; position: absolute; inset: 0 0 52% 0; border-radius: 50% 50% 0 0 / 80% 80% 0 0; background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.05)); pointer-events: none; }
+.a.pressed, .b.pressed { filter: none; transform: translateY(5px); }
+.badge { font-family: var(--display); background: linear-gradient(180deg, color-mix(in srgb, var(--player) 70%, #fff), var(--player)); box-shadow: 0 4px 10px rgba(60, 80, 130, 0.25), inset 0 2px 0 rgba(255, 255, 255, 0.6); }
+.tab { font-family: var(--display); border-radius: 18px; box-shadow: 0 3px 0 #C5D2E6, inset 0 2px 0 #fff; background: linear-gradient(180deg, #fff, #EAF1FA); }
+.tab[aria-selected='true'] { background: linear-gradient(180deg, color-mix(in srgb, var(--player) 70%, #fff), var(--player)); box-shadow: 0 3px 0 color-mix(in srgb, var(--player) 60%, #000), inset 0 2px 0 rgba(255, 255, 255, 0.6); }
+.join-btn, .start-btn { font-family: var(--display); }
+.me-btn { font-family: var(--display); }

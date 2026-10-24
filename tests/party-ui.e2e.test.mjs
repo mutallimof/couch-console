@@ -1,6 +1,7 @@
 // The party in real (headless) browsers (Phase 43): the welcome card, players and guests with their
 // tabs, "Ana joined" on the TV, and the home folders opening and closing. Skipped without Playwright. npm test
 import test from 'node:test';
+import { focusOn } from './helpers-home.mjs';
 import assert from 'node:assert/strict';
 import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
@@ -50,7 +51,7 @@ test('welcome card, player and guest tabs, joined notes, folders', { skip: !pw &
     await ana.waitForTimeout(500); // (the double-tap guard swallows two taps on the same spot)
     await ana.tap('#w-play');
     await ana.waitForSelector('#start:not([hidden])');
-    assert.deepEqual(await tabs(ana), ['remote', 'photos', 'music', 'present'], 'a player has the remote and the three tabs');
+    assert.deepEqual(await tabs(ana), ['remote', 'photos', 'music', 'present', 'activity'], 'a player has the remote and the four tabs');
     assert.equal(await ana.textContent('#badge'), 'P1');
     await tv.waitForFunction(() => document.querySelector('.toast')?.textContent.includes('Ana joined'), null, { timeout: 8000 });
 
@@ -61,7 +62,7 @@ test('welcome card, player and guest tabs, joined notes, folders', { skip: !pw &
     await ben.waitForTimeout(500);
     await ben.tap('#w-guest');
     await ben.waitForSelector('#tabs:not([hidden])');
-    assert.deepEqual(await tabs(ben), ['photos', 'music', 'present']);
+    assert.deepEqual(await tabs(ben), ['photos', 'music', 'present', 'activity']);
     assert.equal(await ben.isVisible('#controller'), false, 'no controller for a guest');
     await ben.tap('.tab[data-tab="music"]');
     assert.equal(await ben.isVisible('#pane-music'), true);
@@ -75,18 +76,18 @@ test('welcome card, player and guest tabs, joined notes, folders', { skip: !pw &
     assert.equal(await ben.textContent('#badge'), 'P2');
     assert.ok((await tabs(ben)).includes('remote'));
 
-    // The TV's home: folders open (the D-pad on phone 1) and close again
+    // The TV's home: the D-pad on phone 1 walks to the Arcade tile, A opens it as its own screen, B comes back
     await tv.waitForSelector('.tile:not(.empty)');
-    const titles = () => tv.$$eval('.tile:not(.empty) .tile-title', (t) => t.map((x) => x.textContent));
+    const titles = () => tv.$$eval('.menu [data-focus] .tile-title', (t) => t.map((x) => x.textContent));
     assert.ok((await titles()).includes('Arcade') && (await titles()).includes('Turbo Karts'));
     await ana.tap('#start-btn');
     const press = (btn) => ana.evaluate((b) => { const el = document.querySelector(`#controller [data-button="${b}"]`); el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); }, btn).then(() => tv.waitForTimeout(350));
-    await press('RIGHT'); await press('A');
-    await tv.waitForFunction(() => !document.getElementById('crumb').hidden);
-    assert.match(await tv.textContent('#crumb'), /Arcade/);
-    assert.ok((await titles()).includes('Back') && (await titles()).includes('Bowling'));
+    await focusOn(tv, press, 'folder:arcade');
+    await press('A');
+    assert.equal(await tv.textContent('#crumb'), 'Arcade', 'A on a folder opens it as its own screen');
+    assert.ok((await titles()).includes('Bowling') && !(await titles()).includes('Turbo Karts'), 'only the folder\'s games show');
     await press('B');
-    await tv.waitForFunction(() => document.getElementById('crumb').hidden);
+    assert.ok((await titles()).includes('Turbo Karts') && (await tv.isHidden('#crumb')), 'B goes back to the home grid');
     assert.deepEqual(errors, [], 'no page errors');
   } finally {
     await browser.close();

@@ -59,9 +59,9 @@ function patchToneMapping(THREE) {
 
 // The last step of the effect chain: vignette, tone mapping and screen colors in one pass
 const FinalShader = {
-  uniforms: { tDiffuse: { value: null }, uStrength: { value: 0.45 }, uSize: { value: 0.8 }, uExposure: { value: 1.05 }, uToon: { value: 0 } },
+  uniforms: { tDiffuse: { value: null }, uStrength: { value: 0.45 }, uSize: { value: 0.8 }, uExposure: { value: 1.05 }, uToon: { value: 0 }, uLinear: { value: 0 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStrength, uSize, uExposure, uToon; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStrength, uSize, uExposure, uToon, uLinear; varying vec2 vUv;
     ${neutral('finalNeutral')} // (own name: three.js may also include the screen's version)
     vec3 toSRGB(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
     void main(){
@@ -77,7 +77,8 @@ const FinalShader = {
         c += uToon * (vec3(0.012, 0.004, -0.006) * l - vec3(0.006, 0.002, -0.012) * (1.0 - clamp(l, 0.0, 1.0)) * 0.5);
         c = max(c, vec3(0.0));
       }
-      gl_FragColor = vec4(toSRGB(clamp(finalNeutral(c * uExposure), 0.0, 1.0)), 1.0);
+      vec3 shown = clamp(finalNeutral(c * uExposure), 0.0, 1.0);
+      gl_FragColor = vec4(uLinear > 0.5 ? shown : toSRGB(shown), 1.0); // (uLinear: the postprocessing library finishes the job and encodes sRGB itself)
     }`,
 };
 
@@ -117,10 +118,21 @@ export async function createLook(THREE, renderer, scene, force = null) {
     try { addons.GTAOPass = (await import('three/addons/postprocessing/GTAOPass.js')).GTAOPass; } catch (err) { console.warn('No ambient occlusion:', err.message); }
   } catch (err) { console.warn('No screen effects:', err.message); }
 
+  // The postprocessing library (Phase 55): better bloom, SMAA edge smoothing and a little color grading, run
+  // on the finished picture of our own chain (outlines, AO, tone mapping stay as they are). Optional.
+  let lib = null;
+  if (addons && force !== 'libs-off' && new URLSearchParams(location.search).get('pp') !== 'off') {
+    try {
+      const L = await import('postprocessing');
+      const [searchImage, areaImage] = await new Promise((resolve, reject) => new L.SMAAImageLoader().load(resolve, reject));
+      lib = { ...L, searchImage, areaImage };
+    } catch (err) { console.warn('No postprocessing library:', err.message); }
+  }
+
   const chains = [];          // one effect chain per split-screen view
   let enabled = !!addons && force !== 'off';
   let low = 0, frames = 0, last = performance.now(), fps = 60;
-  let bloomStrength = 0.4, exposure = 1.05, aoOn = true, cartoonOn = false;
+  let bloomStrength = 0.4, exposure = 1.05, aoOn = true, cartoonOn = false, libBloom = 0.35;
 
   function chain(i, w, h, camera) {
     let c = chains[i];
@@ -152,13 +164,34 @@ export async function createLook(THREE, renderer, scene, force = null) {
       final.uniforms.uExposure.value = exposure;
       final.uniforms.uToon.value = cartoonOn ? 1 : 0;
       composer.addPass(final);
-      c = chains[i] = { composer, pass, ao, edge, bloom, final, w: 0, h: 0 };
+      c = chains[i] = { composer, pass, ao, edge, bloom, final, w: 0, h: 0, lib: null };
+      if (lib) {
+        try {
+          // our chain draws into its own buffer (not the screen); the library's chain shows that picture, adds bloom + grading, then SMAA
+          composer.renderToScreen = false;
+          final.uniforms.uLinear.value = 1;
+          const lc = new lib.EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType, depthBuffer: false });
+          const show = new lib.TextureEffect({ texture: null });
+          const glow = new lib.BloomEffect({ intensity: libBloom, luminanceThreshold: 0.8, luminanceSmoothing: 0.25, mipmapBlur: true, radius: 0.72 });
+          const hue = new lib.HueSaturationEffect({ saturation: 0.12 });
+          const bc = new lib.BrightnessContrastEffect({ contrast: 0.05 });
+          lc.addPass(new lib.EffectPass(camera, show, glow, hue, bc));
+          if (new URLSearchParams(location.search).get('pp') !== 'nosmaa') lc.addPass(new lib.EffectPass(camera, new lib.SMAAEffect({ searchImage: lib.searchImage, areaImage: lib.areaImage })));
+          c.lib = { lc, show, glow };
+          bloom.strength = bloomStrength * 0.5;
+        } catch (err) { console.warn('postprocessing chain failed, using our own:', err.message); composer.renderToScreen = true; final.uniforms.uLinear.value = 0; lib = null; }
+      }
     }
     if (c.w !== w || c.h !== h) {
       c.composer.setPixelRatio(renderer.getPixelRatio());
       c.composer.setSize(w, h);
       c.w = w; c.h = h;
       c.edge.uniforms.uTexel.value.set(1 / (w * renderer.getPixelRatio()), 1 / (h * renderer.getPixelRatio()));
+      if (c.lib) { // (not lc.setSize: it would resize the whole canvas, and this view is only a part of it)
+        const pw = Math.round(w * renderer.getPixelRatio()), ph = Math.round(h * renderer.getPixelRatio());
+        c.lib.lc.inputBuffer.setSize(pw, ph); c.lib.lc.outputBuffer.setSize(pw, ph);
+        for (const p of c.lib.lc.passes) p.setSize(pw, ph);
+      }
     }
     return c;
   }
@@ -171,7 +204,8 @@ export async function createLook(THREE, renderer, scene, force = null) {
       scene.environment?.dispose();
       scene.environment = environmentFor(def);
       bloomStrength = def.night ? 0.75 : 0.35;
-      for (const c of chains) if (c) c.bloom.strength = bloomStrength;
+      libBloom = def.night ? 0.95 : 0.3;
+      for (const c of chains) if (c) { c.bloom.strength = c.lib ? bloomStrength * 0.5 : bloomStrength; if (c.lib) c.lib.glow.intensity = libBloom; }
       exposure = def.lighting?.exposure ?? 1.05; // (a track can be exposed brighter or darker)
       renderer.toneMappingExposure = exposure;
       for (const c of chains) if (c) c.final.uniforms.uExposure.value = exposure;
@@ -189,6 +223,11 @@ export async function createLook(THREE, renderer, scene, force = null) {
         c.edge.uniforms.uNear.value = camera.near; c.edge.uniforms.uFar.value = camera.far;
       }
       c.composer.render();
+      if (c.lib) {
+        c.lib.show.texture = c.composer.readBuffer.texture;
+        renderer.setViewport(x, y, w, h); renderer.setScissor(x, y, w, h);
+        c.lib.lc.render(0.016);
+      }
     },
     // Call once per frame: watches the frame rate and turns the effects off if it's too low
     tick(dt) {
@@ -210,7 +249,7 @@ export async function createLook(THREE, renderer, scene, force = null) {
     setSkyTexture(tex) { scene.environment?.dispose(); scene.environment = pmrem.fromEquirectangular(tex).texture; },
     setAO(on) { aoOn = on; for (const c of chains) if (c?.ao) c.ao.enabled = on; },
     dispose() {
-      for (const c of chains) c?.composer.dispose();
+      for (const c of chains) { c?.composer.dispose(); c?.lib?.lc.dispose(); }
       chains.length = 0;
       scene.environment?.dispose();
       pmrem.dispose();

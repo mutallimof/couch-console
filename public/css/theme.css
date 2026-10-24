@@ -1,0 +1,66 @@
+/* Couch Console theme (docs/STYLE.md): light, clean and glossy. Shared by the TV and the phone. */
+:root {
+  --ink: #25304A; --muted: #66728C; --cloud: #F3F6FB;
+  --cushion: #FF8A3D; --sky: #3FA9FF; --pop: #FF5C8A; --mint: #2FD6A4; --butter: #FFC93C;
+  --glass: rgba(255, 255, 255, 0.55); --glass-edge: rgba(255, 255, 255, 0.85);
+  --shadow: 0 10px 30px rgba(60, 80, 130, 0.18), 0 2px 6px rgba(60, 80, 130, 0.12);
+  --spring: cubic-bezier(.2, .9, .3, 1.25);
+  --display: 'Fredoka', 'Nunito', system-ui, sans-serif;
+  --font: 'Nunito', system-ui, sans-serif;
+}
+.theme-bg {
+  background:
+    radial-gradient(900px 600px at 8% 0%, rgba(255, 214, 140, 0.55), transparent 60%),
+    radial-gradient(900px 700px at 100% 20%, rgba(120, 190, 255, 0.55), transparent 60%),
+    radial-gradient(800px 600px at 40% 110%, rgba(170, 150, 255, 0.45), transparent 60%),
+    linear-gradient(160deg, #EEF4FC, #E4ECF9);
+}
+/* Frosted glass panel */
+.glass {
+  background: var(--glass); border: 1.5px solid var(--glass-edge); border-radius: 32px;
+  backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+/* Glossy tile: a color (--tile) with a highlight on top and a soft floor shadow */
+.gloss {
+  position: relative; overflow: hidden; border-radius: 28px; color: #fff;
+  --base: color-mix(in srgb, var(--tile, #4DA3FF) 84%, #fff);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--base) 78%, #fff), var(--base) 55%, color-mix(in srgb, var(--base) 88%, #000));
+  box-shadow: var(--shadow), inset 0 2px 0 rgba(255, 255, 255, 0.75), inset 0 -4px 0 rgba(0, 0, 0, 0.12);
+  transition: transform 220ms var(--spring), box-shadow 220ms ease-out;
+}
+.gloss::before { /* the sheen */
+  content: ''; position: absolute; inset: 0 0 52% 0; border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.08)); pointer-events: none;
+}
+.gloss.is-focus {
+  transform: translateY(-6px) scale(1.04);
+  box-shadow: 0 18px 40px rgba(60, 80, 130, 0.28), 0 0 0 5px #fff, 0 0 0 9px color-mix(in srgb, var(--tile, #4DA3FF) 75%, #fff), inset 0 2px 0 rgba(255, 255, 255, 0.75);
+}
+.round-btn {
+  width: 64px; height: 64px; border-radius: 50%; border: 0; display: grid; place-items: center; font-size: 30px; color: var(--ink);
+  background: linear-gradient(180deg, #fff, #E6EEF9); box-shadow: var(--shadow), inset 0 2px 0 #fff; transition: transform 220ms var(--spring);
+}
+.round-btn.is-focus { transform: scale(1.12); box-shadow: 0 0 0 5px #fff, 0 0 0 9px var(--sky), var(--shadow); }
+@media (prefers-reduced-motion: reduce) { .gloss, .round-btn { transition: none; } }
+
+/* ---------- Option B: the dark "plum living room at dusk" (add class theme-dark to <body>; ?theme=dark on the TV) ---------- */
+.theme-dark {
+  --ink: #FFF3D6; --muted: rgba(255, 243, 214, 0.68); --cloud: #1B1633;
+  --glass: rgba(60, 48, 115, 0.5); --glass-edge: rgba(255, 255, 255, 0.16);
+  --shadow: 0 10px 30px rgba(6, 3, 24, 0.55), 0 2px 6px rgba(6, 3, 24, 0.45);
+  --bg-top: #221B45; --bg-bottom: #130F2B; --text: #FFF3D6;
+  color: var(--ink);
+}
+.theme-dark, .theme-dark .theme-bg {
+  background:
+    radial-gradient(900px 600px at 50% 0%, rgba(110, 80, 200, 0.45), transparent 62%),
+    radial-gradient(800px 600px at 100% 100%, rgba(255, 120, 80, 0.16), transparent 60%),
+    linear-gradient(170deg, #241C4A, #130F2B);
+}
+.theme-dark .glass { box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+.theme-dark .gloss { box-shadow: 0 12px 28px rgba(4, 2, 18, 0.55), inset 0 2px 0 rgba(255, 255, 255, 0.6), inset 0 -4px 0 rgba(0, 0, 0, 0.16); }
+.theme-dark .gloss.is-focus { box-shadow: 0 18px 40px rgba(4, 2, 18, 0.6), 0 0 0 5px #FFF3D6, 0 0 0 9px color-mix(in srgb, var(--tile, #4DA3FF) 80%, #fff), 0 0 40px color-mix(in srgb, var(--tile, #4DA3FF) 60%, transparent), inset 0 2px 0 rgba(255, 255, 255, 0.6); }
+.theme-dark kbd { background: #FFF3D6; color: #241C4A; }
+.theme-dark .chip { background: rgba(255, 255, 255, 0.1); }
+.theme-dark .mini-join img { background: #FFF3D6; }
