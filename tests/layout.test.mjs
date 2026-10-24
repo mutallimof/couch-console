@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 globalThis.WebSocket ??= require('ws').WebSocket;
 const io = require('../node_modules/socket.io/client-dist/socket.io.js'); // (the file /socket.io/socket.io.js serves)
 
-const PORT = 3600 + Math.floor(Math.random() * 300);
+const PORT = 9700 + Math.floor(Math.random() * 300);
 let server;
 
 test.before(async () => {

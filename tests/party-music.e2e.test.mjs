@@ -15,7 +15,7 @@ function findPlaywright() {
   return null;
 }
 const pw = findPlaywright();
-const PORT = 6000 + Math.floor(Math.random() * 300), FAKE = PORT + 400;
+const PORT = 9100 + Math.floor(Math.random() * 300), FAKE = PORT + 400;
 
 test('three phones queue songs; the TV plays them fairly; skip and blocked links work', { skip: !pw && 'Playwright is not installed', timeout: 240000 }, async () => {
   const fake = createServer((req, res) => {

@@ -16,7 +16,7 @@ function findPlaywright() {
   return null;
 }
 const pw = findPlaywright();
-const PORT = 3900 + Math.floor(Math.random() * 300);
+const PORT = 8100 + Math.floor(Math.random() * 300);
 
 test('the kart pad appears on every phone during a race, and steers', { skip: !pw && 'Playwright is not installed', timeout: 300000 }, async () => {
   const server = spawn(process.execPath, ['server.js'], {
