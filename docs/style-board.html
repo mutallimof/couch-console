@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Couch Console style board</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--den:#1B1633;--plum:#2E2559;--glow:#FFF3D6;--cushion:#FF8A3D;--mint:#3DD9B0;--pop:#FF5C8A;--sky:#5CB8FF;--butter:#FFD95A}
+*{box-sizing:border-box}
+body{margin:0;width:1400px;padding:48px;background:radial-gradient(900px 500px at 50% 0,#2E2559,#1B1633 70%);color:var(--glow);font:400 22px/1.4 Nunito,sans-serif}
+h1,h2,.f{font-family:Fredoka,sans-serif;font-weight:600;letter-spacing:-.01em;margin:0}
+h2{font-size:28px;margin-bottom:14px}
+.row{display:grid;gap:28px;margin-bottom:34px}
+.card{background:var(--plum);border-radius:28px;padding:26px;box-shadow:0 6px 0 rgba(10,6,30,.45),0 18px 40px rgba(10,6,30,.4)}
+.top{grid-template-columns:1.1fr 1fr}
+.logo{display:flex;align-items:center;gap:22px}
+.word{font:700 72px/1 Fredoka;letter-spacing:-.02em}.word small{display:block;font:600 34px Fredoka;color:var(--cushion);letter-spacing:0}
+.sw{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.sw div{border-radius:20px;height:96px;padding:12px;font:700 16px/1.2 Nunito;color:var(--den);box-shadow:0 5px 0 rgba(10,6,30,.4)}
+.sw .l{color:var(--glow)}
+.type{grid-template-columns:1fr 1fr}
+.big{font:700 72px/1 Fredoka}.mid{font:600 40px/1.1 Fredoka}
+.ui{grid-template-columns:repeat(3,1fr)}
+.tile{height:150px;border-radius:28px;padding:18px;font:600 30px Fredoka;display:flex;align-items:flex-end;box-shadow:0 6px 0 rgba(10,6,30,.45)}
+.tile.focus{outline:6px solid var(--cushion);outline-offset:4px;box-shadow:0 0 40px rgba(255,138,61,.55),0 6px 0 rgba(10,6,30,.45)}
+.btn{display:inline-block;padding:14px 28px;border-radius:20px;background:var(--cushion);color:var(--den);font:700 26px Fredoka;box-shadow:0 6px 0 #B85A1E;margin-right:10px}
+.btn.g{background:var(--plum);color:var(--glow);box-shadow:0 6px 0 rgba(10,6,30,.6);border:2px solid #4A3F85}
+.chip{display:inline-flex;gap:8px;align-items:center;padding:8px 16px;border-radius:12px;font:700 22px Fredoka;color:var(--den);margin:4px 8px 4px 0}
+.small{font-size:18px;color:rgba(255,243,214,.65)}
+img.shot{width:100%;border-radius:20px;display:block}
+ul{margin:0;padding-left:22px}li{margin:4px 0}
+</style></head><body>
+<div class="row top">
+ <div class="card"><div class="logo">
+  <svg width="170" height="150" viewBox="0 0 170 150" aria-label="couch console logo">
+   <path d="M85 4 112 22 85 40z" fill="#FFF3D6" transform="translate(0 6)"/>
+   <circle cx="85" cy="27" r="34" fill="#FFF3D6" opacity=".12"/>
+   <rect x="12" y="62" width="146" height="62" rx="26" fill="#FF8A3D"/>
+   <rect x="0" y="82" width="38" height="60" rx="18" fill="#FF8A3D"/><rect x="132" y="82" width="38" height="60" rx="18" fill="#FF8A3D"/>
+   <rect x="38" y="84" width="46" height="40" rx="16" fill="#FFB36E"/><rect x="86" y="84" width="46" height="40" rx="16" fill="#FFB36E"/>
+   <rect x="22" y="132" width="14" height="14" rx="5" fill="#B85A1E"/><rect x="134" y="132" width="14" height="14" rx="5" fill="#B85A1E"/>
+  </svg>
+  <div class="word">couch<small>console</small></div></div>
+  <p class="small" style="margin:18px 0 0">Sofa glyph: two cushions and a backrest, with the TV-glow play triangle floating above it. Works in one flat color at 24 px.</p></div>
+ <div class="card"><h2>Mood: a toy-box living room at dusk</h2><ul><li>Dim plum room, glowing TV, bright chunky toys</li><li>Big, soft, springy; read from 3 m away</li><li>Bright means something: a player, a button, a winner</li></ul></div>
+</div>
+<div class="card row" style="margin-bottom:34px"><h2>Color</h2><div class="sw">
+ <div class="l" style="background:#1B1633;border:2px solid #4A3F85">Night Den<br>#1B1633</div><div class="l" style="background:#2E2559">Plum<br>#2E2559</div><div style="background:#FFF3D6">TV Glow<br>#FFF3D6</div><div style="background:#FF8A3D">Cushion<br>#FF8A3D</div>
+ <div style="background:#3DD9B0">Mint · P3<br>#3DD9B0</div><div style="background:#FF5C8A">Pop · P2<br>#FF5C8A</div><div style="background:#5CB8FF">Sky · P1<br>#5CB8FF</div><div style="background:#FFD95A">Butter · P4<br>#FFD95A</div></div></div>
+<div class="row type"><div class="card"><h2>Type: Fredoka + Nunito</h2><div class="big">Race night</div><div class="mid" style="margin:10px 0">Who is on the couch?</div><p style="margin:0">Nunito for text and hints: friendly, round, easy to read from the sofa. Sentence case, never all caps.</p></div>
+ <div class="card"><h2>Shape, depth, focus</h2><span class="btn">Play</span><span class="btn g">Back</span><p class="small">Things sit on the floor with a soft bottom edge and sink 4 px when pressed. Focus is a thick orange ring with a glow.</p>
+ <span class="chip" style="background:var(--sky)">P1 Ana</span><span class="chip" style="background:var(--pop)">P2 Ben</span><span class="chip" style="background:var(--mint)">P3 Cy</span><span class="chip" style="background:var(--butter)">P4 Di</span></div></div>
+<div class="row ui"><div class="tile focus" style="background:linear-gradient(160deg,#FF8A3D,#E8602A);color:#1B1633">Turbo Karts</div><div class="tile" style="background:#2E2559">Photos</div><div class="tile" style="background:#2E2559">Music</div></div>
+<div class="row" style="grid-template-columns:1.2fr 1fr"><div class="card"><h2>3D: plastic toys, warm light, outlined</h2><img class="shot" src="screenshots/style-3d-sample.png" alt="Turbo Karts sample"></div>
+ <div class="card"><h2>Motion and sound</h2><ul><li>One springy curve: <b>cubic-bezier(.2,.9,.3,1.25)</b>, 180–280 ms</li><li>Squash on press (0.96), stretch on landing (1.04)</li><li>Only transform and opacity; reduced motion = fades</li><li>One big moment: the boot and the winner</li></ul><h2 style="margin-top:20px">Sound</h2><ul><li>Soft clicks, marimba blips, rubbery boings</li><li>Short major-key jingles, nothing harsh</li><li>Menu quiet, choices medium, wins loud</li></ul>
+ <h2 style="margin-top:20px">3D lighting presets</h2><span class="chip" style="background:var(--butter)">Day</span><span class="chip" style="background:var(--cushion)">Dusk</span><span class="chip" style="background:var(--sky)">Night</span><span class="chip" style="background:var(--pop)">Stage</span></div></div>
+</body></html>
