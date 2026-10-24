@@ -9,27 +9,27 @@
 // THIRD_PARTY_NOTICES.md).
 import { colorFor } from '../../shared/protocol.js';
 import { graphics } from '../graphics-prefs.js';
-import { skyFor, asphalt } from './karts-polyhaven.js';
-import { setPavementOverride } from './karts-materials.js';
-import { buildTrack, TRACKS, SUN_DIR } from './kart-track.js';
-import { STADIUM } from './ow-kart/stadium/stadium-def.js';
-import * as stadiumTrack from './ow-kart/stadium/track.js';
+import { skyFor, asphalt } from './turbo-karts/karts-polyhaven.js';
+import { setPavementOverride } from './turbo-karts/karts-materials.js';
+import { buildTrack, TRACKS, SUN_DIR } from './turbo-karts/kart-track.js';
+import { STADIUM } from './turbo-karts/ow-kart/stadium/stadium-def.js';
+import * as stadiumTrack from './turbo-karts/ow-kart/stadium/track.js';
 
 const ALL_TRACKS = [...TRACKS, STADIUM]; // our six courses plus the Grand Stadium
-import { createLook } from './karts-look.js';
-import { KARTS, ITEM_ICONS } from './karts-data.js';
-import { GP_CHARACTERS as CHARACTERS } from './ow-kart/characters.js';
-import { setThree, makeRacer, makeItemMesh, makePortraits } from './karts-models.js';
-import { createSelect } from './karts-select.js';
-import { createShowroom, setShowroomThree } from './karts-showroom.js';
-import { kartInput } from './ow-kart/input.js';
-import { createRaceFx, makeExhaust, updateExhaust } from './karts-fx.js';
-import { CAR, loadAll } from './karts-assets.js';
-import { THEME_MODELS } from './karts-decor.js';
-import { Race, ITEMS, ordinal, formatTime } from './ow-kart/rules.js';
-import { createTrackModel } from './ow-kart/track-model.js';
-import { renderPath } from './ow-kart/render-path.js';
-import { chasePose } from './ow-kart/frame.js';
+import { createLook } from './turbo-karts/karts-look.js';
+import { KARTS, ITEM_ICONS } from './turbo-karts/karts-data.js';
+import { GP_CHARACTERS as CHARACTERS } from './turbo-karts/ow-kart/characters.js';
+import { setThree, makeRacer, makeItemMesh, makePortraits } from './turbo-karts/karts-models.js';
+import { createSelect } from './turbo-karts/karts-select.js';
+import { createShowroom, setShowroomThree } from './turbo-karts/karts-showroom.js';
+import { kartInput } from './turbo-karts/ow-kart/input.js';
+import { createRaceFx, makeExhaust, updateExhaust } from './turbo-karts/karts-fx.js';
+import { CAR, loadAll } from './turbo-karts/karts-assets.js';
+import { THEME_MODELS } from './turbo-karts/karts-decor.js';
+import { Race, ITEMS, ordinal, formatTime } from './turbo-karts/ow-kart/rules.js';
+import { createTrackModel } from './turbo-karts/ow-kart/track-model.js';
+import { renderPath } from './turbo-karts/ow-kart/render-path.js';
+import { chasePose } from './turbo-karts/ow-kart/frame.js';
 
 const RACERS = 8;
 const POINTS = [15, 12, 10, 8, 6, 4, 2, 1]; // co-op points by finishing place
@@ -135,7 +135,7 @@ async function startRace() {
     if (def.stadium) {
       // The Grand Stadium: OpenWii's procedural world, collected in one group so it can be removed again
       const model = stadiumTrack.model, before = new Set(scene.children);
-      const [{ buildWorld }, { addAtmosphere }] = await Promise.all([import('./ow-kart/stadium/world.js'), import('./ow-kart/stadium/atmosphere.js')]);
+      const [{ buildWorld }, { addAtmosphere }] = await Promise.all([import('./turbo-karts/ow-kart/stadium/world.js'), import('./turbo-karts/ow-kart/stadium/atmosphere.js')]);
       const world = buildWorld(scene);
       addAtmosphere(scene);
       const group = new THREE.Group();
@@ -143,7 +143,7 @@ async function startRace() {
       scene.add(group);
       track = { def, group, model, world, mixers: [], pts: model.samples };
       scene.fog = new THREE.FogExp2(...def.lighting.fog);
-      const { createStadiumLights } = await import('./ow-kart/stadium/lighting.js');
+      const { createStadiumLights } = await import('./turbo-karts/ow-kart/stadium/lighting.js');
       track.floodlights = createStadiumLights(THREE, scene);
     } else {
       const model = createTrackModel(def);
