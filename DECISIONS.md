@@ -85,3 +85,9 @@ not to stop for questions). Each entry says what was decided and why. Newest at 
 ## Phase 37: Original Grand Stadium layout
 - New track shape (a tall pear with a hairpin at the top and a hook after the start), designed by choosing a turn angle for each control point and solving the closing of the loop (no crossings, widest clearance 107 m, tightest corner about 28 m radius).
 - The OpenWii scenery is placed by distance along the road, so the length of each segment between control points was kept; heights, pads, item boxes, coins and the glide jump use the same control numbers.
+
+## Phase 38: Quaternius characters in Turbo Karts GP
+- The 14 racers of Turbo Karts GP are now Quaternius "Ultimate Animated Character Pack" models (CC0): Anne, Henry, Suki, Merlo, Hazel, Bjorn, Glint, Pepper, Dusty, Fern, Grub, Joy, Biscuit (pug) and Daisy (cow). They live in `ow-kart/characters.js`; the old Turbo Karts keeps its pirates and animals.
+- Character select shows each one idling on the podium; picking a racer or getting ready plays their `Victory` clip. In the race: `RecieveHit` when hit, `Victory` at the finish. (The pack's clips have other names than the Pirate Kit's, so `karts-models.js` maps Wave/Yes/HitReact to them.)
+- All models are scaled with one factor (1.45 m / 1.8) so a hat or a small pug stays in proportion. If a file is missing, the game draws the old code-built character instead.
+- A test checks every racer's file exists and has Idle, Victory and RecieveHit.

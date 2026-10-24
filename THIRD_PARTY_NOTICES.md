@@ -2,6 +2,14 @@
 
 Couch Console includes code adapted from the projects below.
 
+## Quaternius Ultimate Animated Character Pack
+
+- Source: https://quaternius.com (Quaternius, "LowPoly Models by @Quaternius")
+- Used in: `public/assets/quaternius-characters/` (glTF models and `License.txt`), the racers of
+  Turbo Karts GP (`public/js/console/games/ow-kart/characters.js`)
+- License: CC0 1.0 Universal (public domain dedication), https://creativecommons.org/publicdomain/zero/1.0/
+  Credit is not required but given with thanks. The pack's `License.txt` is kept next to the models.
+
 ## OpenWii
 
 - Source: https://github.com/pattssun/OpenWii

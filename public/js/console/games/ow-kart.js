@@ -14,13 +14,14 @@ import * as stadiumTrack from './ow-kart/stadium/track.js';
 
 const ALL_TRACKS = [...TRACKS, STADIUM]; // (the stadium is only in this game; the old Turbo Karts keeps its own list)
 import { createLook } from './karts-look.js';
-import { CHARACTERS, KARTS, ITEM_ICONS } from './karts-data.js';
+import { KARTS, ITEM_ICONS } from './karts-data.js';
+import { GP_CHARACTERS as CHARACTERS } from './ow-kart/characters.js';
 import { setThree, makeRacer, makeItemMesh, makePortraits } from './karts-models.js';
 import { createSelect } from './karts-select.js';
 import { createShowroom, setShowroomThree } from './karts-showroom.js';
 import { kartInput } from './karts-rules.js';
 import { createRaceFx, makeExhaust, updateExhaust } from './karts-fx.js';
-import { CAR, PIRATE, loadAll } from './karts-assets.js';
+import { CAR, loadAll } from './karts-assets.js';
 import { THEME_MODELS } from './karts-decor.js';
 import { Race, ITEMS, ordinal, formatTime } from './ow-kart/rules.js';
 import { createTrackModel } from './ow-kart/track-model.js';
@@ -67,7 +68,7 @@ function showSelect() {
   const ids = api.players.map((p) => p.playerId).slice(0, api.mode === 'solo' ? 1 : 2);
   root.classList.add('selecting');
   select = createSelect({
-    root, portraits, previous: selection, sound: api.sound, tracks: ALL_TRACKS,
+    root, portraits, previous: selection, sound: api.sound, tracks: ALL_TRACKS, characters: CHARACTERS,
     players: ids.map((id) => ({ playerId: id, color: colorFor(id) })),
     onDone: (sel) => { selection = sel; select = null; root.classList.remove('selecting'); startRace(); },
     onExit: () => api.exit(),
@@ -526,7 +527,7 @@ async function init(token) {
   setThree(THREE);
   setShowroomThree(THREE);
   root.querySelector('.kart-loading').remove();
-  const ok = await loadModels([...KARTS.map((k) => CAR(k.model)), ...CHARACTERS.filter((c) => c.model).map((c) => PIRATE(c.model)),
+  const ok = await loadModels([...KARTS.map((k) => CAR(k.model)), ...CHARACTERS.map((c) => c.path),
     CAR('item-box'), CAR('item-coin-gold')]);
   if (!ok) return;
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });

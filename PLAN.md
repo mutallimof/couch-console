@@ -345,6 +345,9 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 ### Phase 36: Turbo Karts GP (ported OpenWii kart engine + Grand Stadium)
 New game next to Turbo Karts: OpenWii physics, items, computer drivers, camera, HUD; our kart pad and split screen; seven tracks. Done; waiting for the user's real-phone test. Next: swap in Quaternius characters if downloaded.
 
+### Phase 38: Quaternius characters as the racers of Turbo Karts GP
+Done: 14 animated CC0 characters, idle/victory in character select, credit in THIRD_PARTY_NOTICES.md.
+
 ### Phase 34: Cursor and kart-mechanics fixes after the first real test
 - **Steady cursor** switch (Settings, or G on the laptop): `Pointer.steady` skips the learned gyro map and uses the fused orientation only. Test: with a noise gyro, steady = exactly a no-gyro phone.
 - Alien Strike: how-to-play screen first (goal, controls, lives), hold A to keep firing.
