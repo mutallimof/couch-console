@@ -3,14 +3,15 @@
 // Each player's panel has a 3D preview box (.ks-stage) that turbo-karts.js draws the showroom
 // into (karts-showroom.js). The panels are built once and then only updated, so the stat bars
 // can slide to their new values.
-import { CHARACTERS as KART_CHARACTERS, KARTS } from './karts-data.js';
+import { KARTS } from './karts-data.js';
+import { GP_CHARACTERS } from './ow-kart/characters.js';
 import { TRACKS } from './kart-track.js';
 
 const STATS = [['speed', 'Speed'], ['accel', 'Acceleration'], ['handling', 'Handling'], ['weight', 'Weight']];
 const HINTS = { char: 'D-pad: character · A = pick', kart: '◀ ▶ kart · A = ready · B = back', ready: 'Ready! · B = change' };
 
 // onCelebrate(playerId, 'pick' | 'ready'): a character was picked / a player is ready
-export function createSelect({ root, players, portraits, previous, sound, onDone, onExit, onCelebrate = () => {}, tracks = TRACKS, characters: CHARACTERS = KART_CHARACTERS }) {
+export function createSelect({ root, players, portraits, previous, sound, onDone, onExit, onCelebrate = () => {}, tracks = TRACKS, characters: CHARACTERS = GP_CHARACTERS }) {
   // One "seat" per human player: what they're choosing and what they picked
   const seats = players.map((p, n) => ({
     playerId: p.playerId, color: p.color,

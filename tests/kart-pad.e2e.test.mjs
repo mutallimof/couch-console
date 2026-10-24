@@ -34,7 +34,7 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
     });
     await lctx.route('**/games/turbo-karts.js', async (route) => {
       const r = await route.fetch();
-      route.fulfill({ response: r, body: (await r.text()).replace('const clamp =', 'window.__tk = { state: () => state };\nconst clamp =') });
+      route.fulfill({ response: r, body: (await r.text()).replace('let state, shown,', 'window.__tk = { state: () => state };\nlet state, shown,') });
     });
     const lap = await lctx.newPage();
     await lap.goto(`${B}/console.html?noboot=1&fx=off`);
