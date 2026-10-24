@@ -198,7 +198,7 @@ io.on('connection', (socket) => {
   socket.on(EV.CONSOLE_CREATE, (ack) => {
     if (socket.data.role === 'console') deleteRoom(socket.data.room);
     const code = newRoomCode();
-    rooms.set(code, { consoleId: socket.id, slots: new Map() });
+    rooms.set(code, { consoleId: socket.id, slots: new Map(), layout: { mode: 'pointer' } });
     socket.data = { role: 'console', room: code };
     if (typeof ack === 'function') ack({ room: code });
     console.log(`Room ${code} created`);
@@ -217,9 +217,12 @@ io.on('connection', (socket) => {
     io.to(remotesChannel(socket.data.room)).emit(EV.FEEDBACK_SETTINGS, payload);
   });
 
-  // Controller layout for all phones: { mode: 'pointer' | 'wheel' }
+  // Controller layout for all phones: { mode: 'pointer' | 'wheel' | 'keyboard', prompt? }
+  // The room remembers it, so a phone that joins (or comes back) later gets it with its join answer.
   socket.on(EV.FEEDBACK_MODE, (payload) => {
     if (socket.data.role !== 'console') return;
+    const room = rooms.get(socket.data.room);
+    if (room) room.layout = { mode: payload?.mode, prompt: payload?.prompt };
     io.to(remotesChannel(socket.data.room)).emit(EV.FEEDBACK_MODE, payload);
   });
 
@@ -249,7 +252,7 @@ io.on('connection', (socket) => {
     socket.join(remotesChannel(code));
     const color = colorFor(playerId);
     io.to(room.consoleId).emit(EV.PLAYER_JOINED, { playerId, color });
-    ack({ ok: true, playerId, color });
+    ack({ ok: true, playerId, color, layout: room.layout });
     console.log(`Room ${code}: P${playerId} joined`);
   });
 
@@ -260,8 +263,9 @@ io.on('connection', (socket) => {
       const room = rooms.get(socket.data.room);
       if (!room) return;
       const data = { ...(payload && typeof payload === 'object' ? payload : {}), playerId: socket.data.playerId };
-      // Pointer/wheel/motion updates are frequent; it's fine to drop one if the network is busy.
-      const frequent = event === EV.INPUT_POINTER || event === EV.INPUT_WHEEL || event === EV.INPUT_MOTION;
+      // Pointer/motion updates are frequent; it's fine to drop one if the network is busy.
+      // (Steering is not dropped: the last value, e.g. "straight again" after LEFT, must arrive.)
+      const frequent = event === EV.INPUT_POINTER || event === EV.INPUT_MOTION;
       const target = frequent ? io.volatile : io;
       target.to(room.consoleId).emit(event, data);
     });

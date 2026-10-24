@@ -1,5 +1,5 @@
 // Turbo Karts: a 3D kart race. Phones become a kart pad (remote/kart-pad.js), held sideways:
-//   steering strip (input:wheel steer) or tilt · GAS (A) · DRIFT (R; hold while turning fast,
+//   ◀ LEFT / ▶ RIGHT (input:wheel steer) or tilt · GAS (A) · DRIFT (R; hold while turning fast,
 //   let go for a mini-turbo) · ITEM (UP) · BRAKE (B). DRIFT and ITEM keep accelerating.
 //   D-pad ◀ ▶ also steers (keyboard mode, and phones in the normal remote layout).
 // Flow: pick characters & karts → P1 picks a track → 3 laps with items and coins → results.
@@ -12,7 +12,8 @@ import { setThree, makeRacer, makeItemMesh, makePortraits } from './karts-models
 import { createSelect } from './karts-select.js';
 import { createShowroom, setShowroomThree } from './karts-showroom.js';
 import { strikeLightning, takeItem, coinReach, magnetPull, MAGNET_TIME, SLICK_CHARGES } from './karts-items.js';
-import { HOP_TIME, TRICK_TIME, kartInput, stepKart as driveKart, giveBoost as boostKart, bumpKarts, progress as raceProgress, LAPS } from './karts-rules.js';
+import { createRaceFx, makeExhaust, updateExhaust } from './karts-fx.js';
+import { HOP_TIME, TRICK_TIME, driftTier, kartInput, stepKart as driveKart, giveBoost as boostKart, bumpKarts, progress as raceProgress, LAPS } from './karts-rules.js';
 import { CAR, PIRATE, loadAll } from './karts-assets.js';
 import { THEME_MODELS } from './karts-decor.js';
 
@@ -28,7 +29,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 let THREE = null;
 let api, root, renderer, scene, sun, track, frame, lastT, resizeObserver, minimap, mctx, mapBox;
 let karts = [], humans = [], orbs = [], slicks = [], state, timer, raceTime, overAt, paused = false, alive = 0;
-let portraits, select, selection, lastCount, look;
+let portraits, select, selection, lastCount, look, fx;
 const showrooms = new Map(); // playerId -> 3D preview on the select screen (karts-showroom.js)
 const assets = new Map(); // loaded 3D models: path -> glTF (missing = use the code-built ones)
 const input = new Map(); // playerId -> { steer, gas, brake, left, right }
@@ -62,6 +63,7 @@ function showSelect() {
 
 function clearRace() {
   karts.forEach((k) => scene.remove(k.mesh.root, k.mesh.shadow));
+  fx?.clear();
   humans.forEach((h) => h.engine?.stop());
   [...orbs, ...slicks].forEach((o) => scene.remove(o.mesh));
   karts = []; humans = []; orbs = []; slicks = [];
@@ -120,6 +122,9 @@ async function startRace() {
     const color = k.color || k.char.color;
     const mesh = makeRacer(k.char, k.kart, k.playerId ? color : k.char.accent === '#FFFFFF' ? k.char.color : k.char.accent, assets);
     mesh.marker.visible = !!k.playerId; // a colored arrow over each player's kart
+    mesh.flame.visible = false; mesh.sparks.forEach((sp) => { sp.visible = false; }); // (replaced by karts-fx.js)
+    mesh.exhaust = makeExhaust(THREE);
+    mesh.body.add(mesh.exhaust);
     scene.add(mesh.root, mesh.shadow);
     return {
       ...k, name: k.playerId ? `P${k.playerId}` : k.char.name, color, mesh, phys: kartPhysics(k.kart),
@@ -190,6 +195,8 @@ function stepKart(k, dt) {
 // Rule events -> sounds, rumble and driver animations
 function kartEvent(type, k) {
   if (type === 'finish') k.mesh.anim?.play(place(k) <= 3 ? 'Wave' : 'Yes', true);
+  if (type === 'land' || type === 'trick') k.bounce = 0;  // squash and spring back (syncMeshes)
+  if (type === 'boost') k.kick = 0;                        // nose lifts as the turbo kicks in
   if (!k.playerId) return;
   if (type === 'boost') { api.sound.play('golden'); api.rumble(k.playerId, 80); }
   else if (type === 'wall') { api.rumble(k.playerId, 120); api.sound.play('wall'); }
@@ -286,6 +293,7 @@ function stepItems(dt) {
     for (const k of karts) {
       if (Math.hypot(k.x - b.p.x, k.z - b.p.z) < 2.2 && Math.abs(k.y + 1 - b.p.y) < 2.5) {
         b.respawn = 2.5; b.mesh.visible = false;
+        fx.burst(b.p.x, b.p.y, b.p.z); // the box shatters into sparkles
         if (!k.item && k.roulette <= 0) {
           k.roulette = 1.1; k.pending = rollItem(place(k), karts.length);
           if (k.playerId) api.sound.play('pop');
@@ -379,12 +387,21 @@ function syncMeshes(t, dt) {
     m.wheels.forEach((w) => { w.rotation.x += (m.flipWheels ? -1 : 1) * k.v * 0.016; });
     m.marker.position.y = 3.1 + Math.sin(t * 0.005) * 0.15;
     m.driver.rotation.y = -((input.get(k.playerId)?.steer) || 0) * 0.3;
-    const sparks = k.drifting && k.charge > 0.3;
-    m.sparks.forEach((s) => { s.visible = sparks; s.scale.setScalar(0.5 + Math.random() * 0.9); s.rotation.set(Math.random() * 6, Math.random() * 6, 0); });
-    // (brighter than white on purpose: only very bright things glow with the screen effects on)
-    m.sparkMat.color.set(k.charge > 2.2 ? '#FF922B' : k.charge > 1.0 ? '#56CCF2' : '#F4F7FB').multiplyScalar(5);
-    m.flame.visible = k.boost > 0;
-    m.flame.scale.set(1, 0.7 + Math.sin(t * 0.05) * 0.3, 1);
+    // Drift sparks from the rear wheels (blue → orange → purple) and the boost flame (karts-fx.js)
+    if (!paused) fx.drift(k, driftTier(k.charge), dt);
+    updateExhaust(m.exhaust, k.boost, t / 1000);
+    // Bouncy: a landing squashes the kart and it springs back; a turbo lifts the nose for a moment
+    if (k.bounce != null) {
+      k.bounce += dt;
+      const sq = Math.exp(-k.bounce * 7) * Math.cos(k.bounce * 22) * 0.2;
+      m.body.scale.set(1 + sq * 0.6, 1 - sq, 1 + sq * 0.6);
+      if (k.bounce > 1) { k.bounce = null; m.body.scale.set(1, 1, 1); }
+    }
+    if (k.kick != null) {
+      k.kick += dt;
+      m.body.rotation.x -= Math.sin(Math.min(1, k.kick / 0.35) * Math.PI) * 0.12;
+      if (k.kick > 0.35) k.kick = null;
+    }
     m.shield.visible = k.shield > 0;
     // blob shadow stays on the road under the kart
     const loc = track.locate(k.x, k.z, k.idx, k.y);
@@ -394,18 +411,28 @@ function syncMeshes(t, dt) {
   }
 }
 
+// Chase camera, composed like OpenWii's kart game: low and close behind the kart, looking at a
+// point a bit above it, between straight ahead and the road ahead. So the kart sits big and low
+// in the picture and you can see into the next corner. Never dips into the road on hills.
 function moveCamera(h, dt) {
   const fx = Math.sin(h.heading), fz = Math.cos(h.heading);
   // a bit higher and further back while gliding, to see where you'll land
   h.camGlide = (h.camGlide || 0) + ((h.gliding ? 1 : 0) - (h.camGlide || 0)) * Math.min(1, dt * 3);
-  const back = 8 + h.camGlide * 3, up = 3.6 + h.camGlide * 3;
+  const back = 6.3 + h.camGlide * 4.2, up = 2.45 + h.camGlide * 4.8; // (gliding: above the wing, not inside it)
   const want = new THREE.Vector3(h.x - fx * back, h.y + up, h.z - fz * back);
-  if (!h.camPos) h.camPos = want.clone();
-  h.camPos.lerp(want, 1 - Math.exp(-7 * dt));
+  const ground = track.locate(want.x, want.z, h.idx, want.y).height;
+  want.y = Math.max(want.y, ground + 1.25);
+  const road = track.pts[track.at(h.idx + (14 * track.SAMPLES) / track.length)];
+  const follow = 0.45 * (1 - h.camGlide), lift = 1.75 - h.camGlide * 0.8;
+  const aim = new THREE.Vector3(
+    (h.x + fx * 12) * (1 - follow) + road.x * follow, (h.y + lift) * (1 - follow) + (road.y + lift) * follow, (h.z + fz * 12) * (1 - follow) + road.z * follow);
+  if (!h.camPos) { h.camPos = want.clone(); h.camAim = aim.clone(); }
+  h.camPos.lerp(want, 1 - Math.exp(-11 * dt));
+  h.camAim.lerp(aim, 1 - Math.exp(-11 * dt));
   h.camera.position.copy(h.camPos);
-  h.camera.lookAt(h.x + fx * 6, h.y + 1.2, h.z + fz * 6);
-  const fov = 68 + (h.boost > 0 ? 12 : 0) + Math.max(0, h.v - 22) * 0.35;
-  h.camera.fov += (fov - h.camera.fov) * Math.min(1, dt * 5);
+  h.camera.lookAt(h.camAim);
+  const fov = 56 + (h.boost > 0 ? 7 : 0) + Math.max(0, h.v - 22) * 0.25 + h.camGlide * 3;
+  h.camera.fov += (fov - h.camera.fov) * Math.min(1, dt * 6);
   h.camera.updateProjectionMatrix();
   h.engine?.set(55 + Math.abs(h.v) * 4.5, state === 'countdown' ? 0.02 : 0.035);
 }
@@ -428,6 +455,7 @@ function render() {
     sun.target.position.set(h.x, h.y, h.z);
     sun.target.updateMatrixWorld();
     h.camera.aspect = W / vh;
+    fx.setViewport(vh * renderer.getPixelRatio());
     look.render(i, h.camera, 0, y, W, vh);
   });
 }
@@ -513,7 +541,7 @@ function updateHud() {
     set('.kart-item', icon + (h.item === 'slick3' && h.roulette <= 0 ? `<b class="kart-charges">×${h.charges}</b>` : ''));
     q('.kart-itembox').classList.toggle('ready', !!h.item && h.roulette <= 0);
     h.hud.classList.toggle('boosting', h.boost > 0); // speed lines at the screen edges
-    set('.kart-drift', h.spin > 0 ? 'Spin out!' : h.gliding ? 'Gliding! (DRIFT = trick)' : h.drifting ? (h.charge > 2.2 ? 'TURBO!' : h.charge > 1 ? 'Boost ready' : 'Drift…') : h.shield > 0 ? 'Shield' : '');
+    set('.kart-drift', h.spin > 0 ? 'Spin out!' : h.gliding ? 'Gliding! (DRIFT = trick)' : h.drifting ? ['Drift…', 'Boost ready', 'Super boost!', 'ULTRA TURBO!'][driftTier(h.charge)] : h.shield > 0 ? 'Shield' : '');
     let msg = '';
     if (state === 'countdown') msg = timer < 3 ? String(3 - Math.floor(timer)) : '';
     else if (state === 'race' && timer < 1) msg = 'GO!';
@@ -555,7 +583,7 @@ function showResults() {
 function loop(t) {
   const dt = Math.min(0.05, (t - (lastT ?? t)) / 1000);
   lastT = t;
-  if (!paused) update(dt);
+  if (!paused) { update(dt); fx?.update(dt); }
   if (state === 'select') showrooms.forEach((room) => room.update(dt)); // idle animations, turntables
   if (karts.length) {
     syncMeshes(t, dt);
@@ -614,22 +642,28 @@ async function init(token) {
   renderer.setScissorTest(true);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  // (tone mapping: set by createLook, "PBR Neutral" for bright, saturated colors)
   renderer.domElement.className = 'game-canvas';
   root.prepend(renderer.domElement);
   scene = new THREE.Scene();
-  scene.userData.hemi = new THREE.HemisphereLight('#ffffff', '#6a7a5a', 1.1);
+  scene.userData.hemi = new THREE.HemisphereLight('#CFE6FF', '#5A6A4A', 1.1);
   scene.add(scene.userData.hemi);
+  // a soft cool fill from the other side, so shadowed sides aren't flat grey (as in OpenWii)
+  const fill = new THREE.DirectionalLight('#77BAFF', 0.35);
+  fill.position.set(-80, 70, -20);
+  scene.add(fill);
   sun = new THREE.DirectionalLight('#fff4e0', 2.2);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 160 });
-  sun.shadow.bias = -0.0005;
+  // a tight shadow box that follows each player: crisp kart shadows
+  Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 160 });
+  sun.shadow.bias = -0.00035;
+  sun.shadow.normalBias = 0.025;
   sun.shadow.camera.far = 220;
   scene.add(sun, sun.target);
   // reflections + glow + vignette (see karts-look.js); ?fx=on / ?fx=off on the console link
   look = await createLook(THREE, renderer, scene, new URLSearchParams(location.search).get('fx'));
+  fx = createRaceFx(THREE, scene); // drift sparks, smoke, sparkle bursts
   if (token !== alive) return;
   portraits = makePortraits(renderer, CHARACTERS, assets);
   resizeObserver = new ResizeObserver(resize);
@@ -677,7 +711,8 @@ export default {
     look?.dispose();
     renderer?.dispose();
     root?.remove();
-    api = root = renderer = look = scene = track = resizeObserver = select = null;
+    fx?.dispose();
+    api = root = renderer = look = scene = track = resizeObserver = select = fx = null;
     karts = []; humans = [];
     overAt = null;
     input.clear();

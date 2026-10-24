@@ -215,8 +215,9 @@ test('tapping DRIFT in the air does a trick, and landing it gives a boost', () =
   drive(park, k, DT * 2, { drift: true, events }); // tap
   assert.ok(k.trick > 0, 'doing the trick');
   drive(park, k, 2, { drift: false, events });      // ...and land
-  assert.ok(!k.air);
+  // ('trick' only happens on landing; the boost may then carry the kart over a later crest)
   assert.ok(events.includes('trick') && events.includes('boost'));
+  assert.ok(events.indexOf('boost') > events.indexOf('trick'), 'the boost comes with the landing');
 });
 
 test('holding DRIFT from before the jump is not a trick (it has to be a fresh tap)', () => {
@@ -405,4 +406,55 @@ test('laps still count when you take every shortcut', () => {
   }
   assert.ok(k.finished != null, `finished the race (lap ${k.lap})`);
   assert.ok(flights >= LAPS * 2, `took both shortcuts every lap (${flights} flights)`);
+});
+
+// ---- Phase 31: three drift levels ----
+import { driftTier, TIER_BOOST } from '../public/js/console/games/karts-rules.js';
+
+test('drifts charge through three levels, and a longer drift gives a longer turbo', () => {
+  assert.deepEqual([0.5, 1, 2, 3.5].map(driftTier), [0, 1, 2, 3]);
+  const turbo = (secs) => {
+    const k = kart(park, { i: 300 });
+    drive(park, k, 3);
+    // start the drift with a hard turn, then follow the road (holding DRIFT)
+    drive(park, k, secs, { drift: true, steer: (kk) => (kk.drifting ? Math.max(-1, Math.min(1, followRoad(park, kk) + 0.3)) : 0.8) });
+    assert.ok(k.drifting, 'still drifting when DRIFT is let go');
+    drive(park, k, DT * 2, { drift: false });
+    return k.boost;
+  };
+  const short = turbo(1.0), long = turbo(3.5);
+  assert.ok(short > 0 && long > short, `turbo after 1 s: ${short.toFixed(2)} s, after 3.5 s: ${long.toFixed(2)} s`);
+  assert.ok(Math.abs(long - TIER_BOOST[3]) < 0.05, 'a long drift reaches the purple level');
+});
+
+// ---- Phase 34: no more hopping down hills ----
+test('driving a lap never makes a kart hop down the road (only real crests and ramps lift it)', () => {
+  for (const def of TRACKS) {
+    const tr = trackPath(THREE, def), k = kart(tr, { kartId: 'racer' });
+    let launches = 0, walls = 0, was = false, minV = 99;
+    const world = { track: tr, topScale: 1, raceTime: 0, onEvent: (e) => { if (e === 'wall') walls++; } };
+    for (let s = 0; s < 60; s += DT) {
+      stepKart(k, DT, { steer: followRoad(tr, k), gas: true, brake: false }, world);
+      if (k.air && !was && !k.gliding) launches++;
+      was = k.air;
+      if (s > 6) minV = Math.min(minV, k.v);
+    }
+    assert.ok(launches <= 5, `${def.id}: ${launches} take-offs in a minute (a designed jump comes about once a lap)`);
+    assert.ok(walls <= 1, `${def.id}: ${walls} wall hits while following the road`);
+    assert.ok(minV > 20, `${def.id}: never slower than ${minV.toFixed(0)} m/s after the start`);
+  }
+});
+
+test('landing on a downhill keeps moving with the road instead of taking off again', () => {
+  const desert = trackPath(THREE, TRACKS.find((t) => t.id === 'desert'));
+  const k = kart(desert, { i: 395, kartId: 'racer' });
+  k.v = 30; k.air = true; k.vy = -2; k.y += 0.05;
+  const world = { track: desert, topScale: 1, raceTime: 0, onEvent: () => {} };
+  let takeoffs = 0, was = true;
+  for (let s = 0; s < 3; s += DT) {
+    stepKart(k, DT, { steer: followRoad(desert, k), gas: true, brake: false }, world);
+    if (k.air && !was) takeoffs++;
+    was = k.air;
+  }
+  assert.ok(takeoffs <= 1, `${takeoffs} take-offs right after landing`);
 });

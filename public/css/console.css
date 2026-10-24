@@ -401,6 +401,7 @@ html, body {
 .hud3d .panel p { margin: 8px 0; font-size: 26px; font-weight: 700; }
 
 /* Crosshair cursors (aiming games): a ring with a dot, centered on the aim point */
+.cursors.none { visibility: hidden; }
 .cursors.crosshair .cursor svg { display: none; }
 .cursors.crosshair .cursor::before {
   content: '';
@@ -713,3 +714,96 @@ img.qr-img:not([src]) { visibility: hidden; }
 .kart-hud { z-index: 2; }
 .kart-charges { position: absolute; right: -8px; bottom: -8px; padding: 1px 7px; border-radius: 10px; background: #339AF0;
   color: #fff; font-size: 18px; font-weight: 900; text-shadow: none; }
+
+/* ---------- Juicy Slash (ported from OpenWii's fruit game, MIT; see THIRD_PARTY_NOTICES.md) ---------- */
+.juicy { position: absolute; inset: 0; overflow: hidden; background: #2b1a0c; color: #f5ead6; user-select: none; }
+.juicy canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
+.juicy .jz-hud { position: absolute; inset: 0; pointer-events: none; }
+.juicy .jz-score-wrap { position: absolute; left: 30px; top: 18px; }
+.juicy .jz-score-row { display: flex; align-items: center; gap: 12px; }
+.juicy .jz-score-ico { font-size: 34px; filter: drop-shadow(0 3px 6px #0009); }
+.juicy .jz-score-v { font-size: 58px; font-weight: 900; line-height: 1; color: #fff; font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 2px #000, 3px 3px 0 #3a220c, 0 6px 18px #000c; }
+.juicy .jz-best { font-size: 17px; font-weight: 900; color: #ffcf4d; letter-spacing: .06em; margin: 6px 0 0 2px; text-shadow: 0 0 2px #000, 2px 2px 0 #3a220c; }
+.juicy .jz-lives { position: absolute; right: 30px; top: 16px; text-align: right; }
+.juicy .jz-lives .x { display: inline-block; margin-left: 10px; font-size: 44px; font-weight: 900; line-height: 1; color: #4fa7e8;
+  text-shadow: 0 0 2px #000, 2px 3px 0 #16273a, 0 5px 14px #000b; transition: color .15s, transform .15s; }
+.juicy .jz-lives .x.lost { color: #e8372b; transform: scale(1.12); text-shadow: 0 0 2px #000, 2px 3px 0 #3a1210, 0 5px 14px #000b; }
+.juicy .jz-practice { font-size: 14px; font-weight: 900; color: #ffcf4d; margin-top: 4px; letter-spacing: .08em; }
+.juicy .jz-players { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); display: none; flex-direction: column; gap: 4px;
+  align-items: center; padding: 10px 16px; border-radius: 14px; background: #1d1006cc; border: 1px solid #4a3319; }
+.juicy .jz-players.on { display: flex; }
+.juicy .prow { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 900; white-space: nowrap; }
+.juicy .prow b { color: #ffcf4d; }
+.juicy .pdot { width: 11px; height: 11px; border-radius: 50%; flex: none; box-shadow: 0 0 6px currentColor; }
+.juicy .jz-fx { position: absolute; inset: 0; overflow: hidden; }
+.juicy .jz-splash { position: absolute; transform: translate(-50%, -50%); font-weight: 900; white-space: nowrap; animation: jz-pop .95s ease-out forwards; }
+.juicy .jz-splash.plus { font-size: 46px; color: #fff; text-shadow: 0 0 2px #000, 2px 2px 0 #3a220c; }
+.juicy .jz-splash.combo { font-size: 72px; color: #ffb52e; text-shadow: 0 0 3px #000, 3px 3px 0 #4a2a08, 0 0 26px #ffb52e88; }
+.juicy .jz-splash.crit { font-size: 84px; color: #ffe14d; text-shadow: 0 0 3px #000, 3px 3px 0 #4a3708, 0 0 30px #ffe14daa; }
+.juicy .jz-splash.penalty { font-size: 64px; color: #ff5040; text-shadow: 0 0 3px #000, 3px 3px 0 #3a0e08; }
+@keyframes jz-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.4) rotate(-6deg); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(2deg); }
+  30% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -68%) scale(1); }
+}
+.juicy .jz-miss-x { position: absolute; bottom: 16%; left: 50%; transform: translate(-50%, 0) scale(.3); opacity: 0;
+  font-size: 96px; font-weight: 900; color: #e8372b; text-shadow: 0 0 4px #000, 4px 4px 0 #3a0e08; }
+.juicy .jz-miss-x.on { animation: jz-miss .75s ease-out forwards; }
+@keyframes jz-miss {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(.3); }
+  20% { opacity: 1; transform: translate(-50%, 0) scale(1.25); }
+  35% { transform: translate(-50%, 0) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 0) scale(1.05); }
+}
+.juicy .jz-flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+.juicy .jz-flash.on { animation: jz-white .55s ease-out forwards; }
+@keyframes jz-white { 0% { opacity: 1; } 100% { opacity: 0; } }
+.juicy .jz-keys { position: absolute; left: 30px; bottom: 24px; font-size: 15px; font-weight: 800; color: #c9a77a; }
+.juicy .jz-toast { position: absolute; left: 50%; bottom: 78px; transform: translateX(-50%); font-size: 15px; font-weight: 800; letter-spacing: .1em;
+  color: #ffcf4d; text-shadow: 0 1px 4px #000; opacity: 0; transition: opacity .25s; white-space: nowrap; }
+.juicy .jz-toast.on { opacity: 1; }
+.juicy .jz-overlay { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
+  background: radial-gradient(ellipse at 50% 40%, #3a2410ee, #1d1106fa 70%); }
+.juicy .jz-overlay.hide { display: none; }
+.juicy .jz-panel { text-align: center; max-width: 620px; padding: 0 32px; animation: panel-in 240ms var(--ease-out) both; }
+.juicy .jz-panel h1 { margin: 0 0 10px; font-size: 64px; font-weight: 900; color: #fff; text-shadow: 0 0 3px #000, 4px 4px 0 #3a220c; }
+.juicy .jz-panel h1.gameover { color: #e8372b; font-size: 88px; text-shadow: 0 0 4px #000, 5px 5px 0 #2a0a06, 0 0 44px #e8372b55; }
+.juicy .cta { margin-top: 26px; font-size: 20px; font-weight: 800; color: #c9a77a; }
+.juicy .cta strong { color: #f5ead6; }
+.juicy .jz-final { font-size: 30px; font-weight: 900; color: #f5ead6; }
+.juicy .jz-final b { color: #ffcf4d; }
+@media (prefers-reduced-motion: reduce) { .juicy .jz-splash, .juicy .jz-miss-x.on, .juicy .jz-flash.on { animation-duration: .2s; } }
+
+/* ---------- Alien Strike (ported from OpenWii's alien-attack, MIT; see THIRD_PARTY_NOTICES.md) ---------- */
+.alien { position: absolute; inset: 0; overflow: hidden; background: #070b1c; color: #fff; user-select: none; }
+.alien canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
+.alien .as-hud { position: absolute; inset: 0; pointer-events: none; }
+.alien .as-card { position: absolute; left: 30px; top: 24px; border-radius: 14px; padding: 12px 18px; background: #0b1226cc; border: 1px solid #2b3a5e; }
+.alien .as-score { font-size: 30px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.alien .as-meta { font-size: 15px; font-weight: 800; color: #a9bcdc; }
+.alien .as-lives { position: absolute; right: 30px; top: 24px; font-size: 28px; letter-spacing: 4px; filter: drop-shadow(0 2px 6px #000a); }
+.alien .as-popup { position: absolute; left: 50%; top: 32%; transform: translateX(-50%); font-size: 38px; font-weight: 900;
+  text-shadow: 0 4px 14px #000a; opacity: 0; transition: opacity .12s; }
+.alien .as-popup.on { opacity: 1; }
+.alien .as-vignette { position: absolute; inset: 0; opacity: 0; transition: opacity .1s; background: radial-gradient(ellipse at center, #0000 55%, #e2323255 100%); }
+.alien .as-vignette.on { opacity: 1; }
+.alien .as-keys { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font-size: 15px; font-weight: 800; color: #8fa3c9; }
+.alien .as-overlay { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #26336edd, #141b3ef2 72%); }
+.alien .as-overlay.hide { display: none; }
+.alien .as-panel { text-align: center; max-width: 620px; padding: 0 30px; animation: panel-in 240ms var(--ease-out) both; }
+.alien .as-panel h1 { font-size: 58px; margin: 0 0 12px; font-weight: 900; }
+.alien .as-panel h1 em { font-style: normal; background: linear-gradient(120deg, #6fe08f, #2fb56b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.alien .stat { display: inline-block; margin: 0 10px 20px; }
+.alien .stat b { display: block; font-size: 34px; }
+.alien .stat span { font-size: 14px; font-weight: 800; color: #8fa3c9; text-transform: uppercase; letter-spacing: .1em; }
+.alien .cta { font-size: 20px; font-weight: 800; color: #9fb2d4; }
+.alien .cta strong { color: #fff; }
+.alien .as-goal { font-size: 24px; font-weight: 700; line-height: 1.4; margin: 0 0 18px; color: #dbe6ff; }
+.alien .as-goal b { color: #6fe08f; }
+.alien .as-how { display: grid; gap: 8px; text-align: left; margin: 0 auto 22px; max-width: 520px; font-size: 18px; font-weight: 700; color: #9fb2d4; }
+.alien .as-how div { padding: 10px 16px; border-radius: 12px; background: #0b1226cc; border: 1px solid #2b3a5e; }
+.alien .as-how span { display: block; font-size: 20px; font-weight: 900; color: #fff; }

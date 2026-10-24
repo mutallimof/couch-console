@@ -33,6 +33,10 @@ const driverId = () => players.list().reduce((min, p) => Math.min(min, p.playerI
 let sensitivity = 5;
 try { sensitivity = Number(localStorage.getItem('couch.sensitivity')) || 5; } catch { /* ignore */ }
 gyro.setSpeed(sensitivity);
+// Steady cursor: orientation only, for phones whose gyro makes the cursor wander
+let steady = false;
+try { steady = localStorage.getItem('couch.steadyCursor') === '1'; } catch { /* ignore */ }
+gyro.setSteady(steady);
 
 // Phone sounds: each phone plays a small sound when its own game feedback (rumble) arrives
 let phoneSounds = true;
@@ -45,6 +49,12 @@ const prefs = {
     sensitivity = n;
     try { localStorage.setItem('couch.sensitivity', String(n)); } catch { /* ignore */ }
     gyro.setSpeed(n);
+  },
+  getSteady: () => steady,
+  setSteady(on) {
+    steady = on;
+    try { localStorage.setItem('couch.steadyCursor', on ? '1' : '0'); } catch { /* ignore */ }
+    gyro.setSteady(on);
   },
   getPhoneSounds: () => phoneSounds,
   setPhoneSounds(on) {
@@ -159,6 +169,7 @@ let current = null;
 // Phones show the normal remote ('pointer'), a steering wheel ('wheel') or a text box ('keyboard')
 let controllerMode = 'pointer', controllerPrompt = '';
 function setController(mode, prompt = '') {
+  if (mode !== controllerMode) gyro.relearnAll(); // turning the phone for the kart pad (and back) must not leave a stale gyro map
   controllerMode = mode;
   controllerPrompt = prompt;
   socket.emit(EV.FEEDBACK_MODE, { mode, prompt });
@@ -167,6 +178,9 @@ function setController(mode, prompt = '') {
     setTimeout(() => onInputText({ playerId: desk.id, text: (window.prompt(prompt || 'Type here') || '').trim() }), 50);
   }
 }
+// Say it again every 2 s while a game uses a special layout: a phone that missed the message
+// (Wi-Fi hiccup, the browser paused the page for a moment) switches over by itself.
+setInterval(() => { if (controllerMode !== 'pointer') socket.emit(EV.FEEDBACK_MODE, { mode: controllerMode, prompt: controllerPrompt }); }, 2000);
 let busy = false;    // true during the zoom animation
 let picker = null;   // { modes, index } while the mode picker is showing
 
@@ -361,7 +375,7 @@ function onInputText(e) {
 }
 socket.on(EV.INPUT_TEXT, onInputText);
 
-socket.on(EV.INPUT_RECENTER, (e) => { count(e.playerId); gyro.recenter(e.playerId); });
+socket.on(EV.INPUT_RECENTER, (e) => { count(e.playerId); gyro.recenter(e.playerId, !!e.relearn); }); // relearn: the phone's screen turned
 
 function onInputButton(e) {
   count(e.playerId);
@@ -520,4 +534,5 @@ if (DEBUG) {
   }, 1000);
   // A/B test the cursor prediction ("display lead") with the L key
   addEventListener('keydown', (e) => { if (e.key === 'l' || e.key === 'L') gyro.toggleLead(); });
+  addEventListener('keydown', (e) => { if (e.key === 'g' || e.key === 'G') prefs.setSteady(!prefs.getSteady()); }); // G = steady cursor on/off
 }

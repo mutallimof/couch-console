@@ -12,6 +12,13 @@ export const HOP_TIME = 0.25; // seconds of the little hop that starts a drift (
 export const GLIDE_LAUNCH = 9, GLIDE_GRAVITY = 0.28, GLIDE_SINK = 4.5;
 // Tricks: tap DRIFT in the air for a barrel roll; land it for a short boost.
 export const TRICK_TIME = 0.45, TRICK_BOOST = 0.8;
+// Drift charge levels (seconds-ish of charge): blue, orange, purple sparks, and the mini-turbo
+// each one gives when you let go. Three levels, as in OpenWii's kart game.
+export const DRIFT_TIERS = [0.8, 1.8, 3.0];
+export const TIER_BOOST = [0, 0.8, 1.3, 1.9];
+export const driftTier = (charge) => DRIFT_TIERS.filter((c) => charge >= c).length;
+// A hill crest throws the kart into the air when the road curves away faster than this share of gravity
+export const CREST_G = 0.9;
 export const COAST = 6, BRAKE = 30, OFFROAD = 0.5, BOOST_BONUS = 12, GRAVITY = 26, KART_SIZE = 3.2;
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -40,6 +47,9 @@ export function stepKart(k, dt, input, world) {
   const { track, onEvent } = world;
   const ph = k.phys, grip = track.def.grip;
   let { steer, gas, brake, drift = false } = input;
+  // The wheel follows the input quickly but never jumps (smooth for CPUs and button steering alike)
+  k.steerS = (k.steerS ?? 0) + (steer - (k.steerS ?? 0)) * (1 - Math.exp(-dt * 20));
+  steer = k.steerS;
   const tap = input.tapped || (drift && !k.driftHeld); // DRIFT pressed this step (not just held)
   k.driftHeld = drift;
   if (k.spin > 0) { k.spin -= dt; steer = 0; gas = false; brake = false; drift = false; k.drifting = false; }
@@ -58,7 +68,8 @@ export function stepKart(k, dt, input, world) {
   tickItemEffects(k, dt);
 
   if (!k.air) {
-    if (gas) k.v = Math.min(k.v + ph.accel * dt * (k.v < top * 0.4 ? 1.3 : 1), Math.max(top, k.v - 25 * dt));
+    // (a boost pushes much harder than the engine: it kicks you forward straight away)
+    if (gas) k.v = Math.min(k.v + ph.accel * dt * (k.boost > 0 ? 2.5 : k.v < top * 0.4 ? 1.3 : 1), Math.max(top, k.v - 25 * dt));
     else k.v -= Math.sign(k.v) * Math.min(Math.abs(k.v), COAST * dt);
     if (k.v > top) k.v = Math.max(top, k.v - 25 * dt);
   }
@@ -70,7 +81,8 @@ export function stepKart(k, dt, input, world) {
     }
     if (k.drifting && brake) k.drifting = false;
     if (k.drifting && (!drift || k.v < 10)) {
-      if (k.charge > 2.2) giveBoost(k, 1.6, onEvent); else if (k.charge > 1.0) giveBoost(k, 1.0, onEvent);
+      const tier = driftTier(k.charge);
+      if (tier) giveBoost(k, TIER_BOOST[tier], onEvent);
       k.drifting = false;
     }
   }
@@ -78,7 +90,8 @@ export function stepKart(k, dt, input, world) {
 
   let turn;
   if (k.drifting) {
-    turn = (k.driftDir * 0.65 + steer * 0.45) * ph.turn * 1.25;
+    // mostly your steering, with a lean into the drift: steer out to widen it, in to tighten it
+    turn = (k.driftDir * 0.45 + steer * 0.55) * ph.turn * 1.25;
     k.charge += dt * (0.8 + Math.abs(steer));
   } else {
     turn = steer * ph.turn * clamp(Math.abs(k.v) / 12, 0, 1) * Math.sign(k.v || 1) * (0.6 + 0.4 * grip);
@@ -112,13 +125,21 @@ export function stepKart(k, dt, input, world) {
     } else if (k.y <= loc.height) {
       k.y = loc.height; k.air = false; k.gliding = false;
       if (k.vy < -8) onEvent('land', k);
-      k.vy = 0;
+      // Land moving WITH the road. (Landing with zero vertical speed on a downhill made the kart
+      // "take off" again the very next step, so it hopped down every slope.)
+      k.vy = roadVy(track, k);
       if (k.trickDone) { k.trickDone = false; onEvent('trick', k); giveBoost(k, TRICK_BOOST, onEvent); }
     }
   } else {
     const vyRoad = (loc.height - k.y) / dt;
     // only real crests launch you into the air
-    if (vyRoad < k.vy - GRAVITY * dt * 3 && k.v > 18) { k.air = true; k.vy = Math.max(k.vy, 2); k.y += k.vy * dt; }
+    // A jump = the road curves away faster than gravity can pull the kart down: its vertical
+    // acceleration is below -GRAVITY * CREST_G. (Smoothed over ~40 ms, so a bump in the road
+    // height data can't throw the kart into the air.)
+    const accel = k.roadVyPrev == null ? 0 : (vyRoad - k.roadVyPrev) / dt;
+    k.roadVyPrev = vyRoad;
+    k.roadAccel = (k.roadAccel ?? 0) + (accel - (k.roadAccel ?? 0)) * Math.min(1, dt / 0.04);
+    if (k.roadAccel < -GRAVITY * CREST_G && k.v > 18) { k.air = true; k.vy = Math.max(k.vy, 2); k.y += k.vy * dt; k.roadAccel = 0; }
     else { k.vy = vyRoad * 0.5 + k.vy * 0.5; k.y = loc.height; }
   }
 
@@ -136,9 +157,14 @@ export function stepKart(k, dt, input, world) {
     const n = track.nor[k.idx], push = Math.sign(k.lateral) * (Math.abs(k.lateral) - (WALL - 1.1));
     k.x -= n.x * push; k.z -= n.z * push;
     const t = track.tan[k.idx];
-    k.heading += angleDiff(Math.atan2(t.x, t.z), k.heading) * 0.3;
-    if (k.wallCooldown < 0) {
-      k.wallCooldown = 0.4; k.v *= 0.6;
+    const along = angleDiff(Math.atan2(t.x, t.z), k.heading); // how far we're turned from the wall's direction
+    k.heading += along * 0.3;
+    const into = Math.min(Math.abs(along), Math.abs(along - Math.PI * Math.sign(along))); // 0 = parallel, 90° = head-on
+    if (into < 0.4) {
+      k.v *= 1 - 0.6 * dt; // grazing the barrier: a scrape, hardly any slowdown
+    } else if (k.wallCooldown < 0) {
+      // a real hit costs speed in proportion to how square-on it was (from 90% kept down to 60% kept)
+      k.wallCooldown = 0.4; k.v *= 1 - 0.4 * Math.min(1, into / 1.2);
       onEvent('wall', k);
     } else k.v *= 1 - 1.5 * dt;
   }
@@ -160,6 +186,13 @@ export function stepKart(k, dt, input, world) {
   }
   k.boost = Math.max(0, k.boost - dt);
   k.shield = Math.max(0, k.shield - dt);
+}
+
+// How fast the road itself rises (+) or falls (-) under a kart driving along it, in m/s
+function roadVy(track, k) {
+  const a = track.pts[track.at(k.idx + 3)], b = track.pts[track.at(k.idx - 3)];
+  const run = Math.max(0.1, Math.hypot(a.x - b.x, a.z - b.z));
+  return ((a.y - b.y) / run) * Math.max(0, k.v);
 }
 
 export function giveBoost(k, seconds, onEvent) {

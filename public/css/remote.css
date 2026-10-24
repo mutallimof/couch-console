@@ -8,15 +8,17 @@
   --player: #b8c0cc;
 }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
 /* No scrolling, zooming, rubber-banding or long-press menus on the phone. */
 html, body {
   margin: 0;
   height: 100%;
+  height: 100dvh; /* the visible height, not the height behind a browser toolbar */
   overflow: hidden;
   overscroll-behavior: none;
-  touch-action: none;
+  touch-action: none; /* (and `manipulation` on buttons: no double-tap zoom, still fast) */
+  -webkit-text-size-adjust: 100%;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -234,23 +236,18 @@ body.kart-mode .top { display: none; }
 
 .kp-main { flex: 1; min-height: 0; display: flex; gap: 14px; }
 
-/* Left thumb: steering strip with a dead zone in the middle and a marker under the thumb */
-.kp-strip { position: relative; flex: 1.15; border-radius: 22px; background: #F4F7FB; overflow: hidden; touch-action: none;
-  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.08); }
-.kp-strip::before, .kp-strip::after { /* curb stripes along the top and bottom edges */
-  content: ''; position: absolute; left: 0; right: 0; height: 10px;
-  background: repeating-linear-gradient(90deg, #E03131 0 22px, #fff 22px 44px); }
-.kp-strip::before { top: 0; }
-.kp-strip::after { bottom: 0; }
-.kp-dead { position: absolute; top: 10px; bottom: 10px; left: 45%; width: 10%; background: rgba(43, 52, 69, 0.07);
-  border-left: 2px dashed rgba(43, 52, 69, 0.18); border-right: 2px dashed rgba(43, 52, 69, 0.18); }
-.kp-thumb { position: absolute; top: 50%; left: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%;
-  background: var(--player); opacity: 0.35; box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.7);
-  transition: opacity 120ms ease-out, left 160ms cubic-bezier(0.23, 1, 0.32, 1); }
-.kp-strip.active .kp-thumb { opacity: 1; transition: opacity 80ms ease-out; } /* follows the thumb exactly while touched */
-.kp-strip-hint { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; color: #8A94A6; font-weight: 800; font-size: 14px; pointer-events: none; }
-.kp-strip.tilt { background: #DCE3EC; }
-.kp-strip.tilt .kp-thumb { display: none; }
+/* Left thumb: two big steering keycaps, curb-white with a red-and-white curb stripe on top */
+.kp-steer { position: relative; flex: 1.15; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; touch-action: none; }
+.kp-btn.steer { --c: #F4F7FB; --edge: #B8C2D1; color: #2B3445; overflow: hidden; align-content: center; gap: 2px;
+  font-size: clamp(15px, 4vh, 22px); }
+.kp-btn.steer span { font-size: clamp(34px, 12vh, 64px); line-height: 1; }
+.kp-btn.steer::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 10px;
+  background: repeating-linear-gradient(90deg, #E03131 0 18px, #fff 18px 36px); }
+.kp-btn.steer { position: relative; }
+.kp-btn.steer.pressed { --c: var(--player); color: #fff; }
+.kp-tilt-hint { display: none; }
+.kp-steer.tilt .kp-btn.steer { opacity: 0.25; }
+.kp-steer.tilt .kp-tilt-hint { display: grid; place-items: center; position: absolute; inset: 0; font-weight: 900; font-size: 20px; color: #fff; pointer-events: none; }
 
 /* Right thumb: four keycaps; GAS (bottom right) is where the thumb rests, DRIFT next to it */
 .kp-buttons { flex: 1; display: grid; grid-template: 1fr 1.35fr / 1fr 1.2fr; gap: 10px; touch-action: none; }
@@ -263,15 +260,17 @@ body.kart-mode .top { display: none; }
 .kp-btn.drift { --c: #F2994A; --edge: #C4701F; }
 .kp-btn.gas { --c: #27AE60; --edge: #1B7A43; font-size: clamp(22px, 6vh, 34px); }
 
-/* Held upright: ask to turn the phone (the pad needs two thumbs side by side) */
-.kp-rotate { display: none; }
+/* Rotation lock on: the page stays upright while you hold the phone sideways, so the pad turns
+   itself a quarter turn (Flip = the other way round). Without rotation lock the phone turns the page. */
+.kp-flip { display: none; }
 @media (orientation: portrait) {
-  .kart-pad > :not(.kp-rotate) { display: none; }
-  .kp-rotate { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
-  .kp-rotate b { font-size: 28px; }
-  .kp-rotate span { color: rgba(255, 255, 255, 0.7); font-weight: 700; }
+  .kart-pad { position: fixed; top: 50%; left: 50%; width: 100vh; width: 100dvh; height: 100vw;
+    padding: max(10px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-top)); box-sizing: border-box;
+    transform: translate(-50%, -50%) rotate(90deg); }
+  .kart-pad.flipped { transform: translate(-50%, -50%) rotate(-90deg); }
+  .kp-flip { display: inline-block; margin-left: auto; }
 }
-@media (prefers-reduced-motion: reduce) { .kp-btn, .kp-thumb { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .kp-btn { transition: none; } }
 
 /* Keyboard layout */
 .keyboard-pad { margin-top: 24px; }

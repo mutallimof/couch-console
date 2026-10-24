@@ -165,6 +165,7 @@ export class Pointer {
     this.emaM = { x: 0, y: 0, z: 0 };
     this.resBad = 0;
     this.resAll = 0;
+    this.steady = false;   // Settings > Steady cursor: ignore the learned gyro, use the fused orientation only
     this.gyroTrusted = false;
 
     this.live = false;
@@ -195,6 +196,28 @@ export class Pointer {
     this.pitchOffDeg = 0;
     this.refAz = null;      // re-captured from the next packet's attitude
     this.refElev = null;
+  }
+
+  /**
+   * Forget the learned gyro axis map and start learning again. Used when the phone's frame may
+   * have changed under us (its screen turned, or a game switched the remote's layout): until
+   * the gyro earns trust again (about a second of real motion) the cursor follows the fused
+   * orientation, which is always right. (Couch Console addition, not in OpenWii.)
+   */
+  relearn() {
+    this.ring = [];
+    this.C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    this.absO = [0, 0, 0];
+    this.absR = [0, 0, 0];
+    this.map = [null, null, null];
+    this.mapShape = null;
+    this.emaM = { x: 0, y: 0, z: 0 };
+    this.emaO = { x: 0, y: 0, z: 0 };
+    this.prevAxes = null;
+    this.resBad = 0;
+    this.resAll = 0;
+    this.gyroTrusted = false;
+    this.recentre();
   }
 
   setFromMouse(nx, ny) {
@@ -341,7 +364,7 @@ export class Pointer {
     // ── Live body rates: learned gyro if trusted, ground truth otherwise ──
     let omega;
     let deadzone;
-    if (this.gyroTrusted && r) {
+    if (this.gyroTrusted && r && !this.steady) {
       omega = this.applyMap(r);
       deadzone = this.deadzoneDps;
     } else {

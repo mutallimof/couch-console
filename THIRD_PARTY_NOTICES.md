@@ -9,6 +9,30 @@ Couch Console includes code adapted from the projects below.
   - `public/js/console/pointer/gyro-pointer.js` (from `core/pointer.js`)
   - `public/js/console/pointer/orientation.js` (from `core/orientation.js`)
   - `tests/gyro-pointer.test.mjs` (from `core/core.test.mjs`)
+  - `public/js/console/games/karts-fx.js` (drift sparks, smoke, sparkle bursts and the boost
+    flame, adapted from `games/mario-kart/race-effects.js` and `boost-effect.js`)
+  - `public/js/console/games/karts-materials.js` (procedural asphalt with normal/roughness maps
+    and tyre-wear shader, adapted from `games/mario-kart/materials.js`)
+  - Techniques (no code copied verbatim) in `karts-look.js` (PBR Neutral tone mapping,
+    multisampled half-float effect chain), `turbo-karts.js` (chase camera composition, fill
+    light, tight follow-shadow) and `karts-rules.js` (three drift-charge levels, smoothed steering)
+  - `public/js/console/games/juicy-slash.js`, `juicy-slash-rules.js`, `tests/juicy-slash.test.mjs`
+    (from `games/fruit-ninja/game.js`, `logic.js`, `logic.test.mjs` and `core/trail.js`)
+  - `public/js/console/games/alien-strike.js`, `alien-strike-rules.js`, `tests/alien-strike.test.mjs`
+    (from `games/alien-attack/game.js`, `logic.js`, `logic.test.mjs`)
+  - `public/js/console/games/ow-audio.js` (from `core/audio.js`, the synthesized sound effects engine)
+  - `public/js/console/games/ow-kart/` and `ow-kart.js` (Turbo Karts GP): `rules.js`, `frame.js`,
+    `contact.js` and `track-model.js` follow `games/mario-kart/logic.js`, `visual-frame.js`,
+    `contact.js` and `track.js` (physics, handling, drifting, items, computer drivers, camera pose);
+    `ow-kart.js` follows `game.js` (camera smoothing, HUD, race flow); `tests/ow-kart-rules.test.mjs`
+    is adapted from `logic.test.mjs`
+  - `public/js/console/games/ow-kart/stadium/` (the Grand Stadium scenery, from `world.js`,
+    `atmosphere.js`, `materials.js`, `stadium-*.js`) and its turf texture `art/turf-v1.png`.
+    Signs, sponsors, lettering and the tower statue were replaced with original ones. The course
+    *layout* (control points) is OpenWii's, which is itself modelled on a real-game course; swap
+    `stadium/stadium-def.js` if you would rather have an original shape.
+- Only OpenWii's MIT-licensed code and its own generated turf texture were used. None of its
+  Nintendo-derived models, character art, item art, names or sounds are included or imitated.
 - License: MIT
 
 ```

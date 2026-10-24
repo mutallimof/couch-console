@@ -60,6 +60,9 @@ export const ITEM_ICONS = {
   bolt: '<svg viewBox="0 0 40 40"><path d="M23 3 8 23h10l-4 14 18-22H21l5-12z" fill="#FFD43B" stroke="#E8A317" stroke-width="2" stroke-linejoin="round"/></svg>',
   slick3: '<svg viewBox="0 0 40 40">' + [[11, 24], [20, 13], [29, 24]].map(([x, y]) => `<path d="M${x} ${y - 9}c3.5 5 5 7 5 9a5 5 0 0 1-10 0c0-2 1.5-4 5-9z" fill="#339AF0"/>`).join('') + '</svg>',
   magnet: '<svg viewBox="0 0 40 40"><path d="M9 8v13a11 11 0 0 0 22 0V8h-8v13a3 3 0 0 1-6 0V8z" fill="#F03E3E"/><path d="M9 8h8v6H9zM23 8h8v6h-8z" fill="#DEE2E6"/></svg>',
+  seeker: '<svg viewBox="0 0 40 40"><circle cx="20" cy="22" r="11" fill="#F76707"/><circle cx="16" cy="18" r="3.5" fill="#fff" opacity=".7"/><path d="M20 2l6 9h-4v5h-4v-5h-4z" fill="#FFD43B"/></svg>',
+  star: '<svg viewBox="0 0 40 40"><path d="M20 3l5.3 10.8 11.9 1.7-8.6 8.4 2 11.8L20 30.1l-10.6 5.6 2-11.8-8.6-8.4 11.9-1.7z" fill="#FFD43B" stroke="#F59F00" stroke-width="2" stroke-linejoin="round"/></svg>',
+  comet: '<svg viewBox="0 0 40 40"><path d="M6 34L24 16" stroke="#74C0FC" stroke-width="5" stroke-linecap="round" opacity=".6"/><path d="M12 36L28 20" stroke="#A5D8FF" stroke-width="4" stroke-linecap="round" opacity=".8"/><circle cx="28" cy="14" r="9" fill="#339AF0"/><circle cx="25" cy="11" r="3" fill="#fff" opacity=".8"/></svg>',
   shield: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="#94D82D" opacity=".35"/><circle cx="20" cy="20" r="15" fill="none" stroke="#94D82D" stroke-width="3"/><path d="M14 13a9 9 0 0 1 8-3" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
 };
 

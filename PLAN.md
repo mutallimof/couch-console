@@ -330,6 +330,26 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 - New boot: original logo (a TV with a couch inside, one cushion per player color) draws in, lights up, name rises; 2.7 s, skippable (click / key / phone button), reduced-motion version, `?noboot=1` still turns it off.
 - **Timer** channel (Clock / Timer / Stopwatch, offline; rules in `channels/timer-logic.js` with tests in `tests/channels.test.mjs`) and **On This Day** channel (Wikipedia's free "On this day" feed, no key).
 
+### Phase 30: Kart pad fixes + LEFT/RIGHT steering
+- Layout switching made self-healing: the server remembers the room's layout and sends it in every join answer (`layout` in the `remote:join` ack); the console repeats `feedback:mode` every 2 s while a game uses a special layout; the phone only acts on a real change; steering (`input:wheel`) is no longer "volatile" (the final "straight" must arrive). Rotation lock: in portrait the pad turns itself sideways (Flip button). `?debug=1` shows where the layout came from.
+- Steering strip replaced by big ◀ LEFT / ▶ RIGHT buttons (smooth ramp to full lock in 0.16 s, back in 0.08 s; slide between them).
+- Tests: `tests/layout.test.mjs` (server, always runs) and `tests/kart-pad.e2e.test.mjs` (browser, runs when Playwright is installed).
+
+### Phase 31: Kart look and feel from OpenWii's techniques
+- Studied OpenWii's `games/mario-kart` (MIT). Its polished look mostly comes from a converted Nintendo asset pack (racers, the stadium course), which we can't use; we adapted only its techniques: PBR Neutral tone mapping, 4x MSAA half-float effect chain, low close chase camera aimed between straight ahead and the road ahead, fill light + tight follow-shadow, cellular asphalt with normal/roughness maps and tyre-wear lanes, streak drift sparks with three charge colors, curling boost exhaust jets, sparkle bursts from item boxes, squash-and-spring landings, three drift levels and smoothed steering. Plus mowed-grass stripes and more trackside props (billboards, flags, corner cones) from the Kenney Racing Kit.
+- New characters (Quaternius) need a download by the user: see DECISIONS.md.
+
+### Phase 32: Games ported from OpenWii
+- **Juicy Slash** (OpenWii fruit-ninja: 3D wall, painted fruit, juice splats, blade ribbons; 4 blades) and **Alien Strike** (OpenWii alien-attack: toy-box space shooter), with the rules in `juicy-slash-rules.js` / `alien-strike-rules.js` and the original tests (`tests/juicy-slash.test.mjs`, `tests/alien-strike.test.mjs`). `ow-audio.js` = OpenWii's synthesized sounds. Shooting Range was not ported (ours is richer). Credits in THIRD_PARTY_NOTICES.md.
+
+### Phase 36: Turbo Karts GP (ported OpenWii kart engine + Grand Stadium)
+New game next to Turbo Karts: OpenWii physics, items, computer drivers, camera, HUD; our kart pad and split screen; seven tracks. Done; waiting for the user's real-phone test. Next: swap in Quaternius characters if downloaded.
+
+### Phase 34: Cursor and kart-mechanics fixes after the first real test
+- **Steady cursor** switch (Settings, or G on the laptop): `Pointer.steady` skips the learned gyro map and uses the fused orientation only. Test: with a noise gyro, steady = exactly a no-gyro phone.
+- Alien Strike: how-to-play screen first (goal, controls, lives), hold A to keep firing.
+- Karts: no more hopping down hills (landing now keeps the road's vertical speed; crests use `CREST_G`, a physical rule); grazing a barrier is a scrape, only head-on hits cost speed. Tests for hops, wall hits and minimum speed on all 6 tracks.
+
 ### Later
 - 4-player split screen for Turbo Karts.
 
