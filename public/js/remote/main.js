@@ -46,7 +46,19 @@ const party = createParty({
     join(); // from the welcome card
   },
   onTab: () => applyMode(),
+  // The laser pointer of the Present tab: motion sensors, sent for the laser dot only while the finger is held
+  laser: {
+    async start() {
+      if (motionOk) return { ok: true };
+      if (started) return { ok: false, reason: 'unavailable' }; // the player's own start already failed
+      const r = await motion.start(); // (must be called from the tap: iPhone asks for permission then)
+      motionOk = r.ok; started = true;
+      return r;
+    },
+    emit(on) { laserEmit = on; },
+  },
 });
+let motionOk = false, laserEmit = false;
 import * as photosPane from './photos.js';
 import * as musicPane from './music.js';
 import * as presentPane from './present.js';
@@ -179,6 +191,7 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 const motion = createMotion({
   // Raw sensors -> the console turns them into this player's cursor
   onSample: (sample) => {
+    if (laserEmit) socket.volatile.emit(EV.PRESENT_MOTION, sample); // (the presenter's laser: any role)
     if (!joined || mode === 'wheel' || role !== 'player' || party.tab !== 'remote') return; // no cursor while driving or on another tab
     sentCount++;
     socket.volatile.emit(EV.INPUT_MOTION, sample);
@@ -280,6 +293,7 @@ $('start-btn').addEventListener('click', async () => {
   $('start-btn').textContent = 'Starting…';
   const result = await motion.start();
   started = true;
+  motionOk = result.ok;
   $('start').hidden = true;
   if (result.ok) swing.start();
   applyMode(); // a wheel game may already be running

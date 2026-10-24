@@ -11,6 +11,7 @@ import QRCode from 'qrcode';
 import { createParty } from './server/party.js';
 import { createPhotos } from './server/photos.js';
 import { createMusic } from './server/music.js';
+import { createPresent } from './server/present.js';
 import { randomBytes } from 'node:crypto';
 import { upsertPerson, colorOf, freeSlot, roster, canAddGuest, cleanName } from './server/people.js';
 import {
@@ -68,6 +69,8 @@ app.get('/api/polyhaven', (req, res) => {
 // Three.js (3D games) is served from node_modules, so it works without internet.
 app.get('/vendor/three.module.js', (req, res) =>
   res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));
+// pdf.js (PDF slides in the browser) with its fonts and character maps
+app.use('/vendor/pdfjs-dist', express.static(file('./node_modules/pdfjs-dist')));
 // Three.js add-ons (model loader etc.), imported as "three/addons/..."
 app.use('/vendor/three-addons', express.static(file('./node_modules/three/examples/jsm')));
 
@@ -166,6 +169,7 @@ const rooms = new Map();
 const party = createParty({ app, rooms, dataDir: process.env.DATA_DIR || file('./data') });
 const photos = createPhotos({ app, io, rooms, party });
 const music = createMusic({ app, io, rooms, party });
+const present = createPresent({ app, io, rooms, party });
 
 function newRoomCode() {
   let code;
