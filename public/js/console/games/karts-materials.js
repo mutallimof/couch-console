@@ -5,8 +5,11 @@
 // THIRD_PARTY_NOTICES.md).
 
 let cached = null;
+let override = null; // real asphalt maps (Poly Haven), see karts-polyhaven.js
+export function setPavementOverride(maps) { override = maps; }
 
 export function pavementMaps(THREE) {
+  if (override) return override;
   if (cached) return cached;
   const size = 512, height = new Float32Array(size * size);
   let seed = 28971; // same stones every time

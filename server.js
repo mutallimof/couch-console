@@ -50,6 +50,16 @@ if (httpsServer) io.attach(httpsServer); // same rooms on both
 app.use(express.static(fileURLToPath(new URL('./public', import.meta.url)), {
   setHeaders: (res, path) => res.set('Cache-Control', /[\\/]assets[\\/]/.test(path) ? 'public, max-age=86400' : 'no-cache'),
 }));
+// Which Poly Haven files (CC0 skies and textures, see docs/kart-art-options.md) are on disk, so the
+// kart game can use them when they are there (and not ask for files that don't exist)
+app.get('/api/polyhaven', (req, res) => {
+  const base = fileURLToPath(new URL('./public/assets/polyhaven', import.meta.url));
+  const list = (dir, keep) => { try { return readdirSync(`${base}/${dir}`).filter(keep); } catch { return []; } };
+  res.json({
+    hdri: list('hdri', (f) => f.endsWith('.hdr')).map((f) => f.replace(/\.hdr$/, '')),
+    textures: list('textures', (f) => existsSync(`${base}/textures/${f}/diff.jpg`)),
+  });
+});
 // Three.js (3D games) is served from node_modules, so it works without internet.
 app.get('/vendor/three.module.js', (req, res) =>
   res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));

@@ -659,7 +659,7 @@ body.desk-mode, body.desk-mode * { cursor: none !important; }
 /* Turbo Karts speed lines: thin white streaks rushing in from the screen edges while boosting */
 .kart-hud::before {
   content: ''; position: absolute; inset: 0; opacity: 0; pointer-events: none;
-  background: repeating-conic-gradient(from 0deg at 50% 55%, rgba(255, 255, 255, 0.55) 0deg 0.6deg, transparent 0.6deg 9deg);
+  background: repeating-conic-gradient(from 0deg at 50% 55%, rgba(255, 255, 255, 0.32) 0deg 0.5deg, transparent 0.5deg 11deg);
   -webkit-mask: radial-gradient(ellipse at 50% 55%, transparent 42%, #000 78%);
   mask: radial-gradient(ellipse at 50% 55%, transparent 42%, #000 78%);
   transition: opacity 200ms ease-out;
@@ -807,3 +807,13 @@ img.qr-img:not([src]) { visibility: hidden; }
 .alien .as-how { display: grid; gap: 8px; text-align: left; margin: 0 auto 22px; max-width: 520px; font-size: 18px; font-weight: 700; color: #9fb2d4; }
 .alien .as-how div { padding: 10px 16px; border-radius: 12px; background: #0b1226cc; border: 1px solid #2b3a5e; }
 .alien .as-how span { display: block; font-size: 20px; font-weight: 900; color: #fff; }
+
+/* Turbo Karts HUD lettering: chunky gold numerals with a dark outline (like a racing game's score font) */
+.kart-place, .kart-msg {
+  color: transparent; -webkit-text-stroke: 0; font-style: italic; letter-spacing: -0.02em; text-shadow: none;
+  background: linear-gradient(#FFF6B0 0%, #FFD23F 45%, #F5920A 100%); -webkit-background-clip: text; background-clip: text;
+  filter: drop-shadow(3px 0 0 #3B2300) drop-shadow(-3px 0 0 #3B2300) drop-shadow(0 3px 0 #3B2300) drop-shadow(0 -3px 0 #3B2300) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+}
+.kart-place small { font-size: 0.55em; }
+.kart-msg { padding: 0 0.1em; }
+.kart-lap { text-shadow: 0 0 0 #000, 2px 0 0 #1b2740, -2px 0 0 #1b2740, 0 2px 0 #1b2740, 0 -2px 0 #1b2740, 0 4px 8px rgba(0, 0, 0, 0.4); }

@@ -26,6 +26,7 @@ export function addAtmosphere(scene) {
     }),
   );
   sky.renderOrder = -100;
+  sky.userData.isSky = true; // (hidden when a real HDRI sky is available)
   scene.add(sky);
   const beamMaterial = new THREE.ShaderMaterial({
     transparent: true,

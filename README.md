@@ -145,6 +145,8 @@ On the laptop, the debug box also shows how many frames per second the laptop dr
 
 **Turbo Karts looks:** reflections, a sky with a sun, textured roads and grass, a soft glow on bright things (boost flames, drift sparks, neon) and speed lines while boosting. If your laptop can't keep up, the glow effects switch themselves off. To force them, add `?fx=on` (always on) or `?fx=off` (always off) to the laptop link, for example `…/console.html?fx=off`.
 
+**Cartoon look and soft shadows (Settings):** Turbo Karts has a *cartoon look* (dark outlines, stepped light, bolder colors, a glowing rim on karts) and *soft shadows* (ambient occlusion). Both are **On** by default; turn them **Off** in Settings if it runs slowly. Side-by-side pictures are in `docs/kart-compare/cartoon/`. To use real skies and road textures, see `docs/kart-art-options.md` (free Poly Haven files go in `public/assets/polyhaven/`).
+
 **Phone says "Motion needs a secure page"?** The phone opened a plain `http://` link, and browsers only allow motion sensors on secure (`https://`) pages. The message on the phone says what to do; tap it to close it. Meanwhile you can use the touchpad on the phone.
 
 **Good to know**

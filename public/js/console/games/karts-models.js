@@ -2,6 +2,7 @@
 // plus code-built characters, karts and track objects (also the fallbacks).
 
 import { CAR, PIRATE, cloneOf } from './karts-assets.js';
+import { addRimTo } from './karts-style.js';
 
 let THREE;
 export function setThree(t) { THREE = t; }
@@ -200,12 +201,13 @@ export function makeRacer(character, kart, color, assets) {
   // drift sparks, boost flame, shield bubble, blob shadow
   const sparkMat = new THREE.MeshBasicMaterial({ color: '#56CCF2' });
   const sparks = [-0.9, 0.9].map((x) => { const sp = new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 0), sparkMat); sp.position.set(x, 0.2, -1.5); k.group.add(sp); return sp; });
-  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.6, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color('#FF922B').multiplyScalar(5), transparent: true, opacity: 0.9 }));
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.26, 1.05, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color('#FF922B').multiplyScalar(5), transparent: true, opacity: 0.9 }));
   flame.rotation.x = -Math.PI / 2; flame.position.set(0, 0.75, -2.3); k.group.add(flame);
   const shield = new THREE.Mesh(new THREE.SphereGeometry(2.1, 24, 16), new THREE.MeshStandardMaterial({ color: '#94D82D', transparent: true, opacity: 0.25, emissive: '#94D82D', emissiveIntensity: 0.4 }));
   shield.position.y = 0.9; k.group.add(shield);
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.6, 20), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.28, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; shadow.scale.set(0.8, 1.2, 1);
+  addRimTo(THREE, k.group); // (the cartoon look's rim light; does nothing until switched on)
   const root = new THREE.Group();
   root.add(k.group);
   // Glider: a wing that unfolds above the kart off glide ramps (scaled open by turbo-karts.js)

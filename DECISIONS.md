@@ -99,3 +99,24 @@ not to stop for questions). Each entry says what was decided and why. Newest at 
 - The GP game became the tile **Turbo Karts** (`turbo-karts.js`, id `turbo-karts`, order 1). The select screen, kart pad, e2e test (it now drives the new game) all use it.
 - **Kart stats now matter a little** (they were only shown before): top speed ±1.5% per point, acceleration ±6%, handling ±4% (3-3-3 = OpenWii's exact numbers). Weight is not used (equal masses, as in OpenWii).
 - The old shortcut ramps of Cloud Gardens are not part of the OpenWii engine and are gone with the old rules.
+
+## Phase 40: Visual comparison loop with OpenWii
+- Ran OpenWii locally **with** its pack only to take reference screenshots (kept in a scratch folder outside the repo; none of its assets are copied). The side-by-sides in `docs/kart-compare/` contain Nintendo-derived pixels (the reference column) since the user asked for them: private repo only, delete the folder if the repo ever goes public.
+- Full difference list, with "code fix" vs "needs better art", in `docs/kart-compare/DIFFERENCES.md`. All code-side items fixed: stadium light rig and exposure (mean brightness 55-65 -> 70-90 vs the reference's 90-100), moving floodlights, exponential fog, ambient occlusion (GTAO, `?ao=off`), gold HUD lettering, calmer boost, gold hit burst.
+- Per-track light rig (`def.lighting`): only the stadium uses it; the day tracks keep their defaults.
+- Ambient occlusion is on by default; if the laptop is slow, the existing automatic effects-off switch (under 40 fps) turns all screen effects off. In the headless test the software renderer is far too slow with AO, so the capture scripts use `?ao=off` except one sample (`start-ambient-occlusion-on.png`).
+- The remaining gaps are art (karts, characters, course, textures, sky): see `docs/kart-art-options.md` (Phase 42).
+
+## Party plan review (before Phase 43)
+Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "everything stays local" so it is opt-in; share-sheet saving, browser hashing and wake lock need a secure context (fallbacks added); uploads need a real security model (token, magic bytes, random names, rate limits, host checks, disk check); YouTube's player must stay visible and at least 200x200, so the "mini-player" is a card, not a hidden player; MediaPipe model files are a manual download so the camera phases degrade gracefully and test their logic on recorded landmarks; guests need their own id space (a small, backward-compatible protocol addition); Phase 43 is split into 43a/b/c; tests use a temp `DATA_DIR`. Phases are renumbered 35-44 -> 43-52.
+
+## Phase 41: Cartoon look (a toggle)
+- Settings has two new rows, "Cartoon look (karts)" and "Soft shadows (karts)", both On by default, saved in the browser (`graphics-prefs.js`, tested). Links can force them: `?cartoon=off`, `?ao=off` (the automated browser checks use `?ao=off` for speed).
+- What the cartoon look does: dark outlines at depth jumps (a post-process using the scene depth), stepped (cel-like) light, a colour grade (bolder colours, warm lights/cool shadows), and a soft blue rim light on karts and characters (`karts-style.js`). Kept deliberately gentle after the first version looked dark and muddy: banding strength 0.3, outline 0.5, rim 0.5.
+- Side-by-side off/on screenshots: `docs/kart-compare/cartoon/`.
+- Not done on purpose: real toon materials (MeshToonMaterial) for all scenery: too many procedural materials from the stadium; the post-process does the same job for everything at once.
+- Bug found while building it: a rim-light patch that called itself forever (stack overflow). Fixed, the visible symptom was an empty sky-blue screen.
+
+## Phase 42: Poly Haven + free art options
+- **Poly Haven downloads were blocked** (the user's files were not on `main`, and polyhaven.com is not reachable from the sandbox). The code is ready for them: `/api/polyhaven` lists what is in `public/assets/polyhaven/`; `karts-polyhaven.js` uses `hdri/<theme>.hdr` as the track sky and reflections and `textures/asphalt/{diff,nor,rough}.jpg` as the road, and does nothing when the files are missing. Tested with synthetic files (removed again).
+- Exact download links, names and folders: `docs/kart-art-options.md`. That file also lists Sketchfab search links (I could not open Sketchfab either, so no individual model is vouched for, and the doc says so), Tripo free-plan ideas, and which option fixes which weakness.
