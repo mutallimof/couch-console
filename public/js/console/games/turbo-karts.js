@@ -586,7 +586,7 @@ async function init(token) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setScissorTest(true);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.domElement.className = 'game-canvas';
   root.prepend(renderer.domElement);
   scene = new THREE.Scene();

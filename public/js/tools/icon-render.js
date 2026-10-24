@@ -10,7 +10,7 @@ renderer.setSize(SIZE, SIZE);
 renderer.setPixelRatio(1);
 renderer.setClearColor(0x000000, 0);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 document.body.append(renderer.domElement);
 
 const scene = new THREE.Scene();
