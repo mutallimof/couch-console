@@ -4,6 +4,8 @@ import { createMotion } from './motion.js';
 import { createSwing } from './swing.js';
 import { createWheel } from './wheel.js';
 import { createKartPad } from './kart-pad.js';
+import { createParty } from './party.js';
+import './no-zoom.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js
@@ -32,6 +34,53 @@ const clientId = getClientId();
 const isValidRoom = (code) => new RegExp(`^[${ROOM_LETTERS}]{${ROOM_CODE_LENGTH}}$`).test(code);
 let room = (new URLSearchParams(location.search).get('room') || '').toUpperCase();
 let joined = false;
+let role = 'player'; // 'player' (has a controller) or 'guest' (photos, music, slides only)
+
+// Party: the welcome card, the tabs and the "me" sheet (party.js)
+const party = createParty({
+  socket,
+  getRoom: () => room,
+  getClientId: () => clientId,
+  onRoleRequest: (info) => {
+    if (info.changedTo) return afterRoleChange(info.res); // changed from the "me" sheet
+    join(); // from the welcome card
+  },
+  onTab: () => applyMode(),
+  // The laser pointer of the Present tab: motion sensors, sent for the laser dot only while the finger is held
+  laser: {
+    async start() {
+      if (motionOk) return { ok: true };
+      if (started) return { ok: false, reason: 'unavailable' }; // the player's own start already failed
+      const r = await motion.start(); // (must be called from the tap: iPhone asks for permission then)
+      motionOk = r.ok; started = true;
+      return r;
+    },
+    emit(on) { laserEmit = on; },
+  },
+});
+let motionOk = false, laserEmit = false;
+import * as photosPane from './photos.js';
+import * as musicPane from './music.js';
+import * as presentPane from './present.js';
+import * as activityPane from './activity.js';
+import { applyTheme, systemPrefersDark } from '../shared/theme.js';
+
+// Theme: the TV decides (Settings -> Theme) and sends 'light' or 'dark'. Before that arrives we
+// use the last one we saw, or this phone's own setting, so the join screen is never a bright flash.
+function followTheme(theme) {
+  if (theme !== 'light' && theme !== 'dark') return;
+  applyTheme(theme);
+  try { localStorage.setItem('couch.tvTheme', theme); } catch { /* ignore */ }
+}
+{
+  let saved = null;
+  try { saved = localStorage.getItem('couch.tvTheme'); } catch { /* ignore */ }
+  applyTheme(saved || (systemPrefersDark() ? 'dark' : 'light'));
+}
+party.registerPane('photos', 'Photos', '📸', photosPane);
+party.registerPane('music', 'Music', '🎵', musicPane);
+party.registerPane('present', 'Present', '🖥️', presentPane);
+party.registerPane('activity', 'Activity', '🔔', activityPane);
 
 function setConnected(on, text) {
   $('dot').classList.toggle('on', on);
@@ -40,12 +89,13 @@ function setConnected(on, text) {
 
 function setPlayer(playerId, color) {
   document.documentElement.style.setProperty('--player', color || '');
-  $('badge').textContent = playerId ? `P${playerId}` : '–';
+  $('badge').textContent = playerId ? `P${playerId}` : role === 'guest' && joined ? '👀' : '–';
   $('kp-badge').textContent = $('badge').textContent;
 }
 
 function showJoinForm(message = '') {
   joined = false;
+  $('welcome').hidden = true;
   setPlayer(null, '');
   $('controller').hidden = true;
   $('kart-pad').hidden = true;
@@ -58,19 +108,32 @@ function showJoinForm(message = '') {
 
 function join() {
   if (!isValidRoom(room)) return showJoinForm(room ? 'That code doesn\'t look right.' : '');
+  // First time on this phone: ask for a name (then this runs again)
+  if (party.needsWelcome()) {
+    $('join-form').hidden = true;
+    setConnected(false, `Room ${room}`);
+    return party.showWelcome();
+  }
   setConnected(false, 'Joining…');
-  socket.emit(EV.REMOTE_JOIN, { room, clientId }, (res) => {
+  const p = party.profile;
+  socket.emit(EV.REMOTE_JOIN, { room, clientId, name: p.name, emoji: p.emoji, avatar: p.avatar, role: p.role === 'guest' ? 'guest' : 'player' }, (res) => {
     if (!res?.ok) {
       setConnected(false, 'Not joined');
       return showJoinForm(ERRORS[res?.error] || 'Could not join.');
     }
     joined = true;
+    role = res.role === 'guest' ? 'guest' : 'player';
     navigator.vibrate?.(150); // "you're in!" (Android; iPhone ignores it)
     setPlayer(res.playerId, res.color);
     setConnected(true, `Room ${room}`);
     $('join-form').hidden = true;
+    $('welcome').hidden = true;
+    followTheme(res.theme);
+    setLayout(res.layout, 'join'); // the layout the console wants right now (e.g. the kart pad mid-race)
+    party.onJoined(res);
     applyMode();
-    if (!started) $('start').hidden = false;
+    if (!started && role === 'player') $('start').hidden = false;
+    else $('start').hidden = true;
     // Keep the room (and debug flag) in the URL so a refresh rejoins the same room.
     history.replaceState(null, '', `?room=${room}${DEBUG ? '&debug=1' : ''}`);
   });
@@ -85,7 +148,35 @@ $('join-form').addEventListener('submit', (e) => {
 
 // (Re)join on every connect, e.g. after Wi-Fi drops or the phone wakes up.
 socket.on('connect', join);
+socket.on(EV.PARTY_ROSTER, (r) => party.onRoster(r));
+
+// The "me" sheet changed this phone between player and guest
+function afterRoleChange(res) {
+  role = res.role === 'guest' ? 'guest' : 'player';
+  setPlayer(res.playerId, res.color);
+  party.onJoined({ role, person: undefined, slotsFree: undefined });
+  if (role === 'player') party.setTab('remote'); // a new player lands on the controller
+  applyMode();
+}
 socket.on('disconnect', () => setConnected(false, 'Reconnecting…'));
+
+// Another tab of this phone joined (e.g. the QR was scanned again): that tab is now the live one.
+// This tab stops reconnecting by itself and offers to take over again.
+let replaced = false;
+socket.on(EV.REMOTE_REPLACED, () => {
+  replaced = true;
+  joined = false;
+  socket.io.opts.reconnection = false;
+  socket.disconnect();
+  setConnected(false, 'Open in another tab');
+  $('replaced').hidden = false;
+});
+$('replaced-btn').addEventListener('click', () => {
+  replaced = false;
+  $('replaced').hidden = true;
+  socket.io.opts.reconnection = true;
+  socket.connect(); // 'connect' joins again, and this tab is the newest
+});
 
 socket.on(EV.CONSOLE_DISCONNECTED, () => {
   setConnected(false, 'Not joined');
@@ -135,13 +226,14 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 const motion = createMotion({
   // Raw sensors -> the console turns them into this player's cursor
   onSample: (sample) => {
-    if (!joined || mode === 'wheel') return; // no cursor while driving
+    if (laserEmit) socket.volatile.emit(EV.PRESENT_MOTION, sample); // (the presenter's laser: any role)
+    if (!joined || mode === 'wheel' || role !== 'player' || party.tab !== 'remote') return; // no cursor while driving or on another tab
     sentCount++;
     socket.volatile.emit(EV.INPUT_MOTION, sample);
   },
   // Touchpad (phones without motion sensors)
   onPointer: (x, y) => {
-    if (!joined || mode === 'wheel') return;
+    if (!joined || mode === 'wheel' || role !== 'player' || party.tab !== 'remote') return;
     sentCount++;
     socket.volatile.emit(EV.INPUT_POINTER, { x, y });
   },
@@ -157,13 +249,13 @@ const swing = createSwing({
 
 // ---------- Kart pad (Turbo Karts) ----------
 // The console switches us between the normal remote ('pointer'), the kart pad ('wheel')
-// and a text box ('keyboard'). The kart pad steers with its strip, or by tilting (wheel.js).
+// and a text box ('keyboard'). The kart pad steers with LEFT / RIGHT, or by tilting (wheel.js).
 
 let mode = 'pointer';
 const sendSteer = (steer) => {
   if (!joined) return;
   sentCount++;
-  socket.volatile.emit(EV.INPUT_WHEEL, { steer });
+  socket.emit(EV.INPUT_WHEEL, { steer }); // (not volatile: "straight again" must never get lost)
 };
 const wheel = createWheel({ onSteer: (steer) => { if (kartPad.tilt) sendSteer(steer); } });
 const kartPad = createKartPad({
@@ -174,26 +266,44 @@ const kartPad = createKartPad({
   onRecenter: () => { wheel.recenter(); emit(EV.INPUT_RECENTER); },
 });
 
+// The phone's screen turned (portrait <-> landscape): ask the console to learn the gyro axes again
+const onTurned = () => { if (joined && started) emit(EV.INPUT_RECENTER, { relearn: true }); };
+screen.orientation?.addEventListener('change', onTurned);
+window.addEventListener('orientationchange', onTurned);
+
 function applyMode() {
   if (!joined) return;
-  const isKart = mode === 'wheel', isKeys = mode === 'keyboard';
+  // "Tap to start" belongs to the Remote tab: Photos, Music and Present stay reachable without it
+  $('start').hidden = started || role !== 'player' || party.tab !== 'remote';
+  // Guests have no controller: the kart pad and the keyboard are for players. Tabs other than Remote hide the controller.
+  const isPlayer = role === 'player';
+  const isKart = isPlayer && mode === 'wheel', isKeys = isPlayer && mode === 'keyboard';
   const wasKart = !$('kart-pad').hidden;
-  $('controller').hidden = isKart || isKeys;
+  party.setMode(isKart || isKeys ? mode : 'pointer');
+  $('controller').hidden = isKart || isKeys || !isPlayer || party.tab !== 'remote';
   $('kart-pad').hidden = !isKart;
   document.body.classList.toggle('kart-mode', isKart); // hides the top bar: the pad has its own
   $('keyboard-pad').hidden = !isKeys;
   if (isKeys) { $('keyboard-input').value = ''; $('keyboard-input').focus(); }
+  if (isKart) $('motion-msg').hidden = true; // (the kart pad needs no motion, and the note would cover GAS)
   if (isKart && !wasKart) kartPad.show();
   if (!isKart && wasKart) kartPad.hide();
   if (isKart && started && kartPad.tilt) wheel.start();
   else wheel.stop();
 }
 
-socket.on(EV.FEEDBACK_MODE, ({ mode: m, prompt } = {}) => {
-  mode = ['wheel', 'keyboard'].includes(m) ? m : 'pointer';
+// The console says which layout to show. It repeats this every 2 s during a race, so only a
+// real change does anything (repeating 'keyboard' must not wipe what you're typing).
+let layoutInfo = { from: 'none', at: 0 }; // for the ?debug=1 readout
+function setLayout({ mode: m, prompt } = {}, from = 'console') {
+  const next = ['wheel', 'keyboard'].includes(m) ? m : 'pointer';
+  layoutInfo = { from, at: Date.now() };
+  if (next === mode && (prompt || 'Type here') === $('keyboard-prompt').textContent) return;
+  mode = next;
   $('keyboard-prompt').textContent = prompt || 'Type here';
   applyMode();
-});
+}
+socket.on(EV.FEEDBACK_MODE, (layout) => setLayout(layout));
 
 // Keyboard layout: send the text (or '' to cancel)
 $('keyboard-pad').addEventListener('submit', (e) => {
@@ -209,7 +319,7 @@ function showTouchpad(message) {
   $('touchpad').hidden = false;
   if (message) {
     $('motion-text').textContent = message;
-    $('motion-msg').hidden = false;
+    $('motion-msg').hidden = mode === 'wheel'; // not over the kart pad
   }
   touchpad = motion.attachTouchpad($('touchpad'));
 }
@@ -220,6 +330,7 @@ $('start-btn').addEventListener('click', async () => {
   $('start-btn').textContent = 'Starting…';
   const result = await motion.start();
   started = true;
+  motionOk = result.ok;
   $('start').hidden = true;
   if (result.ok) swing.start();
   applyMode(); // a wheel game may already be running
@@ -252,7 +363,10 @@ $('recenter').addEventListener('click', () => {
 // Game feedback for this player: vibrate (Android) and a small sound from the phone itself
 // (iPhones can't vibrate from a web page, so there the sound is the feedback).
 let phoneSounds = true;
-socket.on(EV.FEEDBACK_SETTINGS, (s) => { if (typeof s?.phoneSounds === 'boolean') phoneSounds = s.phoneSounds; });
+socket.on(EV.FEEDBACK_SETTINGS, (s) => {
+  if (typeof s?.phoneSounds === 'boolean') phoneSounds = s.phoneSounds;
+  followTheme(s?.theme);
+});
 socket.on(EV.FEEDBACK_RUMBLE, ({ ms }) => {
   ms = Math.min(Number(ms) || 0, 1000);
   navigator.vibrate?.(ms);
@@ -323,6 +437,8 @@ if (DEBUG) {
     box.textContent = `alpha ${fmt(s.alpha)}  beta ${fmt(s.beta)}  gamma ${fmt(s.gamma)}\n`
       + `gyro ${s.gyro ? 'yes' : 'no'}  mag ${fmt(w.mag ?? s.mag)}  msgs/s ${rate}  ping ${pingMs} ms\n`
       + `swings ${w.swings}  last power ${w.lastPower == null ? '–' : w.lastPower.toFixed(2)}\n`
-      + `mode ${mode}  steer ${(kartPad.tilt ? wheel.stats.steer : kartPad.steer).toFixed(2)}${kartPad.tilt ? ' (tilt)' : ''}`;
+      + `mode ${mode}  steer ${(kartPad.tilt ? wheel.stats.steer : kartPad.steer).toFixed(2)}${kartPad.tilt ? ' (tilt)' : ''}\n`
+      + `layout from ${layoutInfo.from} ${layoutInfo.at ? `${((Date.now() - layoutInfo.at) / 1000).toFixed(0)} s ago` : '(never)'}  `
+      + `showing ${['controller', 'kart-pad', 'keyboard-pad'].filter((id) => $(id).offsetParent).join(',') || 'none'}  ${screen.orientation?.type || ''}`;
   }, 100);
 }

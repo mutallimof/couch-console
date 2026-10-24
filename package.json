@@ -9,15 +9,25 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "certs": "node scripts/make-certs.js",
-    "test": "node --test \"tests/*.test.mjs\""
+    "test": "node --test --test-concurrency=3 \"tests/*.test.mjs\""
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
+    "archiver": "^8.0.0",
     "express": "^5.3.0",
+    "gsap": "^3.15.0",
+    "howler": "^2.2.4",
+    "lottie-web": "^5.13.0",
+    "multer": "^2.5.0",
+    "pdfjs-dist": "^6.4.299",
+    "pixi-filters": "^6.1.5",
+    "pixi.js": "^8.22.0",
+    "postprocessing": "^6.36.0",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.4",
-    "three": "^0.160.0"
+    "three": "^0.160.0",
+    "three.quarks": "^0.10.18"
   }
 }

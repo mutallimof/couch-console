@@ -1,4 +1,4 @@
-// Swing detection from the devicemotion event (see PLAN.md, section 6).
+// Swing detection from the devicemotion event (see docs/PLAN.md, section 6).
 // A swing starts when the acceleration goes above 18, we follow it to its peak,
 // and it ends when it drops below 8. Then we report power (0..1) and tilt (-1..1).
 

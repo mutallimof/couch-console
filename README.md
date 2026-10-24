@@ -6,12 +6,11 @@ A console you run in your web browser and control with your phone.
 - Your **phone** is the remote. You tilt it to move a pointer, tap buttons, and swing it to throw.
 - A small **Node.js server** on your laptop passes the phone's input to the laptop page.
 
-> Milestones 1 and 2 are built. Milestone 3 (better-looking 3D games) has started: **Turbo Karts**, **Table Tennis**, **Target Range**, **Air Hockey**, **Gem Dungeon**, a boot animation, local HTTPS, and the **Photos**, **Weather**, **Video**, **Timer** and **On This Day** channels are in. See `PLAN.md` for the roadmap.
+> **What is built:** the console and phone remote, 4 players, 14 games and channels, **Turbo Karts**, local HTTPS, and the **party mode** (guests, Photos album, Music queue, Present slides). See `docs/PLAN.md` and `docs/PLAN-PARTY.md` for the roadmap and `docs/DECISIONS.md` for why things are the way they are.
 >
-> **After pulling new code, run `npm install` again.** Turbo Karts uses the `three` 3D library, which needs to be downloaded once.
+> **After pulling new code, run `npm install` again** (the 3D library `three`, `pdfjs-dist` for slides and a few others are downloaded once).
 >
-> **3D models:** Turbo Karts uses free CC0 model packs in `public/assets/` (Kenney *Toy Car Kit* and *Racing Kit*, Quaternius *Pirate Kit*). They load with a progress bar when you open the game and when you pick a track. If a model is missing, the game draws a simple built-in version instead, so it always works.
-
+> **3D models and characters:** free CC0 packs in `public/assets/` (Kenney *Toy Car Kit* and *Racing Kit*, Quaternius *Pirate Kit* and *Animated Characters*). They load with a progress bar when you open Turbo Karts. If a model is missing, the game draws a simple built-in version instead, so it always works. Credits are in `THIRD_PARTY_NOTICES.md`.
 ---
 
 ## What you need (one-time setup)
@@ -41,6 +40,18 @@ A console you run in your web browser and control with your phone.
    This downloads `express`, `socket.io` and `qrcode` into a `node_modules` folder. You only need to do this once (and again if `package.json` changes).
 
 ---
+
+
+## Party mode (everyone joins with one QR code)
+
+Scan the QR code on the TV with any phone. The first time, the phone asks for your **name** and an **emoji**, then you choose:
+
+- **🎮 Play**: you get a player slot (P1-P4, with a controller) and the **Remote** tab, plus **Photos**, **Music** and **Present**.
+- **👀 Just join**: you are a **guest** (no limit, 200 at most): you get Photos, Music and Present but no controller. Later, tap your name at the top → **Join as player** if a slot is free, or **Leave my player slot**. The same sheet has **Invite someone**, which shows a QR code on your phone so the next person can scan it.
+
+The TV shows who joins ("🦊 Ana joined"), keeps a small QR code on the home screen, and groups games in folders (**Arcade**, **Channels**; open one with A, go back with B, HOME or the Back tile). Folders are made from each game's `.game.json` (`"folder": "arcade"`) and `public/js/console/folders.json`.
+
+**Settings → Party:** name the party, start a new one, ask for approval before photos appear, set the photo storage limit, or **End party & delete data** (asks three times). Everything is saved on this laptop in the `data/` folder (not uploaded anywhere, and not in git).
 
 ## How to run it
 
@@ -90,13 +101,15 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 | **B** | go back |
 | **HOME** | return to the menu from anywhere |
 
-- **Turbo Karts:** a 3D kart race (3 laps, 8 racers). First each player picks a **character** and a **kart** (D-pad, A = confirm, B = back), watching them in a little 3D showroom: the character waves when picked and cheers when you're ready, and the kart turns on a turntable next to its stats, then P1 picks one of 6 **tracks** (Sunny Park, Dune Canyon, Frosty Peaks, Neon City, Pirate Cove, Cloud Gardens). Drive through **item boxes** and press **ITEM** to use what you got: *Turbo* (speed boost), *Homing Orb* (hits the kart ahead), *Slick* (dropped behind you), *Shield*, *Triple Slick* (three slicks, one per press), *Magnet* (grabs coins from far away and pulls you along behind the kart ahead) or, if you're near the back, the *Lightning Bolt* (everyone ahead of you shrinks and slows for a few seconds; a Shield blocks it). **Coins** raise your top speed; getting hit makes you drop some. Your phone turns into a **kart controller**: hold it sideways with both thumbs.
-  - **Left thumb, steering strip:** put your thumb on it and slide. The further from the middle, the harder you turn; the striped middle band means straight. The dot shows where your thumb is.
+- **Turbo Karts:** a 3D kart race (3 laps, 8 racers) on a close port of OpenWii's kart engine (MIT): tight handling, **three drift boost levels**, a rocket start, item boxes, coins and computer drivers. First each player picks one of 14 animated **characters** (free CC0 Quaternius models) and a **kart** (D-pad, A = confirm, B = back) in a little 3D showroom, then P1 picks one of 7 **tracks** (Sunny Park, Dune Canyon, Frosty Peaks, Neon City, Pirate Cove, Cloud Gardens and the night-time Grand Stadium). Kart stats (speed, acceleration, handling) change the driving a little. 2 players play on a **split screen**. Items: *Turbo*, *Slick*, *Orb*, *Seeker*, *Star* and *Comet*; **coins** raise your top speed. Your phone turns into a **kart controller**: hold it sideways, ◀ LEFT / ▶ RIGHT to steer (or tilt), GAS, DRIFT, ITEM, BRAKE.
+  - **Left thumb, ◀ LEFT and ▶ RIGHT:** two big buttons. Hold one and the kart turns, smoothly building up to a full turn; a quick tap is a small correction. Let go and it drives straight. You can slide your thumb from one to the other without lifting it.
+  - **Rotation lock on?** No problem: if the page stays upright while you hold the phone sideways, the pad turns itself sideways. If it's upside down for you, press **Flip ↻**.
   - **Right thumb, four buttons:** **GAS** (bottom right), **DRIFT** next to it, **ITEM** and **BRAKE** above. Slide your thumb from one to the next without lifting it. Holding **DRIFT** or **ITEM** keeps accelerating, so you can move off GAS.
   - **Drift:** hold DRIFT while turning at speed (the kart does a little hop), then let go for a **mini-turbo** (blue sparks = small boost, orange = big boost). Braking ends a drift with no turbo.
-  - **Switches at the top:** **Tilt steering** (turn the phone like a wheel instead of using the strip, with a Recenter button) and **Auto-gas** (always accelerating). The phone remembers them.
+  - **Switches at the top:** **Tilt steering** (turn the phone like a wheel instead of using the LEFT / RIGHT buttons, with a Recenter button) and **Auto-gas** (always accelerating). The phone remembers them.
   - **Glide ramps:** a blue pad with white chevrons across the road, between two glowing posts. Drive over it at speed and a glider opens: you float down slowly, steering freely, and the glider follows the road's bends.
   - **Shortcuts (Cloud Gardens):** some glide ramps are narrow and sit on one side of the road, with orange posts. Steer onto one and you glide straight across a gap (follow the glowing hoops) and land further along the lap, skipping a long loop of road. The minimap shows shortcuts as dashed lines. Some computer racers dare to take them too.
+  - **Drifting:** sparks fly from the rear wheels and change color as the drift charges: **blue**, then **orange**, then **purple**. Let go of DRIFT for a mini-turbo; purple gives the longest one.
   - **Tricks:** tap **DRIFT** while in the air (off a glide ramp or any jump) for a barrel roll. Land it for a short boost ("Trick!").
   - Orange arrows on the road are boost pads. With 2 phones choose **Versus** (split screen), **Co-op** (your team's points vs the 2 best computer karts) or **Solo**. Keyboard mode: arrows steer, Enter/Space = gas, R or Shift = drift, U = item, Esc = brake.
 - **Table Tennis:** a 3D ping-pong table. The paddles move by themselves; you **swing your phone** to hit when the ball reaches you (or press A). Swinging early or late, or tilting the phone, aims left or right; a harder swing hits faster. **Versus** is first to 11 (win by 2), **Co-op** counts how long you can keep a rally going together, and **Solo** is against the computer.
@@ -107,12 +120,16 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 - **Draw:** hold A to paint. The D-pad changes the color, + and − change the brush size, and B clears the picture.
 - **Paddle Duel:** a bat-and-ball game. Your paddle follows how high you point. Press A to serve; the ball gets 5% faster on every hit, and the first to 7 points wins. With 2 phones choose **Versus** (P1 left, P2 right) or **Solo** against the computer.
 - **Bowling:** point left/right to aim, then **hold B and swing your phone** like you're bowling. A harder swing throws faster, and tilting the phone sideways curves the ball. Can't get swings to work? Press **A** for a medium, straight throw. 10 frames with real bowling scoring (strikes and spares); with 2 phones you take turns.
-- **Photos:** put pictures (.jpg, .png, .gif, .webp) in the `photos` folder inside `couch-console`. Point or use the D-pad to choose one and press A to open it. ◀ ▶ flips through them, A starts or stops a slideshow, and B goes back. Your photos are never uploaded to GitHub.
+- **Juicy Slash** (ported from OpenWii's fruit game): fruit flies up a wooden wall; point your phone and **swing** to slice it, up to 4 blades at once with different colors. Slice 3+ in one swing for a combo; **bombs end the run**, and missing three fruit does too. A = start / play again, B = menu.
+- **Alien Strike** (ported from OpenWii's alien game): an endless space shooter. Your ship flies on its own: **point left or right** (or hold the D-pad ◀ ▶) to strafe, **A** fires. Saucers shoot back and ram; three hits and it's over.
+- **Photos (the party album):** everybody adds photos from their phone (**Photos** tab → **＋ Add photos**). Photos are made smaller and their location data is removed on the phone before they are sent. They show up live on the TV. The TV starts as a calm **wall** (a new photo jumps the queue); **PLUS** shows all photos in a grid, **A** opens one full screen, **MINUS** hides one for everyone (it asks first). On a phone: tap a photo to see it, swipe, pinch to zoom, **Save** (on an iPhone choose "Save Image"), **Select → Save selected**, or **Download all photos (ZIP)**. In Settings → Party you can ask for approval before photos appear. Pictures you put in the `photos` folder on the laptop also appear (marked Laptop). Everything stays on your laptop in `data/`, never on GitHub.
+- **Music (the party queue):** on a phone open **Music → ＋ Add** and paste a YouTube link (in the YouTube app: Share → Copy link). The songs play on the TV in a **fair order**: everyone gets a turn (round-robin), each person can have 3 songs waiting, 👍 moves a song up inside its round, and enough **skip votes** (2, or 40% of the people there) skip the current song. A video that YouTube does not allow on other sites is refused with a clear message. The music keeps playing in a small card in the corner of the TV (YouTube requires it to stay visible) and pauses while a game is open (Settings → Party → Pause music in games). On the TV Music screen, P1 can pause (A), skip (PLUS), remove (MINUS) and re-order (◀ ▶). The first time, click the TV page once so the browser may play sound. You need the internet for this (the video comes from YouTube).
+- **Present (slides from your phone):** on a phone open **Present → ＋ Upload slides** and choose a **PDF** (or several pictures, which you can put in order and name). PowerPoint, Keynote and Google Slides files cannot be shown by a browser: the phone tells you the export steps (PowerPoint: File → Export → PDF · Keynote: File → Export To → PDF · Google Slides: File → Download → PDF). You can also drop a PDF onto the TV's Present screen. Tap **▶** on a deck and your phone becomes the remote: big **Prev / Next** buttons (or swipe), the current and next slide, a timer, **Hold for laser** (a red dot on the TV that follows your phone; the first time it asks for motion access), **Black screen**, and notes for each slide. Only one person presents at a time (the host can take over). On the laptop, the arrow keys, PageUp/PageDown, Space and a USB clicker turn pages, **B** blanks the screen and **Esc** or **HOME** ends the show. Slides are drawn in the browser with pdf.js, so a PDF with unusual fonts may look slightly different from your computer.
 - **Weather:** today's weather and the next days (needs internet). ◀ ▶ changes the city. "My location" asks the laptop's browser for permission once. + / − switches between °C and °F, and A refreshes.
 - **Video:** plays YouTube videos (needs internet). The list comes from `videos.txt` in the `couch-console` folder. Copy `videos.example.txt` to `videos.txt` and put one `Title | YouTube link` per line. While watching: A = play/pause, ◀ ▶ = back/forward 10 s, + / − = volume, ▲ ▼ = previous/next video, B = back to the list. If a video doesn't start, click the laptop page once (browsers block autoplay with sound) and press A.
 - **Timer:** works without internet. ◀ ▶ switches between a big **Clock**, a **Timer** and a **Stopwatch**. Timer: ▲ ▼ = ±1 minute, + / − = ±10 seconds, A = start/pause, − = reset once started. When time is up the screen flashes, it chimes and every phone buzzes (A stops it). Stopwatch: A = start/pause, + = lap, − = reset. The timer keeps running if you go back to the menu.
 - **On This Day:** what happened on today's date in history, from Wikipedia (needs internet, no account). ◀ ▶ = Highlights / Events / Born today / Holidays, ▲ ▼ = browse, A = a random one, + / − = next/previous day.
-- **Settings:** pointer speed (1 to 10), sound on/off, phone sounds on/off, and **Show QR code** to connect a phone again.
+- **Settings:** pointer speed (1 to 10), sound on/off, phone sounds on/off, **Steady cursor** (turn it On if the cursor wanders or shakes: it then follows only the phone's own orientation and ignores the gyro. You can also press **G** on the laptop to flip it while testing), and **Show QR code** to connect a phone again.
 
 If the phone can't use motion sensors, or you tapped "Don't Allow", it shows a **touchpad** instead. Drag on it to move the cursor.
 On iPhone, to get the motion question again: Settings → Apps → Safari → Clear History and Website Data, then reload the page.
@@ -140,6 +157,8 @@ On the phone, add `&debug=1` to the end of its link. You'll see live sensor numb
 On the laptop, the debug box also shows how many frames per second the laptop draws (below about 50 means it's struggling), each phone's motion messages per second and what the pointer has learned about the phone (`learning…` at first, then a line like `x←x+1.00 y←y+1.00 z←z+1.00` once it trusts the gyroscope). Press **L** on the laptop keyboard to switch the cursor prediction off and on, to compare how it feels.
 
 **Turbo Karts looks:** reflections, a sky with a sun, textured roads and grass, a soft glow on bright things (boost flames, drift sparks, neon) and speed lines while boosting. If your laptop can't keep up, the glow effects switch themselves off. To force them, add `?fx=on` (always on) or `?fx=off` (always off) to the laptop link, for example `…/console.html?fx=off`.
+
+**Cartoon look and soft shadows (Settings):** Turbo Karts has a *cartoon look* (dark outlines, stepped light, bolder colors, a glowing rim on karts) and *soft shadows* (ambient occlusion). Both are **On** by default; turn them **Off** in Settings if it runs slowly. Side-by-side pictures are in `docs/kart-compare/cartoon/`. To use real skies and road textures, see `docs/kart-art-options.md` (free Poly Haven files go in `public/assets/polyhaven/`).
 
 **Phone says "Motion needs a secure page"?** The phone opened a plain `http://` link, and browsers only allow motion sensors on secure (`https://`) pages. The message on the phone says what to do; tap it to close it. Meanwhile you can use the touchpad on the phone.
 
@@ -194,19 +213,37 @@ The `certs` folder holds a private key: it is **never** uploaded to GitHub (it's
 
 ---
 
+## Look and feel (Phase 55)
+- The look is written down in `docs/STYLE.md` (colors, fonts, motion, sound). The home screen is one grid of big tiles; a folder (like Arcade) opens as its own screen and **B** goes back.
+- Two looks exist, light (default) and dark. Try the dark one by adding `&theme=dark` to the console address.
+- The little 3D tile pictures are made by a script, no downloads: `node scripts/render-icons.mjs` (needs Playwright, see Tests). Add a scene in `public/js/tools/icon-scenes.js` and its name in `scripts/icon-ids.mjs` for a new game.
+- Sounds are the free Kenney packs in `public/assets/sounds/kenney/` (mapped in `public/js/console/sound-map.js`). Add `?fx=off`, `?pp=off`, `?quarks=off` or `?pixi=off` to the console address to switch off the screen effects, the extra post-processing, the particles or the PixiJS layer when testing.
+
 ## Project layout
 
 ```
-server.js          the Node server (static files + real-time relay)
-public/            everything the browser loads
-  console.html     the laptop page
-  remote.html      the phone page
-  css/             styles for both pages
-  js/shared/       constants both sides use (event names, player colors)
-  js/console/      laptop code
-  js/remote/       phone code
-PLAN.md            the full spec and phase list
-CLAUDE.md          working rules for the AI assistant
+server.js             the Node server: serves the pages, relays phone input, hosts the party API
+server/               party features on the server: people (players/guests), events (saved data),
+                      photos, music, present (slides)
+public/               everything the browser loads
+  console.html        the laptop (TV) page
+  remote.html         the phone page
+  css/                styles for both pages
+  js/shared/          constants both sides use (event names, player colors, limits)
+  js/console/         laptop code: main.js (the menu and router), menu, settings, party, slides,
+                      music player, pointer/ (the gyro cursor), games/ and channels/ (one file per game,
+                      each with a .game.json), folders.json (the home folders)
+  js/console/games/turbo-karts/   everything of Turbo Karts except its entry file: models, tracks, select screen,
+                      effects, and ow-kart/ (the rules ported from OpenWii, track model, characters, stadium scenery)
+  js/remote/          phone code: main.js, party.js (join, tabs), photos / music / present tabs, kart pad
+  assets/             3D models (Kenney, Quaternius) and optional Poly Haven files
+tests/                automatic tests (npm test)
+docs/                 plans (PLAN.md, PLAN-PARTY.md), DECISIONS.md, kart-art-options.md, screenshots
+data/                 your parties (photos, slides): created on first run, never in git
+photos/               pictures that also show in the Photos app (optional, never in git)
+scripts/              make-certs.js (local https certificate)
+CLAUDE.md             working rules for the AI assistant
+THIRD_PARTY_NOTICES.md  credits and licenses
 ```
 
 ### Adding, hiding or reordering games
@@ -218,9 +255,9 @@ Every game and channel lives in `public/js/console/games/` or `public/js/console
 
 - **Reorder the menu:** change `order` (lower numbers come first).
 - **Hide a game:** set `"hidden": true` (its files stay; it just isn't on the menu).
-- **Add a game:** put `my-game.js` and `my-game.game.json` in the `games` folder and refresh the laptop page.
+- **Add a game:** put `my-game.js` and `my-game.game.json` in the `games` folder and refresh the laptop page. Add `"folder": "arcade"` (or `"channels"`, see `folders.json`) to put it inside a home folder.
 
 If a game has a bug and can't load, only its tile shows **Couldn't load…**; the rest of the console keeps working.
 
 ### Tests
-`npm test` runs the automatic tests (no phone needed).
+`npm test` runs the automatic tests (no phone needed). One of them plays a whole Turbo Karts start in a hidden browser and checks that the phones really switch to the kart pad; it only runs if Playwright is installed, otherwise it says "skipped". To run it too (optional, about 150 MB): `npm install --no-save playwright` then `npx playwright install chromium`, then `npm test`.

@@ -39,9 +39,10 @@ export async function loadApps() {
   const loaded = await Promise.allSettled(list.map((meta) =>
     (meta.broken ? Promise.reject(new Error(meta.broken)) : import(meta.module)).then((m) => m.default)));
   return loaded.map((r, i) => {
-    if (r.status === 'fulfilled' && r.value?.mount) return r.value;
+    // (the folder and order come from the game's .game.json)
+    if (r.status === 'fulfilled' && r.value?.mount) { r.value.folder = list[i].folder; r.value.order = list[i].order; return r.value; }
     const error = r.status === 'rejected' ? r.reason : new Error('The file has no game in it (no default export with mount)');
     console.error(`Couldn't load ${list[i].title}:`, error);
-    return brokenApp(list[i], error?.message || error);
+    return { ...brokenApp(list[i], error?.message || error), folder: list[i].folder, order: list[i].order };
   });
 }

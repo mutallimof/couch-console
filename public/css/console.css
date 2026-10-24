@@ -24,84 +24,9 @@ html, body {
   cursor: default;
 }
 
-/* ---------- Home menu ---------- */
-.menu {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.tiles {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)); /* columns may shrink below their text */
-  align-content: center;
-  gap: clamp(12px, 2vw, 24px);
-  /* fit 3 rows of 16:10 tiles on short laptop screens too */
-  width: min(92vw, (100vh - 170px) * 4.8 / var(--rows, 3)); /* shrink tiles when there are more rows */
-  margin: 0 auto;
-  padding: 24px 0;
-}
-
-.tile {
-  aspect-ratio: 16 / 10;
-  border-radius: 18px;
-  /* lit from above, like a backlit panel; the shadow takes the tile's own color */
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%), var(--tile);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 22px color-mix(in srgb, var(--tile) 32%, transparent);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  color: #fff;
-  container-type: inline-size; /* lets the icon and title scale with the tile */
-  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
-}
-.tile.empty {
-  background: rgba(255, 255, 255, 0.35);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
-}
-.tile.focused {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 4px #fff, 0 0 0 8px var(--ring),
-    0 20px 38px color-mix(in srgb, var(--tile) 45%, transparent);
-}
-/* A pressed for real: sink in, then the game zooms out of it */
-.tile.pressed { transform: scale(0.97); transition-duration: 100ms; }
-.tile-icon svg { display: block; width: clamp(34px, 30cqw, 96px); height: auto; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15)); }
-.tile-title { font-weight: 900; font-size: clamp(13px, 11cqw, 26px); white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
-
-/* The menu's one entrance: tiles rise in, one after another, when the menu first appears */
-.tiles.enter .tile { animation: tile-in 420ms var(--ease-out) backwards; animation-delay: calc(var(--i) * 35ms); }
-@keyframes tile-in { from { opacity: 0; transform: translateY(14px) scale(0.96); } }
-
-@media (prefers-reduced-motion: reduce) {
-  .tile, .tile.focused, .tile.pressed { transform: none; transition: box-shadow 120ms ease; }
-  .tiles.enter .tile { animation: tile-fade 200ms ease backwards; }
-  @keyframes tile-fade { from { opacity: 0; } }
-}
-
-.bar {
-  display: flex;
-  align-items: baseline;
-  gap: 18px;
-  padding: 18px 40px 26px;
-  border-top: 2px solid rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.4);
-}
-.clock { font-size: 40px; font-weight: 900; }
-.date { font-size: 20px; color: var(--muted); font-weight: 700; }
-.sound-hint {
-  margin-left: auto;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: #fff4e5;
-  color: #8a5300;
-  font-weight: 700;
-  font-size: 15px;
-}
-
+.toasts { position: fixed; left: 24px; bottom: 96px; z-index: 80; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { padding: 10px 18px; border-radius: 16px; background: rgba(30, 40, 60, 0.92); color: #fff; font-weight: 800; font-size: 22px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); animation: tile-in 260ms var(--ease-out) backwards; }
+.guest-list { margin: 8px 0 0; font-size: 22px; font-weight: 800; color: var(--muted, #5F6B80); text-align: center; max-width: 80vw; }
 /* ---------- Stage (open app) ---------- */
 .stage {
   position: fixed;
@@ -118,17 +43,19 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
+  justify-content: safe center; /* (more rows than the screen is tall: the focused row scrolls into view) */
+  gap: min(14px, 1.6vh);
+  padding: 2vh 0;
+  overflow-y: auto;
   background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
 }
-.settings h1 { margin: 0 0 12px; font-size: 48px; font-weight: 900; }
+.settings h1 { margin: 0 0 4px; font-size: min(48px, 5vh); font-weight: 900; }
 .set-row {
   width: min(720px, 90vw);
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 18px 26px;
+  padding: min(18px, 1.5vh) 26px;
   border-radius: 16px;
   background: var(--card);
   box-shadow: var(--shadow);
@@ -139,16 +66,16 @@ html, body {
 .set-btn {
   font: 900 24px 'Nunito', sans-serif;
   min-width: 52px;
-  height: 52px;
+  height: min(52px, 5.6vh);
   padding: 0 14px;
   border: none;
   border-radius: 12px;
-  background: #eef2f7;
+  background: var(--surface-2);
   color: var(--text);
 }
 .set-btn.wide { min-width: 180px; }
 .levels { display: flex; gap: 5px; }
-.lvl { width: 14px; height: 30px; border-radius: 4px; background: #dfe6ef; }
+.lvl { width: 14px; height: 30px; border-radius: 4px; background: var(--surface-3); }
 .lvl.on { background: #2F80ED; }
 .set-hint { margin: 8px 0 0; color: var(--muted); font-size: 18px; font-weight: 700; }
 
@@ -164,7 +91,8 @@ html, body {
   gap: 6px;
   padding: 10px 20px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--text);
   box-shadow: var(--shadow);
   white-space: nowrap;
 }
@@ -250,8 +178,8 @@ html, body {
 }
 .slot-state { font-size: 20px; font-weight: 700; }
 
-.pairing-close { margin: 0; font-size: 20px; font-weight: 700; color: #1A5CC8; } /* darker blue: readable on the light background */
-.status { margin: 0; min-height: 1.4em; color: #c0392b; font-weight: 700; }
+.pairing-close { margin: 0; font-size: 20px; font-weight: 700; color: var(--link); }
+.status { margin: 0; min-height: 1.4em; color: var(--danger); font-weight: 700; }
 
 /* ---------- Cursors ---------- */
 .cursors { position: fixed; inset: 0; pointer-events: none; z-index: 100; overflow: hidden; }
@@ -376,10 +304,10 @@ html, body {
 .kart-msg { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(56px, 12vh, 120px); font-weight: 900; }
 .kart-minimap { position: absolute; right: 14px; top: 14px; width: 150px; height: 150px; border-radius: 16px; background: rgba(30, 50, 80, 0.35); }
 .kart-results { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(20, 30, 50, 0.45); }
-.kart-card { background: #fff; border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); min-width: 460px; text-align: center; }
+.kart-card { position: relative; background: var(--surface); color: var(--text); border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); min-width: 460px; text-align: center; }
 .kart-card h1 { margin: 0; padding: 22px 32px; color: #fff; font-size: 40px; font-weight: 900; }
 .kart-card table { width: 100%; border-collapse: collapse; font-size: 22px; font-weight: 700; }
-.kart-card td { padding: min(8px, 1vh) 24px; border-bottom: 1px solid #EEF2F7; text-align: left; }
+.kart-card td { padding: min(8px, 1vh) 24px; border-bottom: 1px solid var(--line); text-align: left; }
 .kart-card .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; background: var(--c); }
 .kart-card p { margin: 14px 0 18px; padding: 0 20px; color: #2F80ED; font-weight: 900; font-size: 20px; }
 
@@ -401,6 +329,7 @@ html, body {
 .hud3d .panel p { margin: 8px 0; font-size: 26px; font-weight: 700; }
 
 /* Crosshair cursors (aiming games): a ring with a dot, centered on the aim point */
+.cursors.none { visibility: hidden; }
 .cursors.crosshair .cursor svg { display: none; }
 .cursors.crosshair .cursor::before {
   content: '';
@@ -422,47 +351,15 @@ html, body {
 .dungeon-bar .heart { color: #D5DBE3; font-size: 28px; }
 .dungeon-bar .heart.on { color: #E03131; }
 
-/* ---------- Boot animation ---------- */
-/* Timeline (ease-out, no bounce): frame draws 0-0.6 s · cushions settle 0.35-0.95 s ·
-   screen lights up 0.85 s · name rises 1.0-1.5 s · tagline 1.5 s · fades out at 2.7 s */
-.boot {
-  --boot-ease: cubic-bezier(.22, 1, .36, 1);
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: radial-gradient(circle at 50% 42%, #ffffff 0%, #EEF3FA 50%, #DCE6F3 100%);
-  transition: opacity 300ms ease-out, transform 300ms ease-out;
-}
+/* ---------- Boot animation (GSAP does the motion, see boot.js) ---------- */
+.boot { position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; transition: opacity 300ms ease-out, transform 300ms ease-out; }
 .boot.boot-out { opacity: 0; transform: scale(1.02); pointer-events: none; }
-.boot-logo { overflow: visible; }
-.boot-frame { stroke-dasharray: 1.05; stroke-dashoffset: 1.05; stroke-linecap: round; animation: boot-draw 600ms var(--boot-ease) forwards; }
-@keyframes boot-draw { to { stroke-dashoffset: 0; } }
-.boot-antenna { opacity: 0; transform-origin: 100px 40px; animation: boot-rise 400ms 450ms var(--boot-ease) both; }
-.boot-screen-fill { opacity: 0; animation: boot-fade 300ms 250ms ease-out both; }
-.boot-glow { opacity: 0; animation: boot-glow 700ms 850ms ease-out both; }
-@keyframes boot-glow { 0% { opacity: 0; } 35% { opacity: 1; } 100% { opacity: 0.35; } }
-.boot-couch > :not(.boot-cushion) { opacity: 0; animation: boot-fade 250ms 300ms ease-out both; }
-.boot-cushion { opacity: 0; animation: boot-cushion 450ms var(--boot-ease) both; animation-delay: calc(400ms + var(--i) * 70ms); }
-@keyframes boot-cushion { from { opacity: 0; transform: translateY(-26px); } to { opacity: 1; transform: none; } }
-@keyframes boot-fade { to { opacity: 1; } }
-@keyframes boot-rise { from { opacity: 0; transform: translateY(8px) scale(0.9); } to { opacity: 1; transform: none; } }
-.boot-title { margin: 0; font-size: clamp(40px, 7vw, 84px); font-weight: 900; color: #2B3445; display: flex; letter-spacing: -0.01em; }
-.boot-title span { display: inline-block; animation: boot-letter 420ms var(--boot-ease) both; animation-delay: calc(1000ms + var(--i) * 28ms); }
-@keyframes boot-letter { from { transform: translateY(24px); opacity: 0; filter: blur(4px); } to { transform: none; opacity: 1; filter: none; } }
-.boot-tag { margin: 0; font-size: 22px; font-weight: 700; color: var(--muted); animation: boot-letter 400ms 1500ms var(--boot-ease) both; }
-.boot-skip { position: absolute; bottom: 28px; margin: 0; font-size: 15px; font-weight: 700; color: var(--muted); opacity: 0; animation: boot-fade 300ms 800ms ease-out both; }
-@media (prefers-reduced-motion: reduce) {
-  /* everything simply appears, then the screen fades */
-  .boot-frame { stroke-dashoffset: 0; animation: none; }
-  .boot-antenna, .boot-screen-fill, .boot-couch > *, .boot-cushion, .boot-glow, .boot-title span, .boot-tag, .boot-skip {
-    animation: boot-fade 200ms ease-out both; animation-delay: 0ms; transform: none; filter: none; }
-  .boot-glow { opacity: 0.35; animation: none; }
-}
+.boot-logo { overflow: visible; filter: drop-shadow(0 12px 18px rgba(60, 80, 130, 0.25)); }
+.boot-title { margin: 0; font: 700 clamp(44px, 7.5vw, 92px) / 1 var(--display); color: var(--ink); display: flex; gap: 0.25em; letter-spacing: -0.02em; }
+.boot-title .w2 { color: var(--cushion); }
+.boot-title span { display: inline-block; }
+.boot-tag { margin: 0; font: 600 24px var(--display); color: var(--muted); }
+.boot-skip { position: absolute; bottom: 28px; margin: 0; font-size: 15px; font-weight: 700; color: var(--muted); }
 
 /* ---------- Channels (Photos, Weather, Video) ---------- */
 .channel { position: absolute; inset: 0; overflow: hidden; color: #fff; background: linear-gradient(160deg, #2B3445, #1B2130); }
@@ -584,7 +481,7 @@ html, body {
 .kart-item svg { width: 56px; height: 56px; display: block; }
 .kart-coins { position: absolute; left: 112px; top: 82px; font-size: 28px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
 .coin { width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFF3BF, #FCC419 55%, #E8A400); box-shadow: 0 0 0 2px #fff; }
-.kart-card td img { width: 30px; height: 30px; vertical-align: middle; margin-right: 8px; border-radius: 50%; background: #EEF2F7; }
+.kart-card td img { width: 30px; height: 30px; vertical-align: middle; margin-right: 8px; border-radius: 50%; background: var(--surface-2); }
 
 /* Turbo Karts select screen */
 .kart-select { position: absolute; inset: 0; z-index: 5; padding: 18px 28px; overflow: hidden; color: #fff;
@@ -602,7 +499,7 @@ html, body {
 .ks-kart-name { margin-left: auto; opacity: 0.75; font-weight: 800; font-size: 18px; }
 /* the 3D showroom is drawn behind this box (turbo-karts.js), so it stays see-through */
 .ks-stage { flex: 1; min-height: 120px; border-radius: 16px; background: radial-gradient(ellipse at 50% 85%, rgba(255, 255, 255, 0.10), transparent 65%); }
-.ks-chars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; opacity: 0.5; transition: opacity 160ms ease-out; }
+.ks-chars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; opacity: 0.5; transition: opacity 160ms ease-out; }
 .ks-chars img { width: 100%; aspect-ratio: 1; max-height: 9vh; object-fit: contain; border-radius: 12px; background: rgba(255, 255, 255, 0.85);
   border: 3px solid transparent; box-sizing: border-box; transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), border-color 140ms ease-out; }
 .ks-chars img.focused { border-color: var(--c); transform: scale(1.08); }
@@ -636,14 +533,14 @@ html, body {
 .kart-progress { width: min(420px, 70vw); height: 18px; margin-top: 14px; border-radius: 9px; background: rgba(43, 52, 69, 0.2); overflow: hidden; }
 .kart-progress i { display: block; width: 100%; height: 100%; background: #2F80ED; transform-origin: left; transform: scaleX(var(--p, 0));
   transition: transform 200ms var(--ease-out); }
-.join-warning { margin-top: 10px !important; padding: 10px 14px; border-radius: 12px; background: #FFF3BF; color: #7A4D00; font-size: 14px; font-weight: 700; max-width: 380px; }
+.join-warning { margin-top: 10px !important; padding: 10px 14px; border-radius: 12px; background: var(--warn-bg); color: var(--warn-text); font-size: 14px; font-weight: 700; max-width: 380px; }
 .join-warning code { font-size: 12px; }
 
 /* Cursor trail (drawn on a canvas under the cursors) */
 .cursor-trail { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* Mouse & keyboard mode (no phone): our own cursor replaces the system one */
-.use-mouse { font: 700 18px 'Nunito', sans-serif; color: #1A5CC8; background: none; border: 2px solid currentColor;
+.use-mouse { font: 700 18px 'Nunito', sans-serif; color: var(--link); background: none; border: 2px solid currentColor;
   border-radius: 12px; padding: 8px 16px; cursor: pointer; transition: transform 120ms var(--ease-out); }
 .use-mouse:active { transform: scale(0.97); }
 body.desk-mode, body.desk-mode * { cursor: none !important; }
@@ -653,12 +550,12 @@ body.desk-mode, body.desk-mode * { cursor: none !important; }
   gap: 12px; padding: 24px; text-align: center; background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom)); }
 .broken-app h1 { margin: 0; font-size: 44px; }
 .broken-app p { margin: 0; font-size: 20px; font-weight: 700; color: var(--muted); max-width: 640px; }
-.broken-app code { max-width: 760px; padding: 10px 14px; border-radius: 10px; background: #fff; color: #c0392b; font-size: 15px; white-space: pre-wrap; }
+.broken-app code { max-width: 760px; padding: 10px 14px; border-radius: 10px; background: var(--surface); color: var(--danger); font-size: 15px; white-space: pre-wrap; }
 
 /* Turbo Karts speed lines: thin white streaks rushing in from the screen edges while boosting */
 .kart-hud::before {
   content: ''; position: absolute; inset: 0; opacity: 0; pointer-events: none;
-  background: repeating-conic-gradient(from 0deg at 50% 55%, rgba(255, 255, 255, 0.55) 0deg 0.6deg, transparent 0.6deg 9deg);
+  background: repeating-conic-gradient(from 0deg at 50% 55%, rgba(255, 255, 255, 0.32) 0deg 0.5deg, transparent 0.5deg 11deg);
   -webkit-mask: radial-gradient(ellipse at 50% 55%, transparent 42%, #000 78%);
   mask: radial-gradient(ellipse at 50% 55%, transparent 42%, #000 78%);
   transition: opacity 200ms ease-out;
@@ -713,3 +610,175 @@ img.qr-img:not([src]) { visibility: hidden; }
 .kart-hud { z-index: 2; }
 .kart-charges { position: absolute; right: -8px; bottom: -8px; padding: 1px 7px; border-radius: 10px; background: #339AF0;
   color: #fff; font-size: 18px; font-weight: 900; text-shadow: none; }
+
+/* ---------- Juicy Slash (ported from OpenWii's fruit game, MIT; see THIRD_PARTY_NOTICES.md) ---------- */
+.juicy { position: absolute; inset: 0; overflow: hidden; background: #2b1a0c; color: #f5ead6; user-select: none; }
+.juicy canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
+.juicy .jz-hud { position: absolute; inset: 0; pointer-events: none; }
+.juicy .jz-score-wrap { position: absolute; left: 30px; top: 18px; }
+.juicy .jz-score-row { display: flex; align-items: center; gap: 12px; }
+.juicy .jz-score-ico { font-size: 34px; filter: drop-shadow(0 3px 6px #0009); }
+.juicy .jz-score-v { font-size: 58px; font-weight: 900; line-height: 1; color: #fff; font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 2px #000, 3px 3px 0 #3a220c, 0 6px 18px #000c; }
+.juicy .jz-best { font-size: 17px; font-weight: 900; color: #ffcf4d; letter-spacing: .06em; margin: 6px 0 0 2px; text-shadow: 0 0 2px #000, 2px 2px 0 #3a220c; }
+.juicy .jz-lives { position: absolute; right: 30px; top: 16px; text-align: right; }
+.juicy .jz-lives .x { display: inline-block; margin-left: 10px; font-size: 44px; font-weight: 900; line-height: 1; color: #4fa7e8;
+  text-shadow: 0 0 2px #000, 2px 3px 0 #16273a, 0 5px 14px #000b; transition: color .15s, transform .15s; }
+.juicy .jz-lives .x.lost { color: #e8372b; transform: scale(1.12); text-shadow: 0 0 2px #000, 2px 3px 0 #3a1210, 0 5px 14px #000b; }
+.juicy .jz-practice { font-size: 14px; font-weight: 900; color: #ffcf4d; margin-top: 4px; letter-spacing: .08em; }
+.juicy .jz-players { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); display: none; flex-direction: column; gap: 4px;
+  align-items: center; padding: 10px 16px; border-radius: 14px; background: #1d1006cc; border: 1px solid #4a3319; }
+.juicy .jz-players.on { display: flex; }
+.juicy .prow { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 900; white-space: nowrap; }
+.juicy .prow b { color: #ffcf4d; }
+.juicy .pdot { width: 11px; height: 11px; border-radius: 50%; flex: none; box-shadow: 0 0 6px currentColor; }
+.juicy .jz-fx { position: absolute; inset: 0; overflow: hidden; }
+.juicy .jz-splash { position: absolute; transform: translate(-50%, -50%); font-weight: 900; white-space: nowrap; animation: jz-pop .95s ease-out forwards; }
+.juicy .jz-splash.plus { font-size: 46px; color: #fff; text-shadow: 0 0 2px #000, 2px 2px 0 #3a220c; }
+.juicy .jz-splash.combo { font-size: 72px; color: #ffb52e; text-shadow: 0 0 3px #000, 3px 3px 0 #4a2a08, 0 0 26px #ffb52e88; }
+.juicy .jz-splash.crit { font-size: 84px; color: #ffe14d; text-shadow: 0 0 3px #000, 3px 3px 0 #4a3708, 0 0 30px #ffe14daa; }
+.juicy .jz-splash.penalty { font-size: 64px; color: #ff5040; text-shadow: 0 0 3px #000, 3px 3px 0 #3a0e08; }
+@keyframes jz-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.4) rotate(-6deg); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1.12) rotate(2deg); }
+  30% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -68%) scale(1); }
+}
+.juicy .jz-miss-x { position: absolute; bottom: 16%; left: 50%; transform: translate(-50%, 0) scale(.3); opacity: 0;
+  font-size: 96px; font-weight: 900; color: #e8372b; text-shadow: 0 0 4px #000, 4px 4px 0 #3a0e08; }
+.juicy .jz-miss-x.on { animation: jz-miss .75s ease-out forwards; }
+@keyframes jz-miss {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(.3); }
+  20% { opacity: 1; transform: translate(-50%, 0) scale(1.25); }
+  35% { transform: translate(-50%, 0) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 0) scale(1.05); }
+}
+.juicy .jz-flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+.juicy .jz-flash.on { animation: jz-white .55s ease-out forwards; }
+@keyframes jz-white { 0% { opacity: 1; } 100% { opacity: 0; } }
+.juicy .jz-keys { position: absolute; left: 30px; bottom: 24px; font-size: 15px; font-weight: 800; color: #c9a77a; }
+.juicy .jz-toast { position: absolute; left: 50%; bottom: 78px; transform: translateX(-50%); font-size: 15px; font-weight: 800; letter-spacing: .1em;
+  color: #ffcf4d; text-shadow: 0 1px 4px #000; opacity: 0; transition: opacity .25s; white-space: nowrap; }
+.juicy .jz-toast.on { opacity: 1; }
+.juicy .jz-overlay { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
+  background: radial-gradient(ellipse at 50% 40%, #3a2410ee, #1d1106fa 70%); }
+.juicy .jz-overlay.hide { display: none; }
+.juicy .jz-panel { text-align: center; max-width: 620px; padding: 0 32px; animation: panel-in 240ms var(--ease-out) both; }
+.juicy .jz-panel h1 { margin: 0 0 10px; font-size: 64px; font-weight: 900; color: #fff; text-shadow: 0 0 3px #000, 4px 4px 0 #3a220c; }
+.juicy .jz-panel h1.gameover { color: #e8372b; font-size: 88px; text-shadow: 0 0 4px #000, 5px 5px 0 #2a0a06, 0 0 44px #e8372b55; }
+.juicy .cta { margin-top: 26px; font-size: 20px; font-weight: 800; color: #c9a77a; }
+.juicy .cta strong { color: #f5ead6; }
+.juicy .jz-final { font-size: 30px; font-weight: 900; color: #f5ead6; }
+.juicy .jz-final b { color: #ffcf4d; }
+@media (prefers-reduced-motion: reduce) { .juicy .jz-splash, .juicy .jz-miss-x.on, .juicy .jz-flash.on { animation-duration: .2s; } }
+
+/* ---------- Alien Strike (ported from OpenWii's alien-attack, MIT; see THIRD_PARTY_NOTICES.md) ---------- */
+.alien { position: absolute; inset: 0; overflow: hidden; background: #070b1c; color: #fff; user-select: none; }
+.alien canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
+.alien .as-hud { position: absolute; inset: 0; pointer-events: none; }
+.alien .as-card { position: absolute; left: 30px; top: 24px; border-radius: 14px; padding: 12px 18px; background: #0b1226cc; border: 1px solid #2b3a5e; }
+.alien .as-score { font-size: 30px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.alien .as-meta { font-size: 15px; font-weight: 800; color: #a9bcdc; }
+.alien .as-lives { position: absolute; right: 30px; top: 24px; font-size: 28px; letter-spacing: 4px; filter: drop-shadow(0 2px 6px #000a); }
+.alien .as-popup { position: absolute; left: 50%; top: 32%; transform: translateX(-50%); font-size: 38px; font-weight: 900;
+  text-shadow: 0 4px 14px #000a; opacity: 0; transition: opacity .12s; }
+.alien .as-popup.on { opacity: 1; }
+.alien .as-vignette { position: absolute; inset: 0; opacity: 0; transition: opacity .1s; background: radial-gradient(ellipse at center, #0000 55%, #e2323255 100%); }
+.alien .as-vignette.on { opacity: 1; }
+.alien .as-keys { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font-size: 15px; font-weight: 800; color: #8fa3c9; }
+.alien .as-overlay { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #26336edd, #141b3ef2 72%); }
+.alien .as-overlay.hide { display: none; }
+.alien .as-panel { text-align: center; max-width: 620px; padding: 0 30px; animation: panel-in 240ms var(--ease-out) both; }
+.alien .as-panel h1 { font-size: 58px; margin: 0 0 12px; font-weight: 900; }
+.alien .as-panel h1 em { font-style: normal; background: linear-gradient(120deg, #6fe08f, #2fb56b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.alien .stat { display: inline-block; margin: 0 10px 20px; }
+.alien .stat b { display: block; font-size: 34px; }
+.alien .stat span { font-size: 14px; font-weight: 800; color: #8fa3c9; text-transform: uppercase; letter-spacing: .1em; }
+.alien .cta { font-size: 20px; font-weight: 800; color: #9fb2d4; }
+.alien .cta strong { color: #fff; }
+.alien .as-goal { font-size: 24px; font-weight: 700; line-height: 1.4; margin: 0 0 18px; color: #dbe6ff; }
+.alien .as-goal b { color: #6fe08f; }
+.alien .as-how { display: grid; gap: 8px; text-align: left; margin: 0 auto 22px; max-width: 520px; font-size: 18px; font-weight: 700; color: #9fb2d4; }
+.alien .as-how div { padding: 10px 16px; border-radius: 12px; background: #0b1226cc; border: 1px solid #2b3a5e; }
+.alien .as-how span { display: block; font-size: 20px; font-weight: 900; color: #fff; }
+
+/* Turbo Karts HUD lettering: chunky gold numerals with a dark outline (like a racing game's score font) */
+.kart-place, .kart-msg {
+  color: transparent; -webkit-text-stroke: 0; font-style: italic; letter-spacing: -0.02em; text-shadow: none;
+  background: linear-gradient(#FFF6B0 0%, #FFD23F 45%, #F5920A 100%); -webkit-background-clip: text; background-clip: text;
+  filter: drop-shadow(3px 0 0 #3B2300) drop-shadow(-3px 0 0 #3B2300) drop-shadow(0 3px 0 #3B2300) drop-shadow(0 -3px 0 #3B2300) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+}
+.kart-place small { font-size: 0.55em; }
+.kart-msg { padding: 0 0.1em; }
+.kart-lap { text-shadow: 0 0 0 #000, 2px 0 0 #1b2740, -2px 0 0 #1b2740, 0 2px 0 #1b2740, 0 -2px 0 #1b2740, 0 4px 8px rgba(0, 0, 0, 0.4); }
+
+/* Photos album on the TV (Phase 44) */
+.photo-view.wall .photo-full { animation: wall-zoom 9s ease-out both; } /* a slow, gentle push in */
+@keyframes wall-zoom { from { transform: scale(1); } to { transform: scale(1.05); } }
+.photo-view.wall.fresh .photo-full { animation: photo-fly 700ms var(--ease-out) backwards, wall-zoom 9s ease-out both; }
+@keyframes photo-fly { from { opacity: 0; transform: translateY(40px) scale(0.85) rotate(-3deg); } }
+.photo-by { position: absolute; left: 32px; bottom: 26px; padding: 8px 18px; border-radius: 22px; font-size: 26px; font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+.photo-by.sm { left: 8px; bottom: 8px; padding: 2px 10px; font-size: 16px; }
+.photo-note { position: absolute; left: 50%; top: 24px; transform: translateX(-50%); z-index: 3; margin: 0; padding: 10px 22px; border-radius: 18px; background: rgba(0, 0, 0, 0.75); color: #fff; font-size: 26px; font-weight: 800; }
+.photo-tile { position: relative; }
+.photo-tile.pending img { filter: grayscale(0.6) brightness(0.8); }
+.photo-pending { position: absolute; inset: auto 0 0 0; padding: 6px; background: #d99a00; color: #fff; font-weight: 900; text-align: center; font-size: 16px; }
+.photo-view.empty { background: #12202e; }
+.photo-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; color: #fff; }
+.photo-empty h1 { margin: 0; font-size: 56px; }
+.photo-empty p { margin: 0; font-size: 28px; }
+.photo-empty img { width: min(40vh, 360px); background: #fff; padding: 10px; border-radius: 16px; margin: 12px 0; }
+
+/* The party's music card (Phase 45): big in the Music screen, small in the corner elsewhere. YouTube needs 200x200 px or more, always visible. */
+#music-dock { position: fixed; z-index: 60; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: #111; color: #fff; box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4); transition: opacity 200ms; }
+#music-dock.paused .md-video { filter: grayscale(0.6) brightness(0.7); }
+#music-dock .md-video { flex: 1; min-height: 0; position: relative; background: #000; }
+#music-dock .md-slot, #music-dock iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+#music-dock .md-title { padding: 5px 10px; font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #1d2433; }
+#music-dock.full .md-title { font-size: 22px; padding: 10px 16px; }
+#music-dock .md-unlock { position: absolute; inset: 0; border: 0; background: rgba(10, 20, 40, 0.88); color: #fff; font: 900 20px 'Nunito', system-ui, sans-serif; cursor: pointer; z-index: 2; }
+#music-dock.full .md-unlock { font-size: 34px; }
+.fake-yt { position: absolute; inset: 0; display: grid; place-items: center; color: #8f8; font: 700 22px monospace; background: #012; }
+
+/* The Music screen on the TV (Phase 45) */
+.channel.music { position: absolute; inset: 0; display: grid; grid-template-columns: 58% 1fr; gap: 32px; padding: 48px; }
+.mu-stage { display: grid; place-items: center; }
+.mu-player { width: 100%; aspect-ratio: 16 / 10; max-height: 70vh; border-radius: 18px; }
+.mu-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow: hidden; }
+.mu-label { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.65; }
+.mu-now h2 { margin: 2px 0 6px; font-size: 38px; line-height: 1.15; }
+.mu-by { margin: 0 0 8px; font-size: 22px; font-weight: 700; }
+.mu-by span, .mu-who { display: inline-block; padding: 2px 12px; border-radius: 14px; color: #fff; font-weight: 900; font-size: 18px; white-space: nowrap; }
+.mu-queue { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.mu-queue li { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.1); border: 3px solid transparent; font-size: 22px; font-weight: 800; }
+.mu-queue li.focused { border-color: #fff; background: rgba(255, 255, 255, 0.2); }
+.mu-queue img { width: 64px; height: 36px; object-fit: cover; border-radius: 6px; background: #000; flex: none; }
+.mu-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mu-votes { font-size: 18px; }
+.mu-none { opacity: 0.6; }
+.mu-join { display: flex; align-items: center; gap: 14px; margin-top: auto; font-size: 20px; font-weight: 700; }
+.mu-join img { width: 96px; background: #fff; padding: 5px; border-radius: 10px; }
+.mu-help { margin: 0; font-size: 18px; font-weight: 700; opacity: 0.7; }
+
+/* Slides on the TV (Phase 46) */
+#slides { position: fixed; inset: 0; z-index: 70; background: #000; color: #fff; }
+.sl-layer { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; transition: opacity 150ms linear; }
+.sl-layer.on { opacity: 1; }
+.sl-img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+canvas.sl-img { width: 100%; height: 100%; object-fit: contain; }
+.sl-black { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 120ms; }
+.sl-black.on { opacity: 1; }
+.sl-tag { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 8px 20px; border-radius: 18px; background: rgba(0, 0, 0, 0.7); font-size: 24px; font-weight: 800; }
+.sl-laser { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.sl-laser::after { content: ''; position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%; background: radial-gradient(#ff2a2a 0 35%, rgba(255, 42, 42, 0.5) 55%, transparent 72%); box-shadow: 0 0 22px 8px rgba(255, 30, 30, 0.6); }
+@media (prefers-reduced-motion: reduce) { .sl-layer { transition: none; } }
+.deck-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; padding: 16px 48px 48px; }
+.deck-tile { border-radius: 14px; overflow: hidden; background: #0003; border: 4px solid transparent; transition: transform 160ms var(--ease-out); }
+.deck-tile.focused { border-color: #fff; transform: scale(1.04); }
+.deck-tile .thumb { aspect-ratio: 16 / 10; background: #111; display: grid; place-items: center; }
+.deck-tile img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.deck-tile b { display: block; padding: 8px 12px 0; font-size: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deck-tile span { display: block; padding: 0 12px 10px; font-size: 15px; opacity: 0.7; }
+.channel.present.drop { outline: 6px dashed #fff; outline-offset: -12px; }

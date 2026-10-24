@@ -8,6 +8,13 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { Server } from 'socket.io';
 import QRCode from 'qrcode';
+import { createParty } from './server/party.js';
+import { createActivity } from './server/activity.js';
+import { createPhotos } from './server/photos.js';
+import { createMusic } from './server/music.js';
+import { createPresent } from './server/present.js';
+import { randomBytes } from 'node:crypto';
+import { upsertPerson, colorOf, freeSlot, roster, canAddGuest, cleanName } from './server/people.js';
 import {
   MAX_PLAYERS, colorFor, ROOM_LETTERS, ROOM_CODE_LENGTH,
   RECONNECT_GRACE_MS, EV, INPUT_EVENTS,
@@ -50,11 +57,43 @@ if (httpsServer) io.attach(httpsServer); // same rooms on both
 app.use(express.static(fileURLToPath(new URL('./public', import.meta.url)), {
   setHeaders: (res, path) => res.set('Cache-Control', /[\\/]assets[\\/]/.test(path) ? 'public, max-age=86400' : 'no-cache'),
 }));
+// Which Poly Haven files (CC0 skies and textures, see docs/kart-art-options.md) are on disk, so the
+// kart game can use them when they are there (and not ask for files that don't exist)
+app.get('/api/polyhaven', (req, res) => {
+  const base = fileURLToPath(new URL('./public/assets/polyhaven', import.meta.url));
+  const ls = (dir) => { try { return readdirSync(`${base}/${dir}`); } catch { return []; } };
+  // textures/<group>/textures/<name>_diff_1k.jpg (+ _nor_gl_1k.jpg, _arm_1k.jpg): one entry per material found
+  const textures = {};
+  for (const group of ls('textures')) {
+    const files = ls(`textures/${group}/textures`);
+    for (const f of files.filter((x) => x.endsWith('_diff_1k.jpg'))) {
+      const name = f.replace('_diff_1k.jpg', ''), url = (suffix) => (files.includes(`${name}_${suffix}_1k.jpg`) ? `/assets/polyhaven/textures/${group}/textures/${name}_${suffix}_1k.jpg` : null);
+      (textures[group] ||= []).push({ name, diff: url('diff'), nor: url('nor_gl'), arm: url('arm') });
+    }
+  }
+  res.json({ hdri: ls('hdri').filter((f) => f.endsWith('.hdr')).map((f) => f.replace(/\.hdr$/, '')), textures });
+});
 // Three.js (3D games) is served from node_modules, so it works without internet.
 app.get('/vendor/three.module.js', (req, res) =>
   res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));
+// pdf.js (PDF slides in the browser) with its fonts and character maps
+app.use('/vendor/pdfjs-dist', express.static(file('./node_modules/pdfjs-dist')));
 // Three.js add-ons (model loader etc.), imported as "three/addons/..."
 app.use('/vendor/three-addons', express.static(file('./node_modules/three/examples/jsm')));
+
+// Which isometric icons exist (public/assets/icons/<id>.png, made by scripts/render-icons.mjs)
+app.get('/api/icons', (req, res) => {
+  try { res.json(readdirSync(fileURLToPath(new URL('./public/assets/icons', import.meta.url))).filter((f) => f.endsWith('.png')).map((f) => f.replace(/\.png$/, ''))); } catch { res.json([]); }
+});
+// Libraries for the visual upgrade (Phase 55): effects, tweening, 2D engine, sound, animations.
+// Imported by name through the importmap in console.html / remote.html.
+app.use('/vendor/postprocessing', express.static(file('./node_modules/postprocessing/build')));
+app.use('/vendor/three.quarks', express.static(file('./node_modules/three.quarks/dist')));
+app.use('/vendor/gsap', express.static(file('./node_modules/gsap')));
+app.use('/vendor/pixi.js', express.static(file('./node_modules/pixi.js/dist')));
+app.use('/vendor/pixi-filters', express.static(file('./node_modules/pixi-filters/dist')));
+app.use('/vendor/howler', express.static(file('./node_modules/howler/dist')));
+app.use('/vendor/lottie-web', express.static(file('./node_modules/lottie-web/build/player')));
 
 // ---------- Games and channels on the menu (Phase 21e) ----------
 // Any games/<name>.js or channels/<name>.js with a <name>.game.json next to it is on the menu.
@@ -147,6 +186,13 @@ app.get('/ping', (req, res) => res.set('Cache-Control', 'no-store').send('pong')
 // A slot with socketId = null is "reserved": the phone left and has 30 s to come back.
 const rooms = new Map();
 
+// Party data (events, photos...) lives in data/ (git-ignored); DATA_DIR changes where (tests use a temp folder)
+const party = createParty({ app, rooms, dataDir: process.env.DATA_DIR || file('./data') });
+const activity = createActivity({ io, rooms, party });
+const photos = createPhotos({ app, io, rooms, party, activity });
+const music = createMusic({ app, io, rooms, party, activity });
+const present = createPresent({ app, io, rooms, party, activity });
+
 function newRoomCode() {
   let code;
   do {
@@ -159,6 +205,13 @@ function newRoomCode() {
 }
 
 const remotesChannel = (code) => `remotes:${code}`;
+
+// Tell the TV and every phone who is here (names, roles, who is online)
+function broadcastRoster(room, code) {
+  const r = roster(room);
+  io.to(room.consoleId).emit(EV.PARTY_ROSTER, r);
+  io.to(remotesChannel(code)).emit(EV.PARTY_ROSTER, r);
+}
 
 function deleteRoom(code) {
   const room = rooms.get(code);
@@ -198,9 +251,9 @@ io.on('connection', (socket) => {
   socket.on(EV.CONSOLE_CREATE, (ack) => {
     if (socket.data.role === 'console') deleteRoom(socket.data.room);
     const code = newRoomCode();
-    rooms.set(code, { consoleId: socket.id, slots: new Map() });
+    rooms.set(code, { consoleId: socket.id, slots: new Map(), layout: { mode: 'pointer' }, people: new Map(), nextPersonId: 0, hostToken: randomBytes(16).toString('hex') });
     socket.data = { role: 'console', room: code };
-    if (typeof ack === 'function') ack({ room: code });
+    if (typeof ack === 'function') ack({ room: code, hostToken: rooms.get(code).hostToken, event: party.events.current() });
     console.log(`Room ${code} created`);
   });
 
@@ -214,12 +267,18 @@ io.on('connection', (socket) => {
   // Settings for all phones: { rangeX, rangeY }
   socket.on(EV.FEEDBACK_SETTINGS, (payload) => {
     if (socket.data.role !== 'console') return;
+    // (the room remembers the theme so a phone that joins later gets it with its join answer)
+    const room = rooms.get(socket.data.room);
+    if (room && (payload?.theme === 'light' || payload?.theme === 'dark')) room.theme = payload.theme;
     io.to(remotesChannel(socket.data.room)).emit(EV.FEEDBACK_SETTINGS, payload);
   });
 
-  // Controller layout for all phones: { mode: 'pointer' | 'wheel' }
+  // Controller layout for all phones: { mode: 'pointer' | 'wheel' | 'keyboard', prompt? }
+  // The room remembers it, so a phone that joins (or comes back) later gets it with its join answer.
   socket.on(EV.FEEDBACK_MODE, (payload) => {
     if (socket.data.role !== 'console') return;
+    const room = rooms.get(socket.data.room);
+    if (room) room.layout = { mode: payload?.mode, prompt: payload?.prompt };
     io.to(remotesChannel(socket.data.room)).emit(EV.FEEDBACK_MODE, payload);
   });
 
@@ -231,37 +290,98 @@ io.on('connection', (socket) => {
     const room = rooms.get(code);
     if (!room) return ack({ ok: false, error: 'NO_ROOM' });
 
+    // Who is this phone? (A phone without a stored id counts as new each time.)
+    const key = clientId || `anon:${socket.id}`;
+    if (!room.people.has(key) && !canAddGuest(room)) return ack({ ok: false, error: 'FULL' });
+    const isNew = !room.people.has(key);
+    const person = upsertPerson(room, key, { name: payload?.name, emoji: payload?.emoji, avatar: payload?.avatar });
+    if (isNew && payload?.name) activity.add(code, person, 'join');
+    // Joining as a player (the default, so older phone pages keep working) or as a guest
+    const wantPlayer = payload?.role !== 'guest';
     // Same phone coming back (refresh / reconnect)? Give it its old slot.
-    let playerId = [...room.slots].find(([, s]) => clientId && s.clientId === clientId)?.[0];
-    // Otherwise take the lowest free slot.
-    if (!playerId) {
-      for (let id = 1; id <= MAX_PLAYERS; id++) {
-        if (!room.slots.has(id)) { playerId = id; break; }
-      }
+    let playerId = [...room.slots].find(([, s]) => clientId && s.clientId === clientId)?.[0] || 0;
+    if (!playerId && wantPlayer) playerId = freeSlot(room); // otherwise the lowest free slot
+    const full = wantPlayer && !playerId; // asked to play, but all 4 slots are taken: join as a guest
+
+    // Same phone, another tab already joined? The newest tab takes over: tell the old one and drop it quietly.
+    if (person.socketId && person.socketId !== socket.id) {
+      const older = io.sockets.sockets.get(person.socketId);
+      if (older) { older.data = {}; older.emit(EV.REMOTE_REPLACED); older.leave(remotesChannel(code)); }
     }
-    if (!playerId) return ack({ ok: false, error: 'FULL' });
 
-    const old = room.slots.get(playerId);
-    if (old) clearTimeout(old.leaveTimer);
-    room.slots.set(playerId, { clientId, socketId: socket.id, leaveTimer: null });
+    if (playerId) {
+      const old = room.slots.get(playerId);
+      if (old) clearTimeout(old.leaveTimer);
+      room.slots.set(playerId, { clientId, socketId: socket.id, leaveTimer: null });
+    }
+    person.playerId = playerId || null;
+    person.socketId = socket.id;
+    person.online = true;
 
-    socket.data = { role: 'remote', room: code, playerId };
+    socket.data = { role: 'remote', room: code, playerId: playerId || null, personKey: key };
     socket.join(remotesChannel(code));
-    const color = colorFor(playerId);
-    io.to(room.consoleId).emit(EV.PLAYER_JOINED, { playerId, color });
-    ack({ ok: true, playerId, color });
-    console.log(`Room ${code}: P${playerId} joined`);
+    const color = colorOf(person);
+    if (playerId) io.to(room.consoleId).emit(EV.PLAYER_JOINED, { playerId, color });
+    ack({ ok: true, role: playerId ? 'player' : 'guest', playerId: playerId || null, color, layout: room.layout, theme: room.theme,
+      person: { id: person.id, name: person.name, emoji: person.emoji, avatar: person.avatar }, full, ...roster(room) });
+    broadcastRoster(room, code);
+    console.log(`Room ${code}: ${playerId ? `P${playerId}` : `guest ${person.name}`} joined`);
+  });
+
+  // The TV says a player won a game: the feed tells everyone
+  socket.on(EV.ACTIVITY_GAME, (payload) => {
+    if (socket.data.role !== 'console') return;
+    const room = rooms.get(socket.data.room);
+    const person = [...(room?.people.values() || [])].find((p) => p.playerId === Number(payload?.playerId));
+    if (room && person && payload?.what === 'won') activity.add(socket.data.room, person, 'won', { game: String(payload.game || '').slice(0, 40) });
+  });
+
+  // A phone changes role (take a free player slot / give it back) or its name and emoji
+  socket.on(EV.REMOTE_ROLE, (payload, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const room = rooms.get(socket.data.room), person = room?.people.get(socket.data.personKey);
+    if (socket.data.role !== 'remote' || !person) return reply({ ok: false, error: 'NOT_JOINED' });
+    if (payload?.to === 'player') {
+      if (person.playerId) return reply({ ok: true, role: 'player', playerId: person.playerId, color: colorOf(person) });
+      const id = freeSlot(room);
+      if (!id) return reply({ ok: false, error: 'FULL' });
+      room.slots.set(id, { clientId: person.key.startsWith('anon:') ? '' : person.key, socketId: socket.id, leaveTimer: null });
+      person.playerId = id;
+      socket.data.playerId = id;
+      io.to(room.consoleId).emit(EV.PLAYER_JOINED, { playerId: id, color: colorFor(id) });
+      reply({ ok: true, role: 'player', playerId: id, color: colorFor(id) });
+    } else if (payload?.to === 'guest') {
+      const id = person.playerId;
+      if (id) {
+        clearTimeout(room.slots.get(id)?.leaveTimer);
+        room.slots.delete(id);
+        person.playerId = null;
+        socket.data.playerId = null;
+        io.to(room.consoleId).emit(EV.PLAYER_LEFT, { playerId: id });
+      }
+      reply({ ok: true, role: 'guest', playerId: null, color: colorOf(person) });
+    } else return reply({ ok: false, error: 'BAD_ROLE' });
+    broadcastRoster(room, socket.data.room);
+  });
+  socket.on(EV.REMOTE_PROFILE, (payload, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const room = rooms.get(socket.data.room), person = room?.people.get(socket.data.personKey);
+    if (socket.data.role !== 'remote' || !person) return reply({ ok: false });
+    upsertPerson(room, person.key, { name: payload?.name, emoji: payload?.emoji, avatar: payload?.avatar });
+    broadcastRoster(room, socket.data.room);
+    reply({ ok: true, name: person.name, emoji: person.emoji, avatar: person.avatar });
   });
 
   // Relay every input event to the console, stamped with the sender's playerId.
   for (const event of INPUT_EVENTS) {
     socket.on(event, (payload) => {
-      if (socket.data.role !== 'remote') return;
+      if (socket.data.role !== 'remote' || !socket.data.playerId) return; // (guests have no controller)
       const room = rooms.get(socket.data.room);
       if (!room) return;
       const data = { ...(payload && typeof payload === 'object' ? payload : {}), playerId: socket.data.playerId };
-      // Pointer/wheel/motion updates are frequent; it's fine to drop one if the network is busy.
-      const frequent = event === EV.INPUT_POINTER || event === EV.INPUT_WHEEL || event === EV.INPUT_MOTION;
+      // Pointer/motion updates are frequent; it's fine to drop one if the network is busy.
+      // (Steering is not dropped: the last value, e.g. "straight again" after LEFT, must arrive.)
+      const frequent = event === EV.INPUT_POINTER || event === EV.INPUT_MOTION;
       const target = frequent ? io.volatile : io;
       target.to(room.consoleId).emit(event, data);
     });
@@ -269,7 +389,7 @@ io.on('connection', (socket) => {
 
   // --- Disconnects ---
   socket.on('disconnect', () => {
-    const { role, room: code, playerId } = socket.data;
+    const { role, room: code, playerId, personKey } = socket.data;
     if (role === 'console') {
       deleteRoom(code);
       console.log(`Room ${code} closed`);
@@ -277,6 +397,10 @@ io.on('connection', (socket) => {
     }
     if (role !== 'remote') return;
     const room = rooms.get(code);
+    const person = room?.people.get(personKey);
+    // A guest who closes the page just goes offline (their name and uploads stay)
+    if (person && person.socketId === socket.id) { person.online = false; broadcastRoster(room, code); }
+    if (!playerId) return;
     const slot = room?.slots.get(playerId);
     // Ignore if this socket was already replaced by a newer one (phone refreshed).
     if (!slot || slot.socketId !== socket.id) return;
@@ -284,7 +408,11 @@ io.on('connection', (socket) => {
     io.to(room.consoleId).emit(EV.PLAYER_LEFT, { playerId });
     console.log(`Room ${code}: P${playerId} left (slot kept for ${RECONNECT_GRACE_MS / 1000} s)`);
     slot.leaveTimer = setTimeout(() => {
-      if (room.slots.get(playerId) === slot) room.slots.delete(playerId);
+      if (room.slots.get(playerId) === slot) {
+        room.slots.delete(playerId);
+        if (person && person.playerId === playerId) person.playerId = null; // the slot is free again
+        broadcastRoster(room, code);
+      }
     }, RECONNECT_GRACE_MS);
   });
 });

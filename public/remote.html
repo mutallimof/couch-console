@@ -8,13 +8,15 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232F80ED'/%3E%3Ccircle cx='32' cy='32' r='12' fill='white'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/remote.css">
 </head>
 <body>
   <header class="top">
     <div id="badge" class="badge">–</div>
     <div class="conn"><span id="dot" class="dot"></span><span id="conn-text">Connecting…</span></div>
+    <button id="me-btn" class="me-btn" type="button" aria-label="Me" hidden><span id="me-emoji">🙂</span><span id="me-name"></span></button>
     <button id="recenter" class="recenter" type="button">Recenter</button>
   </header>
 
@@ -45,7 +47,7 @@
     <button class="btn round b" data-button="B">B</button>
   </main>
 
-  <!-- Kart pad (Turbo Karts): hold the phone sideways. Left thumb steers on the strip,
+  <!-- Kart pad (Turbo Karts): hold the phone sideways. Left thumb: LEFT / RIGHT buttons,
        right thumb slides between the four buttons. "Tilt" switches to tilt steering. -->
   <main id="kart-pad" class="kart-pad" hidden>
     <div class="kp-bar">
@@ -56,12 +58,13 @@
       <button id="kp-tilt" class="kp-switch" type="button" aria-pressed="false">Tilt steering</button>
       <button id="kp-autogas" class="kp-switch" type="button" aria-pressed="false">Auto-gas</button>
       <button id="kp-recenter" class="kp-switch" type="button" hidden>Recenter</button>
+      <button id="kp-flip" class="kp-switch kp-flip" type="button">Flip ↻</button>
     </div>
     <div class="kp-main">
-      <div id="kp-strip" class="kp-strip">
-        <div class="kp-dead"></div>
-        <div id="kp-thumb" class="kp-thumb"></div>
-        <span id="kp-strip-hint" class="kp-strip-hint">◀ slide to steer ▶</span>
+      <div id="kp-steer" class="kp-steer">
+        <div class="kp-btn steer" data-steer="-1" aria-label="Left"><span>◀</span>LEFT</div>
+        <div class="kp-btn steer" data-steer="1" aria-label="Right"><span>▶</span>RIGHT</div>
+        <span class="kp-tilt-hint">Tilt the phone to steer</span>
       </div>
       <div id="kp-buttons" class="kp-buttons">
         <div class="kp-btn item" data-kart="UP">ITEM</div>
@@ -70,7 +73,6 @@
         <div class="kp-btn gas" data-kart="A">GAS</div>
       </div>
     </div>
-    <div class="kp-rotate"><b>Turn your phone sideways</b><span>Left thumb steers, right thumb drives</span></div>
   </main>
 
   <!-- Keyboard layout: type text for the console (e.g. a YouTube search) -->
@@ -98,6 +100,48 @@
 
   <!-- Shown when motion is unavailable or permission was denied -->
   <p id="motion-msg" class="motion-msg" hidden><span id="motion-text"></span><br><b>Tap to close</b></p>
+
+  <!-- Party (Phase 43): welcome card, the tabs, the sheet with "me" -->
+  <form id="welcome" class="panel welcome" hidden>
+    <h1 class="w-title">Join the party</h1>
+    <label for="w-name" class="muted">What's your name?</label>
+    <input id="w-name" class="room-input w-name" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name">
+    <div id="w-avatar"></div>
+    <div id="w-emoji" class="emoji-row" role="group" aria-label="Pick an emoji" hidden></div>
+    <button id="w-play" class="join-btn" type="submit" value="player">🎮 Play</button>
+    <button id="w-guest" class="join-btn ghost" type="submit" value="guest">👀 Just join (photos, music, slides)</button>
+    <p id="w-note" class="muted w-note"></p>
+  </form>
+
+  <section id="panes" class="panes" hidden>
+    <div id="pane-photos" class="pane" hidden></div>
+    <div id="pane-music" class="pane" hidden></div>
+    <div id="pane-present" class="pane" hidden></div>
+    <div id="pane-activity" class="pane" hidden></div>
+  </section>
+  <nav id="tabs" class="tabs" hidden aria-label="Sections"></nav>
+
+  <div id="sheet" class="sheet" hidden>
+    <div class="sheet-card">
+      <h2 class="sheet-title">Me</h2>
+      <input id="s-name" class="room-input w-name" maxlength="20" autocomplete="off" placeholder="Your name">
+      <div id="s-avatar"></div>
+      <div id="s-emoji" class="emoji-row" hidden></div>
+      <button id="s-save" class="join-btn" type="button">Save</button>
+      <button id="s-role" class="join-btn ghost" type="button"></button>
+      <button id="s-invite" class="join-btn ghost" type="button">📲 Invite someone (show QR)</button>
+      <img id="s-qr" class="s-qr" alt="" hidden>
+      <button id="s-close" class="join-btn ghost" type="button">Close</button>
+    </div>
+  </div>
+
+  <div id="replaced" class="sheet" hidden>
+    <div class="sheet-card">
+      <h2 class="sheet-title">Opened in another tab</h2>
+      <p class="muted">This phone joined from a newer tab, so this one stepped aside. Nothing was lost.</p>
+      <button id="replaced-btn" class="join-btn" type="button">Use this tab</button>
+    </div>
+  </div>
 
   <pre id="debug" class="debug" hidden></pre>
 

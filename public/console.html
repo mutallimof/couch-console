@@ -7,24 +7,31 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232F80ED'/%3E%3Ccircle cx='32' cy='32' r='12' fill='white'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/console.css">
+  <link rel="stylesheet" href="/css/home.css">
 </head>
 <body>
-  <!-- Home menu -->
-  <main class="menu">
-    <div id="tiles" class="tiles"></div>
-    <footer class="bar">
-      <span id="clock" class="clock"></span>
-      <span id="date" class="date"></span>
+  <!-- Home menu (Phase 55): a top bar and ONE grid of big tiles; a folder opens as its own screen -->
+  <main class="menu theme-bg">
+    <header class="status glass">
+      <div class="when"><b id="clock" class="clock"></b><span id="date" class="date"></span></div>
       <span id="sound-hint" class="sound-hint">Click this page once to turn on sound</span>
-      <span id="bar-players" class="bar-players"></span>
-      <!-- Small QR so another phone can join while you're in the menu -->
-      <span id="mini-join" class="mini-join" hidden>
-        <img class="qr-img" alt="QR code to join">
-        <span>Scan to join<br><b id="mini-room"></b></span>
+      <span class="status-right">
+        <span id="bar-players" class="bar-players"></span>
+        <!-- Small QR so another phone can join while you're in the menu -->
+        <span id="mini-join" class="mini-join" hidden>
+          <img class="qr-img" alt="QR code to join">
+          <span>Scan to join<br><b id="mini-room"></b></span>
+        </span>
       </span>
-    </footer>
+    </header>
+    <section class="home">
+      <h2 id="crumb" class="crumb" hidden></h2>
+      <div id="tiles" class="tiles"></div>
+      <p class="panel-hint"><span><kbd>A</kbd> Open</span><span class="back-hint"><kbd>B</kbd> Back</span></p>
+    </section>
   </main>
 
   <!-- An open app (game or settings) zooms out of its tile into this layer -->
@@ -49,7 +56,7 @@
   </div>
 
   <!-- Pairing: shown when no phone is connected, or from Settings -> Show QR code -->
-  <section id="pairing" class="pairing">
+  <section id="pairing" class="pairing theme-bg">
     <h1 class="title">Couch Console</h1>
 
     <div class="pair-card">
@@ -69,10 +76,14 @@
     </div>
 
     <div id="slots" class="slots"></div>
+    <p id="guest-list" class="guest-list" hidden></p>
     <button id="use-mouse" class="use-mouse" type="button">No phone? Use mouse &amp; keyboard</button>
     <p id="pairing-close" class="pairing-close" hidden>Press A or B to close</p>
     <p id="status" class="status"></p>
   </section>
+
+  <!-- "Ana joined" notes -->
+  <div id="toasts" class="toasts" aria-live="polite"></div>
 
   <!-- One cursor per player is drawn here, above everything -->
   <div id="cursors" class="cursors"></div>
@@ -80,9 +91,11 @@
   <pre id="debug" class="debug" hidden></pre>
 
   <!-- 3D games import "three"; our server serves it from node_modules -->
-  <script type="importmap">{ "imports": { "three": "/vendor/three.module.js", "three/addons/": "/vendor/three-addons/" } }</script>
+  <script type="importmap">{ "imports": { "three": "/vendor/three.module.js", "three/addons/": "/vendor/three-addons/", "postprocessing": "/vendor/postprocessing/index.js", "three.quarks": "/vendor/three.quarks/three.quarks.esm.js", "gsap": "/vendor/gsap/index.js", "pixi.js": "/vendor/pixi.js/pixi.min.mjs", "pixi-filters": "/vendor/pixi-filters/pixi-filters.mjs" } }</script>
   <!-- socket.io client is served by the Node server -->
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/vendor/howler/howler.min.js"></script>
+  <script src="/vendor/lottie-web/lottie.min.js"></script>
   <script type="module" src="/js/console/main.js"></script>
 </body>
 </html>
