@@ -51,6 +51,7 @@ export const EV = {
   // Party (Phase 43). Everything below is an addition: phones that don't know it still work.
   PARTY_ROSTER: 'party:roster',     // server -> console + phones: { people: [{ id, name, emoji, color, role, playerId, online }] }
   REMOTE_ROLE: 'remote:role',       // phone -> server, with ack: { to: 'player' | 'guest' } -> { ok, role, playerId?, color?, error? }
+  PARTY_PHOTO: 'party:photo',       // server -> TV (always) and phones (visible photos): { kind: 'added' | 'removed' | 'hidden' | 'shown', photo }
   REMOTE_PROFILE: 'remote:profile', // phone -> server, with ack: { name, emoji } -> { ok }
 };
 

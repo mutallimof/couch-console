@@ -16,8 +16,17 @@ function toast(text) {
   setTimeout(() => el.remove(), 3200);
 }
 
+// Photo notices (new photo, removed...) go to whoever is listening; if the Photos app is not open, a toast
+const photoListeners = new Set();
+
 export const party = {
   toast,
+  photosOpen: false,
+  onPhoto(fn) { photoListeners.add(fn); return () => photoListeners.delete(fn); },
+  emitPhoto(e) {
+    photoListeners.forEach((fn) => fn(e));
+    if (e.kind === 'added' && !party.photosOpen) toast(`📸 New photo from ${e.photo.byName}`);
+  },
   get roster() { return roster; },
   get people() { return roster.people; },
   get event() { return event; },

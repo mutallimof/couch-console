@@ -9,6 +9,7 @@ import express from 'express';
 import { Server } from 'socket.io';
 import QRCode from 'qrcode';
 import { createParty } from './server/party.js';
+import { createPhotos } from './server/photos.js';
 import { randomBytes } from 'node:crypto';
 import { upsertPerson, colorOf, freeSlot, roster, canAddGuest, cleanName } from './server/people.js';
 import {
@@ -162,6 +163,7 @@ const rooms = new Map();
 
 // Party data (events, photos...) lives in data/ (git-ignored); DATA_DIR changes where (tests use a temp folder)
 const party = createParty({ app, rooms, dataDir: process.env.DATA_DIR || file('./data') });
+const photos = createPhotos({ app, io, rooms, party });
 
 function newRoomCode() {
   let code;

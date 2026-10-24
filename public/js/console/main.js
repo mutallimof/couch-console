@@ -124,6 +124,7 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
   }
 });
 socket.on(EV.PARTY_ROSTER, (r) => { party.onRoster(r); renderGuests(); });
+socket.on(EV.PARTY_PHOTO, (e) => party.emitPhoto(e));
 socket.on(EV.PLAYER_LEFT, ({ playerId }) => {
   players.leave(playerId);
   sound.play('leave');
