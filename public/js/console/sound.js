@@ -1,6 +1,26 @@
-// Tiny synth sounds made with the Web Audio API (no audio files).
+// Game sounds: Kenney's CC0 sound packs through howler (see sound-map.js), with the little synth
+// sounds below as the fallback (no howler, a missing file, or a sound the map doesn't have).
 // Browsers only allow sound after the user clicks the page once, so the console
 // calls sound.unlock() on the first click or key press.
+import { KENNEY, HOVER_RATES } from './sound-map.js';
+
+const howls = new Map(); // name -> Howl (null: its file would not load)
+function getHowl(name) {
+  const spec = KENNEY[name];
+  if (!spec || typeof Howl === 'undefined') return null; // (Howl: the global from /vendor/howler)
+  if (!howls.has(name)) {
+    const h = new Howl({ src: [`/assets/sounds/kenney/${spec.file.split('/').map(encodeURIComponent).join('/')}`], volume: spec.vol, preload: true, onloaderror: () => { howls.set(name, null); } });
+    howls.set(name, h);
+  }
+  return howls.get(name);
+}
+function kenney(name, opts) {
+  const h = getHowl(name);
+  if (!h || h.state() !== 'loaded') return false; // missing, or still loading the first time: the synth sound covers it
+  h.rate(name === 'hover' ? HOVER_RATES[(opts?.step ?? 0) % HOVER_RATES.length] : KENNEY[name].rate ?? 1);
+  h.play();
+  return true;
+}
 
 let ctx = null;
 let muted = false;
@@ -93,7 +113,7 @@ const SOUNDS = {
 export const sound = {
   play(name, opts) {
     if (muted || !ctx || ctx.state !== 'running') return;
-    SOUNDS[name]?.(opts);
+    if (!kenney(name, opts)) SOUNDS[name]?.(opts);
   },
   // A continuous tone, e.g. an engine hum. Returns { set(freq, volume), stop() }.
   loop(type = 'sawtooth') {
@@ -121,11 +141,13 @@ export const sound = {
   // Call from a real click/key press on the laptop.
   unlock() {
     audio().resume();
+    if (typeof Howler !== 'undefined') { Howler.mute(muted); for (const name of Object.keys(KENNEY)) getHowl(name); } // (load them all now)
   },
   get unlocked() { return ctx?.state === 'running'; },
   get muted() { return muted; },
   setMuted(value) {
     muted = value;
+    if (typeof Howler !== 'undefined') Howler.mute(value);
     try { localStorage.setItem('couch.muted', value ? '1' : '0'); } catch { /* ignore */ }
   },
 };
