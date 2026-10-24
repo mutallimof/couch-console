@@ -8,15 +8,17 @@
   --player: #b8c0cc;
 }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
 /* No scrolling, zooming, rubber-banding or long-press menus on the phone. */
 html, body {
   margin: 0;
   height: 100%;
+  height: 100dvh; /* the visible height, not the height behind a browser toolbar */
   overflow: hidden;
   overscroll-behavior: none;
-  touch-action: none;
+  touch-action: none; /* (and `manipulation` on buttons: no double-tap zoom, still fast) */
+  -webkit-text-size-adjust: 100%;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;

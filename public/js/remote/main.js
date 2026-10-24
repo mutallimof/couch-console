@@ -4,6 +4,7 @@ import { createMotion } from './motion.js';
 import { createSwing } from './swing.js';
 import { createWheel } from './wheel.js';
 import { createKartPad } from './kart-pad.js';
+import './no-zoom.js';
 
 const $ = (id) => document.getElementById(id);
 const socket = io(); // global from /socket.io/socket.io.js

@@ -70,3 +70,12 @@ test('only the console can change the layout', { timeout: 10000 }, async () => {
   await new Promise((r) => setTimeout(r, 100));
   assert.equal((await ask(other, EV.REMOTE_JOIN, { room, clientId: 'e' })).layout?.mode, 'pointer');
 });
+
+// The phone page must keep its zoom guards (iPhone Safari ignores the viewport tag)
+import { readFileSync } from 'node:fs';
+test('the phone page loads the no-zoom guards', () => {
+  const main = readFileSync(new URL('../public/js/remote/main.js', import.meta.url), 'utf8');
+  const guard = readFileSync(new URL('../public/js/remote/no-zoom.js', import.meta.url), 'utf8');
+  assert.match(main, /import '\.\/no-zoom\.js'/);
+  for (const part of ['gesturestart', 'touchend', 'visualViewport']) assert.ok(guard.includes(part), `no-zoom.js handles ${part}`);
+});

@@ -56,3 +56,8 @@ not to stop for questions). Each entry says what was decided and why. Newest at 
 - **Rewiring:** OpenWii games read the phone itself (gyro, motion). Ours get pointer positions and buttons from the console, so: Juicy Slash uses each player's pointer as a blade (up to 4); Alien Strike steers by where you point (or D-pad ◀ ▶ held), because the original needed the phone held flat like a tray, which doesn't fit our standard remote. Phone buzzing on slices/hits goes through our `rumble`.
 - **Rules:** Juicy Slash uses real rules (3 missed fruit or a bomb end the run); OpenWii's default was an endless practice mode while they tuned it. Best score is saved in the browser.
 - **Testing note:** the browser test uses a slow software renderer, so fruit piled up in the screenshot; on a real GPU it flows normally.
+
+## Phase 33: Phone zoom bug
+- **Cause:** the phone page's viewport tag forbids zooming, but iPhone Safari ignores that tag, so a double tap zoomed the page in and it stayed zoomed (the LEFT button then sat off screen).
+- **Fix:** `remote/no-zoom.js` stops pinch gestures, swallows a second tap within 0.4 s (except in text boxes), and, if the page is somehow zoomed anyway, snaps it back by re-applying the viewport. The page height also uses the visible height (`100dvh`), so a browser toolbar can't push the bottom buttons off screen.
+- **Cursor ("working poorly"):** the phone-side pointer code is unchanged since Phase 21 (the version that felt much better), so I did not change anything for it without a symptom. Asked the user for one (laggy / jumpy / drifting / wrong speed / only in a certain screen) plus the `?debug=1` numbers.
