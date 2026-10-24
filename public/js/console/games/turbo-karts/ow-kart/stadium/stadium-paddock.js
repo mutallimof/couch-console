@@ -5,6 +5,7 @@
 import * as THREE from "three";
 import { buildServiceCompound } from "./stadium-service.js";
 import { surfaceAt, project, trackAt } from "./track.js";
+import { drawEmblem } from "./emblem.js";
 export function buildPaddock(
   world,
   { mesh, box, standard, basic, canvasTexture },
@@ -67,42 +68,8 @@ export function buildPaddock(
     c.strokeStyle = "#d2b953";
     c.lineWidth = 12;
     c.strokeRect(20, 20, w - 40, h - 40);
-    // Stylised mushroom trophy, deliberately authored here rather than a screenshot texture.
-    c.fillStyle = "#ceb565";
-    c.beginPath();
-    c.moveTo(184, 360);
-    c.lineTo(328, 360);
-    c.lineTo(299, 572);
-    c.lineTo(276, 623);
-    c.lineTo(276, 690);
-    c.lineTo(340, 730);
-    c.lineTo(172, 730);
-    c.lineTo(236, 690);
-    c.lineTo(236, 623);
-    c.lineTo(214, 572);
-    c.closePath();
-    c.fill();
-    c.strokeStyle = "#e9d28c";
-    c.lineWidth = 20;
-    c.beginPath();
-    c.ellipse(256, 375, 156, 127, 0, 0, Math.PI * 2);
-    c.stroke();
-    c.fillStyle = "#fff2cb";
-    c.beginPath();
-    c.ellipse(256, 318, 104, 70, 0, 0, 7);
-    c.fill();
-    c.fillStyle = "#d54c38";
-    c.beginPath();
-    c.ellipse(256, 295, 101, 58, 0, Math.PI, Math.PI * 2);
-    c.fill();
-    c.fillStyle = "#fff2cb";
-    for (const x of [207, 256, 305]) {
-      c.beginPath();
-      c.arc(x, 268, 13, 0, 7);
-      c.fill();
-    }
-    c.fillStyle = "#112349";
-    for (const x of [242, 270]) c.fillRect(x, 320, 8, 21);
+    // The Couch Console emblem on the team banner.
+    drawEmblem(c, 256, 470, 330);
     c.fillStyle = "#fff4d2";
     c.textAlign = "center";
     c.font = "italic 900 46px Arial";
@@ -138,7 +105,7 @@ export function buildPaddock(
     roughness: 0.6,
   });
   // Long near-field building follows the climb. Its overhang, suites and banners
-  // occupy the right side of the frame seen in the MK8 reference.
+  // occupy the right side of the frame seen from the start grid.
   for (let s = 445; s <= 630; s += 15) {
     const p = surfaceAt(s, 36),
       g = new THREE.Group();

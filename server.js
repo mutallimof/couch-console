@@ -78,6 +78,9 @@ app.get('/vendor/three.module.js', (req, res) =>
   res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));
 // pdf.js (PDF slides in the browser) with its fonts and character maps
 app.use('/vendor/pdfjs-dist', express.static(file('./node_modules/pdfjs-dist')));
+// three.module.js imports ./three.core.js (three >= 0.18x)
+app.get('/vendor/three.core.js', (req, res) =>
+  res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.core.js', import.meta.url))));
 // Three.js add-ons (model loader etc.), imported as "three/addons/..."
 app.use('/vendor/three-addons', express.static(file('./node_modules/three/examples/jsm')));
 
@@ -89,6 +92,7 @@ app.get('/api/icons', (req, res) => {
 // Imported by name through the importmap in console.html / remote.html.
 app.use('/vendor/postprocessing', express.static(file('./node_modules/postprocessing/build')));
 app.use('/vendor/three.quarks', express.static(file('./node_modules/three.quarks/dist')));
+app.use('/vendor/quarks.core', express.static(file('./node_modules/quarks.core/dist'))); // (three.quarks 0.17 imports it)
 app.use('/vendor/gsap', express.static(file('./node_modules/gsap')));
 app.use('/vendor/pixi.js', express.static(file('./node_modules/pixi.js/dist')));
 app.use('/vendor/pixi-filters', express.static(file('./node_modules/pixi-filters/dist')));

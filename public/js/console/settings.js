@@ -14,7 +14,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 </svg>`;
 
 // prefs: { getSensitivity(), setSensitivity(n), getPhoneSounds(), setPhoneSounds(on), showQR() } from main.js
-const MAIN_ACTIONS = ['theme', 'sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'party', 'qr'];
+const MAIN_ACTIONS = ['theme', 'sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'debug', 'party', 'qr'];
 const PARTY_ACTIONS = ['rename', 'new-party', 'approve', 'limit-up', 'music-pause', 'download', 'end-party', 'back'];
 const THEME_LABELS = { light: 'Light', dark: 'Dark', auto: 'Auto' };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -49,9 +49,11 @@ export function createSettings(prefs) {
           <button class="set-btn wide" data-action="cartoon">${on(graphics.cartoon)}</button></div>
         <div class="set-row" data-row="6"><span class="set-label">Soft shadows (karts)</span>
           <button class="set-btn wide" data-action="ao">${on(graphics.ao)}</button></div>
-        <div class="set-row" data-row="7"><span class="set-label">Party</span>
+        <div class="set-row" data-row="7"><span class="set-label">Debug readout (fps, ping)</span>
+          <button class="set-btn wide" data-action="debug">${on(prefs.getDebug())}</button></div>
+        <div class="set-row" data-row="8"><span class="set-label">Party</span>
           <button class="set-btn wide" data-action="party">Open ›</button></div>
-        <div class="set-row" data-row="8"><span class="set-label">Add a phone</span>
+        <div class="set-row" data-row="9"><span class="set-label">Add a phone</span>
           <button class="set-btn wide" data-action="qr">Show QR code</button></div>
         <p class="set-hint">Theme: Light, Dark or Auto (follows this laptop); the phones follow it too. Steady cursor: turn it On if the cursor wanders or shakes. Cartoon look and soft shadows make Turbo Karts prettier; turn them Off if it runs slowly. D-pad to choose · A to press · B to go back</p>`;
   }
@@ -149,6 +151,9 @@ export function createSettings(prefs) {
       api.sound.play('select');
     } else if (action === 'cartoon' || action === 'ao') {
       graphics.set(action, !graphics[action]);
+      api.sound.play('select');
+    } else if (action === 'debug') {
+      prefs.setDebug(!prefs.getDebug());
       api.sound.play('select');
     } else if (action === 'party') {
       page = 'party'; row = 0; message = '';

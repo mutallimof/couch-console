@@ -4,6 +4,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "/vendor/three-addons/geometries/RoundedBoxGeometry.js";
 import { surfaceAt, trackAt } from "./track.js";
+import { drawEmblem } from "./emblem.js";
 /** Open working pit bays and the welcome gantry seen from the starting grid. */
 export function buildPitlane(
   world,
@@ -253,13 +254,13 @@ export function buildPitlane(
     c.strokeRect(10, 10, w - 20, h - 20);
     c.textAlign = "center";
     c.textBaseline = "middle";
-    c.font = "italic 900 169px Arial Black, Arial";
+    c.font = "italic 900 150px Arial Black, Arial";
     c.lineJoin = "round";
     c.lineWidth = 12;
     c.strokeStyle = "#647476";
-    c.strokeText("MOTOKART", w / 2, h / 2 + 9);
+    c.strokeText("TURBO KARTS", w / 2, h / 2 + 9);
     c.fillStyle = "#fffef0";
-    c.fillText("MOTOKART", w / 2, h / 2 + 9);
+    c.fillText("TURBO KARTS", w / 2, h / 2 + 9);
   });
   panel(gate, 36.7, 4.05, [0, 13.65, 1.27], title);
   panel(gate, 36.7, 4.05, [0, 13.65, -1.27], title, Math.PI);
@@ -272,29 +273,7 @@ export function buildPitlane(
     c.lineWidth = 14;
     c.strokeStyle = "#f3d34e";
     c.stroke();
-    c.fillStyle = "#f4efe0";
-    c.beginPath();
-    c.ellipse(256, 257, 80, 66, 0, 0, 7);
-    c.fill();
-    c.fillStyle = "#e73940";
-    c.beginPath();
-    c.ellipse(256, 170, 119, 91, 0, Math.PI, Math.PI * 2);
-    c.lineTo(375, 202);
-    c.quadraticCurveTo(256, 235, 137, 202);
-    c.closePath();
-    c.fill();
-    c.fillStyle = "#fff4df";
-    for (const x of [176, 256, 336]) {
-      c.beginPath();
-      c.ellipse(x, x === 256 ? 151 : 181, x === 256 ? 32 : 19, 30, 0, 0, 7);
-      c.fill();
-    }
-    c.fillStyle = "#202a42";
-    for (const x of [233, 279]) {
-      c.beginPath();
-      c.ellipse(x, 259, 8, 20, 0, 0, 7);
-      c.fill();
-    }
+    drawEmblem(c, 256, 205, 250);
     c.font = "900 67px Arial Black, Arial";
     c.textAlign = "center";
     c.lineWidth = 13;

@@ -15,7 +15,7 @@ import { loadApps } from './apps.js';
 import { applyTheme, normalizeChoice, resolveTheme, systemPrefersDark } from '../shared/theme.js';
 
 const $ = (id) => document.getElementById(id);
-const DEBUG = new URLSearchParams(location.search).has('debug');
+// (The TV's debug readout is never turned on by the link: only by F3 or Settings on the TV itself, see below.)
 // Boot animation (skip it with ?noboot=1)
 const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoot({ sound });
 // Games and channels, from their .game.json files (each loads on its own; see apps.js).
@@ -88,6 +88,8 @@ const prefs = {
     try { localStorage.setItem('couch.phoneSounds', on ? '1' : '0'); } catch { /* ignore */ }
     sendSettings();
   },
+  getDebug: () => debugOn,
+  setDebug: (on) => setDebug(on),
   showQR: () => setPairing(true),
 };
 
@@ -579,36 +581,48 @@ function unlockSound() {
 addEventListener('pointerdown', unlockSound);
 addEventListener('keydown', unlockSound);
 
-// ---------- Debug readout (?debug=1) ----------
+// ---------- Debug readout (F3 or Settings on the TV) ----------
 
-if (DEBUG) {
-  const box = $('debug');
-  box.hidden = false;
+let debugOn = false;
+try { debugOn = localStorage.getItem('couch.debugReadout') === '1'; } catch { /* ignore */ }
+const debugBox = $('debug');
+let debugTimers = [], frameCounter = 0;
+function setDebug(on) {
+  debugOn = on;
+  try { localStorage.setItem('couch.debugReadout', on ? '1' : '0'); } catch { /* ignore */ }
+  debugBox.hidden = !on;
+  debugTimers.forEach(clearInterval);
+  debugTimers = [];
+  if (!on) return;
   let pingMs = '…';
   // Round trip laptop -> server -> laptop (through the tunnel if opened via it).
   // The phone's debug view shows its own ping; total input delay ≈ both added up.
-  setInterval(async () => {
+  debugTimers.push(setInterval(async () => {
     const t0 = performance.now();
     try {
       await fetch('/ping', { cache: 'no-store' });
       pingMs = Math.round(performance.now() - t0);
     } catch { pingMs = 'err'; }
-  }, 2000);
+  }, 2000));
   // Frames per second the laptop actually draws (below ~50 = the laptop is struggling)
-  let frames = 0, fps = 0;
-  (function countFrames() { frames++; requestAnimationFrame(countFrames); })();
-  setInterval(() => {
-    fps = frames; frames = 0;
+  let last = frameCounter;
+  debugTimers.push(setInterval(() => {
+    const fps = frameCounter - last; last = frameCounter;
     const rates = players.list().map((p) => `P${p.playerId} ${msgCount.get(p.playerId) || 0} msgs/s`);
     msgCount.clear();
-    box.textContent = `latency (ping) ${pingMs} ms   screen ${fps} fps${current ? `   in ${current.app.title}` : ''}\n`
+    debugBox.textContent = `latency (ping) ${pingMs} ms   screen ${fps} fps${current ? `   in ${current.app.title}` : ''}\n`
       + `${rates.join('\n') || 'no players'}\n`
-      + `${gyro.describe().join('\n')}\nL = cursor prediction on/off (for comparing)`;
-  }, 1000);
-  // A/B test the cursor prediction ("display lead") with the L key
-  addEventListener('keydown', (e) => { if (e.key === 'l' || e.key === 'L') gyro.toggleLead(); });
-  addEventListener('keydown', (e) => { if (e.key === 'g' || e.key === 'G') prefs.setSteady(!prefs.getSteady()); }); // G = steady cursor on/off
+      + `${gyro.describe().join('\n')}\nL = cursor prediction on/off · G = steady cursor · F3 = hide this`;
+  }, 1000));
 }
+(function countFrames() { frameCounter++; requestAnimationFrame(countFrames); })();
+addEventListener('keydown', (e) => {
+  if (e.key === 'F3') { e.preventDefault(); setDebug(!debugOn); return; }
+  if (!debugOn) return;
+  if (e.key === 'l' || e.key === 'L') gyro.toggleLead(); // A/B test the cursor prediction ("display lead")
+  if (e.key === 'g' || e.key === 'G') prefs.setSteady(!prefs.getSteady()); // steady cursor on/off
+});
+setDebug(debugOn);
 
 // The connection may already be up (it starts while the games load): then 'connect' came too early to hear
 if (socket.connected) onConnect();

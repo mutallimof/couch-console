@@ -135,7 +135,7 @@ function join() {
     if (!started && role === 'player') $('start').hidden = false;
     else $('start').hidden = true;
     // Keep the room (and debug flag) in the URL so a refresh rejoins the same room.
-    history.replaceState(null, '', `?room=${room}${DEBUG ? '&debug=1' : ''}`);
+    history.replaceState(null, '', `?room=${room}`);
   });
 }
 
@@ -181,7 +181,7 @@ $('replaced-btn').addEventListener('click', () => {
 socket.on(EV.CONSOLE_DISCONNECTED, () => {
   setConnected(false, 'Not joined');
   room = '';
-  history.replaceState(null, '', location.pathname + (DEBUG ? '?debug=1' : ''));
+  history.replaceState(null, '', location.pathname);
   showJoinForm('The console closed. Scan the new QR code on the laptop.');
 });
 

@@ -382,12 +382,14 @@ function moveCamera(h, dt) {
 function render() {
   const W = root.clientWidth, H = root.clientHeight;
   if (state === 'select' || !humans.length) {
-    renderer.setClearColor(0x000000, 0);
-    renderer.setViewport(0, 0, W, H); renderer.setScissor(0, 0, W, H);
-    renderer.clear();
-    if (state === 'select' && select) renderShowrooms(W, H);
+    // The select screen never touches the big canvas (a full-window multisampled canvas cost most of the frame):
+    // each preview has its own small canvas (see renderShowrooms). Hidden here, so it isn't even composited.
+    renderer.domElement.style.visibility = 'hidden';
+    if (state === 'select' && select) renderShowrooms();
     return;
   }
+  renderer.domElement.style.visibility = '';
+  closePreviews();
   renderer.setClearColor(0x000000, 1);
   humans.forEach((h, i) => {
     const r = h.racer, vh = H / humans.length, y = H - vh * (i + 1);
@@ -402,21 +404,46 @@ function render() {
   });
 }
 
-function renderShowrooms(W, H) {
-  const box = root.getBoundingClientRect();
+// One small canvas + renderer per player preview, pixel ratio 1 (the cost follows the pixels drawn, so a
+// preview box is far cheaper than the full-window canvas). Antialiased: it is small.
+const previewGL = new Map(); // playerId -> { gl, canvas }
+function previewFor(playerId, stage) {
+  let p = previewGL.get(playerId);
+  if (p && p.canvas.parentNode !== stage) { p.gl.dispose(); p.canvas.remove(); p = null; }
+  if (!p) {
+    const gl = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    gl.setPixelRatio(1);
+    gl.toneMapping = THREE.NeutralToneMapping;
+    gl.toneMappingExposure = 1.05;
+    gl.domElement.className = 'ks-canvas';
+    stage.append(gl.domElement);
+    previewGL.set(playerId, (p = { gl, canvas: gl.domElement }));
+  }
+  return p;
+}
+function closePreviews() {
+  for (const p of previewGL.values()) { p.gl.dispose(); p.canvas.remove(); }
+  previewGL.clear();
+}
+
+let previewFrame = 0;
+function renderShowrooms() {
+  previewFrame++;
   for (const s of select.seats()) {
     if (!s.stage) continue;
     let room = showrooms.get(s.playerId);
     if (!room) showrooms.set(s.playerId, (room = createShowroom(assets)));
     room.set(s.character, s.kartDef, s.color);
-    const r = s.stage.getBoundingClientRect();
-    const x = r.left - box.left, y = H - (r.top - box.top) - r.height;
-    if (r.width < 10 || r.height < 10) continue;
-    room.camera.aspect = r.width / r.height;
+    const w = s.stage.clientWidth, h = s.stage.clientHeight;
+    if (w < 10 || h < 10) continue;
+    const { gl, canvas } = previewFor(s.playerId, s.stage);
+    const resized = canvas.width !== w || canvas.height !== h;
+    if (resized) gl.setSize(w, h, false);
+    // The previews turn slowly, so every second frame is enough (half the work); the canvas keeps the last picture
+    if (!resized && previewFrame % 2) continue;
+    room.camera.aspect = w / h;
     room.camera.updateProjectionMatrix();
-    renderer.setViewport(x, y, r.width, r.height);
-    renderer.setScissor(x, y, r.width, r.height);
-    renderer.render(room.scene, room.camera);
+    gl.render(room.scene, room.camera);
   }
 }
 
@@ -586,7 +613,7 @@ async function init(token) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setScissorTest(true);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.domElement.className = 'game-canvas';
   root.prepend(renderer.domElement);
   scene = new THREE.Scene();
@@ -657,6 +684,7 @@ export default {
       scene.traverse((o) => { o.geometry?.dispose(); [].concat(o.material || []).forEach((m) => { m.map?.dispose(); m.dispose(); }); });
     }
     select?.destroy();
+    closePreviews();
     showrooms.forEach((room) => room.dispose());
     showrooms.clear();
     stopGraphics?.(); stopGraphics = null;

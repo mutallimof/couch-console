@@ -31,8 +31,8 @@ export async function skyFor(THREE, theme) {
   const list = await available(), name = SKY_FOR[theme];
   if (!name || !list.hdri?.includes(name)) return null;
   if (!loaded.has(name)) {
-    loaded.set(name, import('three/addons/loaders/RGBELoader.js')
-      .then(({ RGBELoader }) => new RGBELoader().loadAsync(`/assets/polyhaven/hdri/${name}.hdr`))
+    loaded.set(name, import('three/addons/loaders/HDRLoader.js')
+      .then(({ HDRLoader }) => new HDRLoader().loadAsync(`/assets/polyhaven/hdri/${name}.hdr`))
       .then((tex) => { tex.mapping = THREE.EquirectangularReflectionMapping; return tex; })
       .catch((err) => { console.warn('Sky not loaded:', name, err.message); return null; }));
   }

@@ -497,7 +497,9 @@ html, body {
 .ks-tag { align-self: center; padding: 3px 11px; border-radius: 10px; background: var(--c); font-weight: 900; font-size: 18px; }
 .ks-name { font-size: 30px; }
 .ks-kart-name { margin-left: auto; opacity: 0.75; font-weight: 800; font-size: 18px; }
-/* the 3D showroom is drawn behind this box (turbo-karts.js), so it stays see-through */
+/* the 3D showroom has its own small canvas inside this box (turbo-karts.js) */
+.ks-stage { position: relative; overflow: hidden; }
+.ks-stage .ks-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; } /* (the 3D preview: its own small canvas) */
 .ks-stage { flex: 1; min-height: 120px; border-radius: 16px; background: radial-gradient(ellipse at 50% 85%, rgba(255, 255, 255, 0.10), transparent 65%); }
 .ks-chars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; opacity: 0.5; transition: opacity 160ms ease-out; }
 .ks-chars img { width: 100%; aspect-ratio: 1; max-height: 9vh; object-fit: contain; border-radius: 12px; background: rgba(255, 255, 255, 0.85);

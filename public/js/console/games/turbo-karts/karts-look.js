@@ -12,7 +12,7 @@ import { STYLE } from './karts-style.js';
 const LOW_FPS = 40;
 const LOW_FOR_S = 3;
 
-// Khronos PBR Neutral tone mapping (three.js r160 doesn't have it yet)
+// Khronos PBR Neutral tone mapping, for the effect chain's last pass (plain rendering uses three's built-in one)
 const neutral = (name) => `vec3 ${name}(vec3 color) {
     const float start = 0.8 - 0.04; const float desaturation = 0.15;
     float x = min(color.r, min(color.g, color.b));
@@ -47,16 +47,6 @@ const EdgeShader = {
     }`,
 };
 
-// Use it for everything drawn straight to the screen (renderer.toneMapping = CustomToneMapping)
-let patched = false;
-function patchToneMapping(THREE) {
-  if (patched) return;
-  patched = true;
-  THREE.ShaderChunk.tonemapping_pars_fragment = THREE.ShaderChunk.tonemapping_pars_fragment.replace(
-    'vec3 CustomToneMapping( vec3 color ) { return color; }',
-    `${neutral('neutralTone')}\nvec3 CustomToneMapping( vec3 color ) { return neutralTone( color * toneMappingExposure ); }`);
-}
-
 // The last step of the effect chain: vignette, tone mapping and screen colors in one pass
 const FinalShader = {
   uniforms: { tDiffuse: { value: null }, uStrength: { value: 0.45 }, uSize: { value: 0.8 }, uExposure: { value: 1.05 }, uToon: { value: 0 }, uLinear: { value: 0 } },
@@ -84,8 +74,7 @@ const FinalShader = {
 
 // force: 'on' (never switch off by itself) · 'off' (plain rendering) · null (automatic)
 export async function createLook(THREE, renderer, scene, force = null) {
-  patchToneMapping(THREE);
-  renderer.toneMapping = THREE.CustomToneMapping;
+  renderer.toneMapping = THREE.NeutralToneMapping; // (built in since three r162; the effect chain's last pass has its own copy)
   renderer.toneMappingExposure = 1.05;
   // Reflections: made from each track's own sky and ground colors (see setTrack), so paint and
   // metal reflect a blue sky in the park and a purple glow in the city. No image files.

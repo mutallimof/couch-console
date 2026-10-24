@@ -45,7 +45,7 @@ export function buildArchitecture(
     return m;
   };
   // Stadium hero tower outside the climbing road, with a rounded layered base,
-  // wraparound title band, lit windows, metal cornices and the Mario sculpture.
+  // wraparound title band, lit windows, metal cornices and the kart sculpture.
   const tp = surfaceAt(715, 45),
     tower = new THREE.Group();
   tower.position.set(tp.x, 0, tp.z);
@@ -108,7 +108,7 @@ export function buildArchitecture(
   );
   mesh(new THREE.CylinderGeometry(16, 18.8, 3, 64), dark, tower, [0, 62, 0]);
   const statue = new THREE.Group();
-  statue.add(proceduralKart("mario"));
+  statue.add(proceduralKart());
   statue.userData.dynamicScenery = true;
   statue.scale.setScalar(7.6);
   statue.position.y = 63;
@@ -215,7 +215,7 @@ export function buildArchitecture(
     c.font = "italic 900 94px Arial Black, Arial";
     c.textAlign = "center";
     c.textBaseline = "middle";
-    c.fillText("MOTOKART", w / 2, h / 2, 940);
+    c.fillText("TURBO KARTS", w / 2, h / 2, 940);
   });
   const columnArt = canvasTexture(128, 1024, (c, w, h) => {
     c.fillStyle = "#30256a";

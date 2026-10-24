@@ -23,7 +23,7 @@ export async function createStage(container, { sky = '#BFE3FF', fog = null, fov 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.domElement.className = 'game-canvas';
   root.prepend(renderer.domElement);
 

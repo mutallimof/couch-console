@@ -12,5 +12,5 @@ export const GP_CHARACTERS = [
   { id: 'glint', name: 'Glint', path: Q('Knight_Golden_Male'), skin: '#D9A877', color: '#F2C94C', accent: '#FFFFFF' },
   { id: 'grub', name: 'Grub', path: Q('Goblin_Male'), color: '#74B816', accent: '#FFD43B' },
   { id: 'biscuit', name: 'Biscuit', path: Q('Pug'), color: '#E5C49F', accent: '#343A40' },
-  { id: 'daisy', name: 'Daisy', path: Q('Cow'), color: '#F4F1EC', accent: '#F7A8B8' },
+  { id: 'clover', name: 'Clover', path: Q('Cow'), color: '#F4F1EC', accent: '#F7A8B8' },
 ];
