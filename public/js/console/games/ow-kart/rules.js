@@ -46,13 +46,16 @@ export function rollItem(position, rng = Math.random) {
   return 'turbo';
 }
 
-function makeRacer(T, character, i, humans) {
+// A kart's 1..5 stats nudge the handling a little (3 = exactly OpenWii's numbers)
+const kitOf = (kart) => kart ? { top: 1 + (kart.speed - 3) * 0.015, accel: 1 + (kart.accel - 3) * 0.06, turn: 1 + (kart.handling - 3) * 0.04 } : { top: 1, accel: 1, turn: 1 };
+
+function makeRacer(T, character, i, humans, kart) {
   // Grid: two columns behind the line, the human players at the back
   const grid = i < humans ? 7 - i : i - humans;
   const progress = -8 - Math.floor(grid / 2) * 6 - (grid % 2) * 0.5, side = grid % 2 ? 3 : -3;
   const p = T.surfaceAt(progress, side);
   return {
-    id: i, character, skill: character.skill ?? SKILLS[i % SKILLS.length], progress, s: wrap(progress, T.length),
+    id: i, character, kit: kitOf(kart), skill: character.skill ?? SKILLS[i % SKILLS.length], progress, s: wrap(progress, T.length),
     x: p.x, z: p.z, y: p.y, heading: p.heading, lateral: side,
     speed: 0, sideVelocity: 0, contactCooldown: 0, contactAnimation: 0, steer: 0, coins: 0, lap: 1,
     nextCheckpoint: T.length / 8, checkpoints: 0, finishTime: null,
@@ -67,7 +70,7 @@ export class Race {
    * track: a track model (track-model.js). characters: the 8 racers' characters, the human players
    * first (humans = how many). laps: 1 or 3.
    */
-  constructor({ track, characters, humans = 1, seed = 381, laps = 3, burnout = true, onEvent = () => {} }) {
+  constructor({ track, characters, karts = [], humans = 1, seed = 381, laps = 3, burnout = true, onEvent = () => {} }) {
     this.track = track;
     this.burnout = burnout; // holding GAS far too early at the start spins you out (OpenWii). Off in our game: Auto-gas holds GAS.
     this.laps = laps === 1 ? 1 : 3;
@@ -79,7 +82,7 @@ export class Race {
     this.time = 0;
     this.raceTime = 0;
     this.accumulator = 0;
-    this.racers = characters.slice(0, 8).map((c, i) => makeRacer(track, c, i, humans));
+    this.racers = characters.slice(0, 8).map((c, i) => makeRacer(track, c, i, humans, karts[i]));
     this.humans = this.racers.slice(0, humans);
     this.player = this.racers[0];
     this.objects = [];
@@ -225,7 +228,7 @@ export class Race {
       if (tier > r.tier) { r.tier = tier; this.emit('drift', r, { tier }); }
     }
     const offroad = !r.gliding && Math.abs(r.lateral) > T.roadHalf + 0.2;
-    let max = topSpeed(r.coins);
+    let max = topSpeed(r.coins) * r.kit.top;
     if (auto) {
       // computer drivers: a skill factor and a gentle rubber band toward the leading human
       const lead = Math.max(...this.humans.map((h) => h.progress));
@@ -237,12 +240,12 @@ export class Race {
     if (spinning) r.speed *= Math.exp(-5 * dt);
     else if (input.brake) r.speed = Math.max(-10, r.speed - 28 * dt);
     else if (input.gas) {
-      r.speed += (r.boost > 0 || r.star > 0 ? 35 : 15) * dt;
+      r.speed += (r.boost > 0 || r.star > 0 ? 35 : 15 * r.kit.accel) * dt;
       r.speed = Math.min(r.speed, max);
     } else r.speed = Math.sign(r.speed) * Math.max(0, Math.abs(r.speed) - 5.5 * dt);
     if (r.speed > max) r.speed = Math.max(max, r.speed - 36 * dt);
     // No yaw momentum or centrifugal term: zero wheel means exactly straight. Turn rate is bounded at every speed.
-    const turn = (r.drift ? r.drift * 0.12 + r.steer * 0.92 : r.steer) * 1.48;
+    const turn = (r.drift ? r.drift * 0.12 + r.steer * 0.92 : r.steer) * 1.48 * r.kit.turn;
     const turnAngle = turn * clamp(r.speed / 20, -0.5, 1) * dt * (r.gliding ? 0.52 : 1);
     const previousS = r.s, previousProgress = r.progress;
     r.heading = angle(r.heading + turnAngle);

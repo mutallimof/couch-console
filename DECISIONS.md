@@ -91,3 +91,11 @@ not to stop for questions). Each entry says what was decided and why. Newest at 
 - Character select shows each one idling on the podium; picking a racer or getting ready plays their `Victory` clip. In the race: `RecieveHit` when hit, `Victory` at the finish. (The pack's clips have other names than the Pirate Kit's, so `karts-models.js` maps Wave/Yes/HitReact to them.)
 - All models are scaled with one factor (1.45 m / 1.8) so a hat or a small pug stays in proportion. If a file is missing, the game draws the old code-built character instead.
 - A test checks every racer's file exists and has Idle, Victory and RecieveHit.
+
+## Phase 39: One Turbo Karts (the GP port replaces the old game)
+- Autonomous overnight run. Phase numbers continue from 38: 39 = one kart game, 40 = OpenWii visual comparison loop, 41 = stylized rendering, 42 = Poly Haven + art options, 43-52 = the party plan (PLAN-PARTY.md phases 35-44 renumbered +8), 53 = cleanup.
+- **Poly Haven (blocked):** the user said `public/assets/polyhaven/` is on `main`, but it is not in the repo, and polyhaven.com, dl.polyhaven.org and sketchfab.com are not reachable from the sandbox (proxy refuses). Not skipping the idea: the sky/textures code will use them when the files exist and fall back to the generated sky otherwise; the exact links/folders go in `docs/kart-art-options.md` and the final message.
+- **Deleted** (user approved; still in git history): `turbo-karts.js` (old game), `karts-rules.js` (old physics), `karts-items.js` (old item rules), `tests/karts.test.mjs` (their tests), and from `karts-data.js` the old characters, item odds, `kartPhysics` and `rollItem`. `kartInput` (the kart pad's input rules) moved to `ow-kart/input.js` with its tests.
+- The GP game became the tile **Turbo Karts** (`turbo-karts.js`, id `turbo-karts`, order 1). The select screen, kart pad, e2e test (it now drives the new game) all use it.
+- **Kart stats now matter a little** (they were only shown before): top speed ±1.5% per point, acceleration ±6%, handling ±4% (3-3-3 = OpenWii's exact numbers). Weight is not used (equal masses, as in OpenWii).
+- The old shortcut ramps of Cloud Gardens are not part of the OpenWii engine and are gone with the old rules.

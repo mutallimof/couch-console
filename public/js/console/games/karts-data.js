@@ -1,23 +1,5 @@
-// Turbo Karts data: the original characters, karts and items.
+// Turbo Karts data: the karts and the item icons (the racers are in ow-kart/characters.js).
 // Stats go from 1 (low) to 5 (high).
-
-// model: a pirate from the Pirate Kit (animated). No model = drawn in code (the animals).
-export const CHARACTERS = [
-  { id: 'anne', name: 'Anne', model: 'Characters_Anne', color: '#C08457', accent: '#F4D35E' },
-  { id: 'barbarossa', name: 'Barbarossa', model: 'Characters_Captain_Barbarossa', color: '#C92A2A', accent: '#FFD43B' },
-  { id: 'henry', name: 'Henry', model: 'Characters_Henry', color: '#8D6E63', accent: '#E03131' },
-  { id: 'mako', name: 'Mako', model: 'Characters_Mako', color: '#868E96', accent: '#4DABF7' },
-  { id: 'sharky', name: 'Sharky', model: 'Characters_Sharky', color: '#4C6EF5', accent: '#A5D8FF' },
-  { id: 'skelly', name: 'Skelly', model: 'Characters_Skeleton', color: '#CED4DA', accent: '#F59F00' },
-  { id: 'pip', name: 'Pip', kind: 'bird', color: '#F2C94C', accent: '#F2994A' },
-  { id: 'mochi', name: 'Mochi', kind: 'cat', color: '#F4F1EC', accent: '#F7A8B8' },
-  { id: 'bruno', name: 'Bruno', kind: 'bear', color: '#9C6B3C', accent: '#E5C49F' },
-  { id: 'bolt', name: 'Bolt', kind: 'robot', color: '#B8C4D4', accent: '#56CCF2' },
-  { id: 'hops', name: 'Hops', kind: 'bunny', color: '#C9B6E8', accent: '#F7D9E8' },
-  { id: 'ember', name: 'Ember', kind: 'fox', color: '#F2994A', accent: '#FFFFFF' },
-  { id: 'kiwi', name: 'Kiwi', kind: 'frog', color: '#6FCF97', accent: '#E8F7EE' },
-  { id: 'nova', name: 'Nova', kind: 'alien', color: '#56CCF2', accent: '#BB6BD9' },
-];
 
 // Toy Car Kit vehicles. open = the driver sits in a cockpit; closed cars have the driver
 // pop out of the roof (toy style). seat = [height, forward] of the driver's feet (meters).
@@ -34,24 +16,6 @@ export const KARTS = [
   { id: 'hauler', name: 'Hauler', model: 'vehicle-truck', open: false, seat: [0.85, 0.55], shape: 'heavy', speed: 2, accel: 3, handling: 3, weight: 5 },
 ];
 
-// Items from item boxes. Further back in the race = better items.
-export const ITEMS = {
-  turbo: { name: 'Turbo', color: '#FF922B' },     // a short speed boost
-  orb: { name: 'Homing Orb', color: '#E64980' },  // flies ahead and spins out the kart in front
-  slick: { name: 'Slick', color: '#4DABF7' },     // dropped behind you; karts that hit it spin
-  shield: { name: 'Shield', color: '#94D82D' },   // blocks one hit for a few seconds
-  // Phase 27 (rules in karts-items.js)
-  bolt: { name: 'Lightning Bolt', color: '#FFD43B' }, // everyone ahead of you shrinks for a few seconds
-  slick3: { name: 'Triple Slick', color: '#339AF0' }, // three slicks, one per ITEM press
-  magnet: { name: 'Magnet', color: '#F03E3E' },       // pulls in coins from far away + slipstream
-};
-// Further back = better items. The Lightning Bolt only comes to the karts at the very back.
-export const ITEM_ODDS = {
-  front: { slick: 40, shield: 25, orb: 15, slick3: 15, magnet: 5 },
-  middle: { orb: 30, turbo: 25, slick: 10, shield: 10, slick3: 10, magnet: 15 },
-  back: { turbo: 45, orb: 20, magnet: 15, shield: 5, bolt: 15 },
-};
-
 // Small flat icons for the HUD (original drawings)
 export const ITEM_ICONS = {
   turbo: '<svg viewBox="0 0 40 40"><path d="M14 6h12l-2 6h-8z" fill="#ADB5BD"/><rect x="13" y="12" width="14" height="18" rx="4" fill="#FF922B"/><path d="M15 30l5 8 5-8z" fill="#FFD43B"/></svg>',
@@ -65,21 +29,3 @@ export const ITEM_ICONS = {
   comet: '<svg viewBox="0 0 40 40"><path d="M6 34L24 16" stroke="#74C0FC" stroke-width="5" stroke-linecap="round" opacity=".6"/><path d="M12 36L28 20" stroke="#A5D8FF" stroke-width="4" stroke-linecap="round" opacity=".8"/><circle cx="28" cy="14" r="9" fill="#339AF0"/><circle cx="25" cy="11" r="3" fill="#fff" opacity=".8"/></svg>',
   shield: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="#94D82D" opacity=".35"/><circle cx="20" cy="20" r="15" fill="none" stroke="#94D82D" stroke-width="3"/><path d="M14 13a9 9 0 0 1 8-3" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
 };
-
-// Turn 1..5 stats into physics numbers
-export function kartPhysics(kart) {
-  return {
-    top: 27 + kart.speed * 1.4,           // m/s
-    accel: 14 + kart.accel * 3,           // m/s²
-    turn: 1.55 + kart.handling * 0.13,    // rad/s at full lock
-    weight: kart.weight,
-  };
-}
-
-export function rollItem(place, total) {
-  const pos = (place - 1) / Math.max(1, total - 1); // 0 = first, 1 = last
-  const odds = ITEM_ODDS[pos < 0.25 ? 'front' : pos > 0.6 ? 'back' : 'middle'];
-  let r = Math.random() * Object.values(odds).reduce((a, b) => a + b, 0);
-  for (const [item, w] of Object.entries(odds)) { r -= w; if (r <= 0) return item; }
-  return 'turbo';
-}
