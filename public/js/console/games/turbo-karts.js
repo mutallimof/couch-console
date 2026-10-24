@@ -28,6 +28,7 @@ import { createShowroom, setShowroomThree } from './turbo-karts/karts-showroom.j
 import { kartInput } from './turbo-karts/ow-kart/input.js';
 import { createRaceFx, makeExhaust, updateExhaust, TIER_COLORS } from './turbo-karts/karts-fx.js';
 import { createQuarks } from './turbo-karts/karts-quarks.js';
+import { podiumHtml, playPodium } from '../results.js';
 import { CAR, loadAll } from './turbo-karts/karts-assets.js';
 import { THEME_MODELS } from './turbo-karts/karts-decor.js';
 import { Race, ITEMS, ordinal, formatTime } from './turbo-karts/ow-kart/rules.js';
@@ -505,9 +506,14 @@ function showResults() {
     <td>${v.kart.name}</td><td>${formatTime(v.racer.finishTime)}</td>${api.mode === 'coop' ? `<td>${POINTS[i]} pts</td>` : ''}</tr>`).join('');
   const el = document.createElement('div');
   el.className = 'kart-results';
-  el.innerHTML = `<div class="kart-card"><h1 style="background:${color}">${banner}</h1><table>${rows}</table>
+  const podium = podiumHtml(order.slice(0, 3).map((v) => ({
+    face: v.playerId && party.personOfPlayer(v.playerId)?.avatar ? avatarSvg(party.personOfPlayer(v.playerId).avatar, 84) : `<img src="${portraits[v.char.id]}" alt="">`,
+    name: v.playerId ? `P${v.playerId} ${party.personOfPlayer(v.playerId)?.name || ''}`.trim() : v.char.name, sub: formatTime(v.racer.finishTime), color: v.playerId ? v.color : '#8E99B3',
+  })));
+  el.innerHTML = `<div class="kart-card"><h1 style="background:${color}">${banner}</h1>${podium}<table>${rows}</table>
     <p>A = race again · B = change racers/track · HOME = menu</p></div>`;
   root.append(el);
+  playPodium(el.querySelector('.kart-card')); // the podium rises and confetti falls (GSAP)
 }
 
 // A drift tier's spark color for three.quarks (above 1 so it glows)

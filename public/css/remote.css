@@ -415,3 +415,22 @@ body.kart-mode .tabs, body.kart-mode .panes { display: none; }
 .act-text { font-weight: 800; font-size: 16px; display: grid; }
 .act-text small { font-weight: 700; color: var(--muted); font-size: 13px; }
 .act-empty { text-align: center; padding: 20px; }
+
+/* ---------- Glossy look (Phase 55, docs/STYLE.md): the same room, tiles and buttons as the TV ---------- */
+html, body { background: transparent; }
+html { background:
+  radial-gradient(700px 500px at 8% 0%, rgba(255, 214, 140, 0.55), transparent 60%),
+  radial-gradient(700px 600px at 100% 25%, rgba(120, 190, 255, 0.5), transparent 60%),
+  linear-gradient(160deg, #EEF4FC, #E4ECF9); }
+.btn { background: linear-gradient(180deg, #fff, #E6EEF9); box-shadow: 0 5px 0 #C5D2E6, 0 8px 16px rgba(60, 80, 130, 0.2), inset 0 2px 0 #fff; font-family: var(--display); }
+.btn.pressed { background: linear-gradient(180deg, #E6EEF9, #D5E0F2); transform: translateY(4px); box-shadow: 0 1px 0 #C5D2E6, 0 2px 6px rgba(60, 80, 130, 0.2), inset 0 2px 0 #fff; }
+.a, .b { position: relative; overflow: hidden; }
+.a { background: linear-gradient(180deg, color-mix(in srgb, var(--player) 70%, #fff), var(--player) 55%, color-mix(in srgb, var(--player) 85%, #000)); box-shadow: 0 6px 0 color-mix(in srgb, var(--player) 60%, #000), 0 10px 18px rgba(60, 80, 130, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.7); }
+.b { background: linear-gradient(180deg, #8E99B3, #5B6577 60%, #4B5568); box-shadow: 0 6px 0 #3C4556, 0 10px 18px rgba(60, 80, 130, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.5); }
+.a::before, .b::before { content: ''; position: absolute; inset: 0 0 52% 0; border-radius: 50% 50% 0 0 / 80% 80% 0 0; background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.05)); pointer-events: none; }
+.a.pressed, .b.pressed { filter: none; transform: translateY(5px); }
+.badge { font-family: var(--display); background: linear-gradient(180deg, color-mix(in srgb, var(--player) 70%, #fff), var(--player)); box-shadow: 0 4px 10px rgba(60, 80, 130, 0.25), inset 0 2px 0 rgba(255, 255, 255, 0.6); }
+.tab { font-family: var(--display); border-radius: 18px; box-shadow: 0 3px 0 #C5D2E6, inset 0 2px 0 #fff; background: linear-gradient(180deg, #fff, #EAF1FA); }
+.tab[aria-selected='true'] { background: linear-gradient(180deg, color-mix(in srgb, var(--player) 70%, #fff), var(--player)); box-shadow: 0 3px 0 color-mix(in srgb, var(--player) 60%, #000), inset 0 2px 0 rgba(255, 255, 255, 0.6); }
+.join-btn, .start-btn { font-family: var(--display); }
+.me-btn { font-family: var(--display); }
