@@ -112,9 +112,10 @@ function onConnect() {
     slides.init(); // (a presentation may already be running)
   });
 }
-socket.on('connect', onConnect);
+socket.on('connect', () => { menu.setStatus({ online: true }); onConnect(); });
 
 socket.on('disconnect', () => {
+  menu.setStatus({ online: false });
   $('status').textContent = 'Lost connection to the server. Is `npm start` still running?';
   players.clear();
 });
@@ -177,6 +178,7 @@ function renderSlots() {
 }
 
 players.onChange(() => {
+  menu.setStatus({ phones: players.list().length });
   renderSlots();
   setPairing();
   // The focus ring shows who's driving the menu
@@ -223,6 +225,7 @@ function openApp(app) {
   // Games (not the hubs and channels) pause the party music, unless Settings -> Party says otherwise
   musicPlayer.setGameActive(!['music', 'photos', 'present', 'settings'].includes(app.id) && app.folder !== 'channels');
   queueMicrotask(() => slides.refresh()); // (a running game covers the slides)
+  menu.recordPlay(app);
   menu.press();
   stage.hidden = false;
   const anim = REDUCED_MOTION
@@ -412,6 +415,8 @@ function onInputButton(e) {
   const { playerId, button, state } = e;
   const down = state === 'down';
   const isDriver = playerId === driverId();
+  if (asleep) { if (down) wake(); return; }
+  if (overlayOpen) { if (down && ['A', 'B', 'HOME'].includes(button)) { closeOverlay(); sound.play('back'); } return; }
 
   // The QR screen opened from Settings: A, B or HOME closes it.
   if (pairingForced) {
@@ -455,20 +460,45 @@ function onInputButton(e) {
   else if (button === 'B' && menu.back()) sound.play('back');
 }
 
-// A on the focused tile: a game opens, a folder zooms in, the Back tile goes back
+// A on the focused thing: a game opens, a folder shows its games, a round button does its job
 function pressTile() {
   const tile = menu.focusedApp();
   if (!tile) return;
-  if (tile.isBack) { menu.press(); menu.back(); sound.play('back'); return; }
+  if (tile.isPage) { menu.press(); menu.turnPage(tile.dir); sound.play('select'); return; }
   if (tile.isFolder) { menu.press(); menu.openFolder(tile.id); sound.play('select'); return; }
+  if (tile.isAction) { menu.press(); sound.play('select'); return doAction(tile.action); }
   openApp(tile);
 }
+
+// ---------- Side buttons, the dock's Join, Sleep, and the little info panels ----------
+let overlayOpen = false, asleep = false;
+function showOverlay(html) {
+  overlayOpen = true;
+  $('overlay').innerHTML = `<div class="card glass">${html}<p class="muted">Press A or B to close</p></div>`;
+  $('overlay').hidden = false;
+}
+function closeOverlay() { overlayOpen = false; $('overlay').hidden = true; }
+function sleepNow() { asleep = true; $('sleep').hidden = false; }
+function wake() { if (!asleep) return false; asleep = false; $('sleep').hidden = true; return true; }
+function doAction(action) {
+  if (action === 'players' || action === 'join') prefs.showQR();
+  else if (action === 'sleep') sleepNow();
+  else if (action === 'profile') showOverlay(profileHtml());
+  else if (action === 'activity') showOverlay(activityHtml());
+}
+const escHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+function profileHtml() {
+  const people = party.people.filter((p) => p.online);
+  return `<h1>Who is here</h1><ul>${people.map((p) => `<li>${escHtml(p.emoji)} <b>${escHtml(p.name)}</b> · ${p.role === 'player' ? `Player ${p.playerId}` : 'Guest'}</li>`).join('') || '<li class="muted">Nobody yet. Scan the QR code.</li>'}</ul>`;
+}
+function activityHtml() { return '<h1>Activity</h1><p class="muted">Nothing yet.</p>'; }
+
 socket.on(EV.INPUT_BUTTON, onInputButton);
 
 // Aim assist: only on menu tiles and the mode picker, never inside a game.
 pointers.setAssist((x, y) => {
   if (busy || !$('pairing').hidden || (current && !picker)) return null;
-  const el = document.elementFromPoint(x, y)?.closest?.(picker ? '[data-mode]' : '[data-tile]');
+  const el = document.elementFromPoint(x, y)?.closest?.(picker ? '[data-mode]' : '.menu [data-focus]');
   if (!el) return null;
   const r = el.getBoundingClientRect();
   return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: Math.hypot(r.width, r.height) / 2 };

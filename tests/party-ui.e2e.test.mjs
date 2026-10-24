@@ -75,18 +75,19 @@ test('welcome card, player and guest tabs, joined notes, folders', { skip: !pw &
     assert.equal(await ben.textContent('#badge'), 'P2');
     assert.ok((await tabs(ben)).includes('remote'));
 
-    // The TV's home: folders open (the D-pad on phone 1) and close again
+    // The TV's home: the D-pad on phone 1 walks to a folder tile, A shows its games in the panel, B hops back to the folder tile
     await tv.waitForSelector('.tile:not(.empty)');
-    const titles = () => tv.$$eval('.tile:not(.empty) .tile-title', (t) => t.map((x) => x.textContent));
+    const titles = () => tv.$$eval('.menu [data-focus] .tile-title', (t) => t.map((x) => x.textContent));
     assert.ok((await titles()).includes('Arcade') && (await titles()).includes('Turbo Karts'));
     await ana.tap('#start-btn');
     const press = (btn) => ana.evaluate((b) => { const el = document.querySelector(`#controller [data-button="${b}"]`); el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); }, btn).then(() => tv.waitForTimeout(350));
-    await press('RIGHT'); await press('A');
-    await tv.waitForFunction(() => !document.getElementById('crumb').hidden);
-    assert.match(await tv.textContent('#crumb'), /Arcade/);
-    assert.ok((await titles()).includes('Back') && (await titles()).includes('Bowling'));
-    await press('B');
-    await tv.waitForFunction(() => document.getElementById('crumb').hidden);
+    const zone = () => tv.evaluate(() => document.querySelector('.menu .focused')?.dataset.zone);
+    const onArcade = () => tv.evaluate(() => document.querySelector('.menu .focused .tile-title')?.textContent === 'Arcade');
+    for (let i = 0; i < 14 && !(await onArcade()); i++) await press('RIGHT');
+    assert.equal(await zone(), 'folder', 'the D-pad reaches the folder tiles');
+    const folderName = await tv.evaluate(() => document.querySelector('.menu .focused .tile-title').textContent);
+    await press('A');
+    assert.equal(await tv.textContent('#crumb'), folderName, 'A on a folder tile shows its games in the panel');
     assert.deepEqual(errors, [], 'no page errors');
   } finally {
     await browser.close();

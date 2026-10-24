@@ -24,93 +24,9 @@ html, body {
   cursor: default;
 }
 
-/* ---------- Home menu ---------- */
-.menu {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.tiles {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)); /* columns may shrink below their text */
-  align-content: center;
-  gap: clamp(12px, 2vw, 24px);
-  /* fit 3 rows of 16:10 tiles on short laptop screens too */
-  width: min(92vw, (100vh - 170px) * 4.8 / var(--rows, 3)); /* shrink tiles when there are more rows */
-  margin: 0 auto;
-  padding: 24px 0;
-}
-
-.tile {
-  aspect-ratio: 16 / 10;
-  border-radius: 18px;
-  /* lit from above, like a backlit panel; the shadow takes the tile's own color */
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%), var(--tile);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 22px color-mix(in srgb, var(--tile) 32%, transparent);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  color: #fff;
-  container-type: inline-size; /* lets the icon and title scale with the tile */
-  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
-}
 .toasts { position: fixed; left: 24px; bottom: 96px; z-index: 80; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .toast { padding: 10px 18px; border-radius: 16px; background: rgba(30, 40, 60, 0.92); color: #fff; font-weight: 800; font-size: 22px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); animation: tile-in 260ms var(--ease-out) backwards; }
 .guest-list { margin: 8px 0 0; font-size: 22px; font-weight: 800; color: var(--muted, #5F6B80); text-align: center; max-width: 80vw; }
-.crumb { text-align: center; font-size: 22px; font-weight: 900; color: var(--muted, #5F6B80); margin: 0 0 8px; }
-/* A folder tile shows a 2x2 preview of the games inside it */
-.mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2px, 2cqw, 8px); width: clamp(44px, 32cqw, 100px); }
-.tile.folder { gap: 2px; }
-.mini-grid span { display: grid; place-items: center; background: rgba(255, 255, 255, 0.18); border-radius: 12%; padding: 6%; }
-.tile-icon .mini-grid svg { width: 100%; height: auto; filter: none; }
-.tile.empty {
-  background: rgba(255, 255, 255, 0.35);
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
-}
-.tile.focused {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 4px #fff, 0 0 0 8px var(--ring),
-    0 20px 38px color-mix(in srgb, var(--tile) 45%, transparent);
-}
-/* A pressed for real: sink in, then the game zooms out of it */
-.tile.pressed { transform: scale(0.97); transition-duration: 100ms; }
-.tile-icon svg { display: block; width: clamp(34px, 30cqw, 96px); height: auto; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15)); }
-.tile-title { font-weight: 900; font-size: clamp(13px, 11cqw, 26px); white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
-
-/* The menu's one entrance: tiles rise in, one after another, when the menu first appears */
-.tiles.enter .tile { animation: tile-in 420ms var(--ease-out) backwards; animation-delay: calc(var(--i) * 35ms); }
-@keyframes tile-in { from { opacity: 0; transform: translateY(14px) scale(0.96); } }
-
-@media (prefers-reduced-motion: reduce) {
-  .tile, .tile.focused, .tile.pressed { transform: none; transition: box-shadow 120ms ease; }
-  .tiles.enter .tile { animation: tile-fade 200ms ease backwards; }
-  @keyframes tile-fade { from { opacity: 0; } }
-}
-
-.bar {
-  display: flex;
-  align-items: baseline;
-  gap: 18px;
-  padding: 18px 40px 26px;
-  border-top: 2px solid rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.4);
-}
-.clock { font-size: 40px; font-weight: 900; }
-.date { font-size: 20px; color: var(--muted); font-weight: 700; }
-.sound-hint {
-  margin-left: auto;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: #fff4e5;
-  color: #8a5300;
-  font-weight: 700;
-  font-size: 15px;
-}
-
 /* ---------- Stage (open app) ---------- */
 .stage {
   position: fixed;

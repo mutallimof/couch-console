@@ -6,7 +6,7 @@
   --shadow: 0 10px 30px rgba(60, 80, 130, 0.18), 0 2px 6px rgba(60, 80, 130, 0.12);
   --spring: cubic-bezier(.2, .9, .3, 1.25);
   --display: 'Fredoka', 'Nunito', system-ui, sans-serif;
-  --text: 'Nunito', system-ui, sans-serif;
+  --font: 'Nunito', system-ui, sans-serif;
 }
 .theme-bg {
   background:
@@ -24,7 +24,8 @@
 /* Glossy tile: a color (--tile) with a highlight on top and a soft floor shadow */
 .gloss {
   position: relative; overflow: hidden; border-radius: 28px; color: #fff;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--tile, #4DA3FF) 80%, #fff), var(--tile, #4DA3FF) 55%, color-mix(in srgb, var(--tile, #4DA3FF) 85%, #000));
+  --base: color-mix(in srgb, var(--tile, #4DA3FF) 84%, #fff);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--base) 78%, #fff), var(--base) 55%, color-mix(in srgb, var(--base) 88%, #000));
   box-shadow: var(--shadow), inset 0 2px 0 rgba(255, 255, 255, 0.75), inset 0 -4px 0 rgba(0, 0, 0, 0.12);
   transition: transform 220ms var(--spring), box-shadow 220ms ease-out;
 }
@@ -32,7 +33,7 @@
   content: ''; position: absolute; inset: 0 0 52% 0; border-radius: inherit;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.08)); pointer-events: none;
 }
-.gloss.is-focus, .gloss:hover {
+.gloss.is-focus {
   transform: translateY(-6px) scale(1.04);
   box-shadow: 0 18px 40px rgba(60, 80, 130, 0.28), 0 0 0 5px #fff, 0 0 0 9px color-mix(in srgb, var(--tile, #4DA3FF) 75%, #fff), inset 0 2px 0 rgba(255, 255, 255, 0.75);
 }
@@ -40,5 +41,5 @@
   width: 64px; height: 64px; border-radius: 50%; border: 0; display: grid; place-items: center; font-size: 30px; color: var(--ink);
   background: linear-gradient(180deg, #fff, #E6EEF9); box-shadow: var(--shadow), inset 0 2px 0 #fff; transition: transform 220ms var(--spring);
 }
-.round-btn:hover, .round-btn.is-focus { transform: scale(1.12); box-shadow: 0 0 0 5px #fff, 0 0 0 9px var(--sky), var(--shadow); }
+.round-btn.is-focus { transform: scale(1.12); box-shadow: 0 0 0 5px #fff, 0 0 0 9px var(--sky), var(--shadow); }
 @media (prefers-reduced-motion: reduce) { .gloss, .round-btn { transition: none; } }
