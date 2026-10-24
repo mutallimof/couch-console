@@ -42,6 +42,18 @@ A console you run in your web browser and control with your phone.
 
 ---
 
+
+## Party mode (everyone joins with one QR code)
+
+Scan the QR code on the TV with any phone. The first time, the phone asks for your **name** and an **emoji**, then you choose:
+
+- **🎮 Play**: you get a player slot (P1-P4, with a controller) and the **Remote** tab, plus **Photos**, **Music** and **Present**.
+- **👀 Just join**: you are a **guest** (no limit, 200 at most): you get Photos, Music and Present but no controller. Later, tap your name at the top → **Join as player** if a slot is free, or **Leave my player slot**. The same sheet has **Invite someone**, which shows a QR code on your phone so the next person can scan it.
+
+The TV shows who joins ("🦊 Ana joined"), keeps a small QR code on the home screen, and groups games in folders (**Arcade**, **Channels**; open one with A, go back with B, HOME or the Back tile). Folders are made from each game's `.game.json` (`"folder": "arcade"`) and `public/js/console/folders.json`.
+
+**Settings → Party:** name the party, start a new one, ask for approval before photos appear, set the photo storage limit, or **End party & delete data** (asks three times). Everything is saved on this laptop in the `data/` folder (not uploaded anywhere, and not in git).
+
 ## How to run it
 
 You need **two terminal windows**, both opened in the `couch-console` folder.

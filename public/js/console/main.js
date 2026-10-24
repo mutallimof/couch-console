@@ -1,6 +1,7 @@
 // Console (laptop) entry point: socket, pairing/lobby, and the router menu <-> apps.
 import { EV, colorFor } from '../shared/protocol.js';
 import { players } from './players.js';
+import { party } from './party.js';
 import { createPointers } from './pointer.js';
 import { createGyroPointers } from './pointer/engine.js';
 import { createMenu } from './menu.js';
@@ -16,6 +17,7 @@ const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoo
 // Games and channels, from their .game.json files (each loads on its own; see apps.js).
 // Loaded before connecting, so no server message can arrive before we're listening.
 const gameApps = await loadApps();
+const folders = await fetch('/js/console/folders.json').then((r) => r.json()).catch(() => ({}));
 const socket = io(); // global from /socket.io/socket.io.js
 const pointers = createPointers($('cursors'));
 const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
@@ -69,7 +71,7 @@ const prefs = {
 
 const apps = [...gameApps, createSettings(prefs)]; // Settings is built in, always last
 const menu = createMenu({
-  grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
+  grid: $('tiles'), clock: $('clock'), date: $('date'), crumb: $('crumb'), apps, folders,
   onFocusChange: (column) => sound.play('hover', { step: column }),
 });
 
@@ -85,8 +87,14 @@ function setPairing(forced = pairingForced) {
   $('pairing').hidden = !(forced || (none && !current?.mounted)); // a running game shows its own pause screen
   if (wasShown && $('pairing').hidden && !current) menu.enter(); // the menu appears: tiles rise in
   $('pairing-close').hidden = !(forced && !none);
-  const full = players.slots().every((s) => s.connected);
-  $('mini-join').hidden = full || none;
+  $('mini-join').hidden = none; // (guests are unlimited, so the QR stays: the next person can always join)
+}
+
+// Who is here besides the players (shown on the pairing screen)
+function renderGuests() {
+  const guests = party.people.filter((p) => p.online && p.role === 'guest');
+  $('guest-list').hidden = !guests.length;
+  $('guest-list').textContent = guests.length ? `Also here: ${guests.map((g) => `${g.emoji} ${g.name}`).join('  ·  ')}` : '';
 }
 
 // A new room is created on every (re)connect, e.g. after the server restarts.
@@ -94,7 +102,7 @@ socket.on('connect', () => {
   $('status').textContent = '';
   players.clear();
   if (desk.active) players.join(desk.id, colorFor(desk.id)); // still playing with the mouse
-  socket.emit(EV.CONSOLE_CREATE, ({ room }) => showRoom(room));
+  socket.emit(EV.CONSOLE_CREATE, (res) => { party.setRoom(res); showRoom(res.room); });
 });
 
 socket.on('disconnect', () => {
@@ -115,6 +123,7 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
     current.allowed.add(playerId);
   }
 });
+socket.on(EV.PARTY_ROSTER, (r) => { party.onRoster(r); renderGuests(); });
 socket.on(EV.PLAYER_LEFT, ({ playerId }) => {
   players.leave(playerId);
   sound.play('leave');
@@ -396,7 +405,7 @@ function onInputButton(e) {
   }
   // HOME always goes back to the menu (only the driver opens and closes things).
   if (button === 'HOME') {
-    if (down && isDriver) closeApp();
+    if (down && isDriver) { if (!current && menu.back()) sound.play('back'); else closeApp(); }
     return;
   }
   if (busy) return;
@@ -412,7 +421,17 @@ function onInputButton(e) {
   if (!down || !isDriver) return;
   if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(button)) menu.move(button);
   // Open the focused tile (moving the cursor over a tile focuses it, see below).
-  else if (button === 'A') openApp(menu.focusedApp());
+  else if (button === 'A') pressTile();
+  else if (button === 'B' && menu.back()) sound.play('back');
+}
+
+// A on the focused tile: a game opens, a folder zooms in, the Back tile goes back
+function pressTile() {
+  const tile = menu.focusedApp();
+  if (!tile) return;
+  if (tile.isBack) { menu.press(); menu.back(); sound.play('back'); return; }
+  if (tile.isFolder) { menu.press(); menu.openFolder(tile.id); sound.play('select'); return; }
+  openApp(tile);
 }
 socket.on(EV.INPUT_BUTTON, onInputButton);
 

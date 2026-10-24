@@ -4,6 +4,7 @@ import { createMotion } from './motion.js';
 import { createSwing } from './swing.js';
 import { createWheel } from './wheel.js';
 import { createKartPad } from './kart-pad.js';
+import { createParty } from './party.js';
 import './no-zoom.js';
 
 const $ = (id) => document.getElementById(id);
@@ -33,6 +34,25 @@ const clientId = getClientId();
 const isValidRoom = (code) => new RegExp(`^[${ROOM_LETTERS}]{${ROOM_CODE_LENGTH}}$`).test(code);
 let room = (new URLSearchParams(location.search).get('room') || '').toUpperCase();
 let joined = false;
+let role = 'player'; // 'player' (has a controller) or 'guest' (photos, music, slides only)
+
+// Party: the welcome card, the tabs and the "me" sheet (party.js)
+const party = createParty({
+  socket,
+  getRoom: () => room,
+  getClientId: () => clientId,
+  onRoleRequest: (info) => {
+    if (info.changedTo) return afterRoleChange(info.res); // changed from the "me" sheet
+    join(); // from the welcome card
+  },
+  onTab: () => applyMode(),
+});
+import * as photosPane from './photos.js';
+import * as musicPane from './music.js';
+import * as presentPane from './present.js';
+party.registerPane('photos', 'Photos', '📸', photosPane);
+party.registerPane('music', 'Music', '🎵', musicPane);
+party.registerPane('present', 'Present', '🖥️', presentPane);
 
 function setConnected(on, text) {
   $('dot').classList.toggle('on', on);
@@ -41,12 +61,13 @@ function setConnected(on, text) {
 
 function setPlayer(playerId, color) {
   document.documentElement.style.setProperty('--player', color || '');
-  $('badge').textContent = playerId ? `P${playerId}` : '–';
+  $('badge').textContent = playerId ? `P${playerId}` : role === 'guest' && joined ? '👀' : '–';
   $('kp-badge').textContent = $('badge').textContent;
 }
 
 function showJoinForm(message = '') {
   joined = false;
+  $('welcome').hidden = true;
   setPlayer(null, '');
   $('controller').hidden = true;
   $('kart-pad').hidden = true;
@@ -59,20 +80,31 @@ function showJoinForm(message = '') {
 
 function join() {
   if (!isValidRoom(room)) return showJoinForm(room ? 'That code doesn\'t look right.' : '');
+  // First time on this phone: ask for a name (then this runs again)
+  if (party.needsWelcome()) {
+    $('join-form').hidden = true;
+    setConnected(false, `Room ${room}`);
+    return party.showWelcome();
+  }
   setConnected(false, 'Joining…');
-  socket.emit(EV.REMOTE_JOIN, { room, clientId }, (res) => {
+  const p = party.profile;
+  socket.emit(EV.REMOTE_JOIN, { room, clientId, name: p.name, emoji: p.emoji, role: p.role === 'guest' ? 'guest' : 'player' }, (res) => {
     if (!res?.ok) {
       setConnected(false, 'Not joined');
       return showJoinForm(ERRORS[res?.error] || 'Could not join.');
     }
     joined = true;
+    role = res.role === 'guest' ? 'guest' : 'player';
     navigator.vibrate?.(150); // "you're in!" (Android; iPhone ignores it)
     setPlayer(res.playerId, res.color);
     setConnected(true, `Room ${room}`);
     $('join-form').hidden = true;
+    $('welcome').hidden = true;
     setLayout(res.layout, 'join'); // the layout the console wants right now (e.g. the kart pad mid-race)
+    party.onJoined(res);
     applyMode();
-    if (!started) $('start').hidden = false;
+    if (!started && role === 'player') $('start').hidden = false;
+    else $('start').hidden = true;
     // Keep the room (and debug flag) in the URL so a refresh rejoins the same room.
     history.replaceState(null, '', `?room=${room}${DEBUG ? '&debug=1' : ''}`);
   });
@@ -87,6 +119,16 @@ $('join-form').addEventListener('submit', (e) => {
 
 // (Re)join on every connect, e.g. after Wi-Fi drops or the phone wakes up.
 socket.on('connect', join);
+socket.on(EV.PARTY_ROSTER, (r) => party.onRoster(r));
+
+// The "me" sheet changed this phone between player and guest
+function afterRoleChange(res) {
+  role = res.role === 'guest' ? 'guest' : 'player';
+  setPlayer(res.playerId, res.color);
+  party.onJoined({ role, person: undefined, slotsFree: undefined });
+  if (role === 'player' && !started) $('start').hidden = false;
+  applyMode();
+}
 socket.on('disconnect', () => setConnected(false, 'Reconnecting…'));
 
 socket.on(EV.CONSOLE_DISCONNECTED, () => {
@@ -137,13 +179,13 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 const motion = createMotion({
   // Raw sensors -> the console turns them into this player's cursor
   onSample: (sample) => {
-    if (!joined || mode === 'wheel') return; // no cursor while driving
+    if (!joined || mode === 'wheel' || role !== 'player' || party.tab !== 'remote') return; // no cursor while driving or on another tab
     sentCount++;
     socket.volatile.emit(EV.INPUT_MOTION, sample);
   },
   // Touchpad (phones without motion sensors)
   onPointer: (x, y) => {
-    if (!joined || mode === 'wheel') return;
+    if (!joined || mode === 'wheel' || role !== 'player' || party.tab !== 'remote') return;
     sentCount++;
     socket.volatile.emit(EV.INPUT_POINTER, { x, y });
   },
@@ -183,9 +225,12 @@ window.addEventListener('orientationchange', onTurned);
 
 function applyMode() {
   if (!joined) return;
-  const isKart = mode === 'wheel', isKeys = mode === 'keyboard';
+  // Guests have no controller: the kart pad and the keyboard are for players. Tabs other than Remote hide the controller.
+  const isPlayer = role === 'player';
+  const isKart = isPlayer && mode === 'wheel', isKeys = isPlayer && mode === 'keyboard';
   const wasKart = !$('kart-pad').hidden;
-  $('controller').hidden = isKart || isKeys;
+  party.setMode(isKart || isKeys ? mode : 'pointer');
+  $('controller').hidden = isKart || isKeys || !isPlayer || party.tab !== 'remote';
   $('kart-pad').hidden = !isKart;
   document.body.classList.toggle('kart-mode', isKart); // hides the top bar: the pad has its own
   $('keyboard-pad').hidden = !isKeys;

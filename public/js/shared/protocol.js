@@ -8,6 +8,16 @@ export const PLAYER_COLORS = ['#2F80ED', '#EB5757', '#27AE60', '#D99A00'];
 
 export const colorFor = (playerId) => PLAYER_COLORS[playerId - 1];
 
+// Guests (Phase 43): anyone can join to share photos, queue music or present, without a
+// controller. They have no P-number: just a name, an emoji and a color of their own.
+export const MAX_GUESTS = 200;
+export const GUEST_COLORS = ['#9B51E0', '#F2994A', '#00A6A6', '#E0457B', '#5C7CFA', '#74B816', '#C9732B', '#6C757D'];
+export const EMOJIS = ['😀', '😎', '🤠', '🦊', '🐼', '🐸', '🦄', '🐙', '🚀', '🍕', '🎸', '🌈', '⚡', '🍩', '🐯', '🦖'];
+export const NAME_MAX = 20;
+
+// How much space the party's photos may use (Settings -> Party)
+export const PHOTO_LIMITS_GB = [1, 2, 3, 5, 10, 20];
+
 // Room codes use A–Z without I and O (easy to read and type).
 export const ROOM_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 export const ROOM_CODE_LENGTH = 4;
@@ -38,6 +48,10 @@ export const EV = {
   // The console turns these into a cursor (pointer/gyro-pointer.js). input:pointer is
   // still used by the touchpad on phones without motion sensors.
   INPUT_MOTION: 'input:motion',
+  // Party (Phase 43). Everything below is an addition: phones that don't know it still work.
+  PARTY_ROSTER: 'party:roster',     // server -> console + phones: { people: [{ id, name, emoji, color, role, playerId, online }] }
+  REMOTE_ROLE: 'remote:role',       // phone -> server, with ack: { to: 'player' | 'guest' } -> { ok, role, playerId?, color?, error? }
+  REMOTE_PROFILE: 'remote:profile', // phone -> server, with ack: { name, emoji } -> { ok }
 };
 
 // The remote -> console input events the server relays (with playerId added).
