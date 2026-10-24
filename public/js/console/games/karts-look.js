@@ -7,6 +7,8 @@
 // switch off by themselves and the game renders plainly, like before.
 // Console link options: ?fx=on (always on) · ?fx=off (always off).
 
+import { STYLE } from './karts-style.js';
+
 const LOW_FPS = 40;
 const LOW_FOR_S = 3;
 
@@ -25,6 +27,26 @@ const neutral = (name) => `vec3 ${name}(vec3 color) {
     return mix(color, vec3(newPeak), g);
   }`;
 
+// Cartoon outlines: dark lines where the distance to the camera jumps (edges of karts, characters,
+// buildings, barriers). Uses the depth the scene was drawn with.
+const EdgeShader = {
+  uniforms: { tDiffuse: { value: null }, tDepth: { value: null }, uTexel: { value: null }, uNear: { value: 0.1 }, uFar: { value: 1800 }, uStrength: { value: 0.5 }, uWidth: { value: 1 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse, tDepth; uniform vec2 uTexel; uniform float uNear, uFar, uStrength, uWidth; varying vec2 vUv;
+    float lin(vec2 uv) { float z = texture2D(tDepth, uv).x * 2.0 - 1.0; return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear)); }
+    void main() {
+      vec4 base = texture2D(tDiffuse, vUv);
+      vec2 o = uTexel * uWidth;
+      float d = lin(vUv);
+      float e = max(max(abs(lin(vUv + vec2(o.x, 0.0)) - d), abs(lin(vUv - vec2(o.x, 0.0)) - d)),
+                    max(abs(lin(vUv + vec2(0.0, o.y)) - d), abs(lin(vUv - vec2(0.0, o.y)) - d)));
+      // a jump bigger than a few percent of the distance is an edge (so far-away detail doesn't turn black)
+      float edge = smoothstep(0.035, 0.09, e / (d * 0.5 + 1.5));
+      base.rgb = mix(base.rgb, base.rgb * vec3(0.12, 0.10, 0.16), edge * uStrength);
+      gl_FragColor = base;
+    }`,
+};
+
 // Use it for everything drawn straight to the screen (renderer.toneMapping = CustomToneMapping)
 let patched = false;
 function patchToneMapping(THREE) {
@@ -37,15 +59,24 @@ function patchToneMapping(THREE) {
 
 // The last step of the effect chain: vignette, tone mapping and screen colors in one pass
 const FinalShader = {
-  uniforms: { tDiffuse: { value: null }, uStrength: { value: 0.45 }, uSize: { value: 0.8 }, uExposure: { value: 1.05 } },
+  uniforms: { tDiffuse: { value: null }, uStrength: { value: 0.45 }, uSize: { value: 0.8 }, uExposure: { value: 1.05 }, uToon: { value: 0 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStrength, uSize, uExposure; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStrength, uSize, uExposure, uToon; varying vec2 vUv;
     ${neutral('finalNeutral')} // (own name: three.js may also include the screen's version)
     vec3 toSRGB(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
     void main(){
       vec3 c = texture2D(tDiffuse, vUv).rgb;
       float d = distance(vUv, vec2(0.5));
       c *= mix(1.0, smoothstep(uSize, uSize - 0.5, d), uStrength);
+      if (uToon > 0.0) {
+        // Cartoon look: light falls off in a few steps (cel shading, softened), colors pop, warm lights and cool shadows
+        float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+        float steps = 5.0, banded = (floor(l * steps) + smoothstep(0.35, 0.65, fract(l * steps))) / steps;
+        c *= mix(1.0, banded / max(l, 0.0005), 0.3 * uToon) * (1.0 + 0.1 * uToon); // (the little boost makes up for the steps rounding down)
+        c = mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, 1.0 + 0.28 * uToon);
+        c += uToon * (vec3(0.012, 0.004, -0.006) * l - vec3(0.006, 0.002, -0.012) * (1.0 - clamp(l, 0.0, 1.0)) * 0.5);
+        c = max(c, vec3(0.0));
+      }
       gl_FragColor = vec4(toSRGB(clamp(finalNeutral(c * uExposure), 0.0, 1.0)), 1.0);
     }`,
 };
@@ -66,7 +97,7 @@ export async function createLook(THREE, renderer, scene, force = null) {
     for (let i = 0; i < p.count; i++) {
       const y = p.getY(i) / 10; // -1 (straight down) .. 1 (straight up)
       const c = y > 0 ? horizon.clone().lerp(top, Math.min(1, y * 1.6)) : horizon.clone().lerp(ground, Math.min(1, -y * 4));
-      c.multiplyScalar(def.night ? 0.5 : 0.8);
+      c.multiplyScalar(def.lighting ? def.lighting.env * 1.5 : def.night ? 0.5 : 0.8); // (a track can set its own reflection strength)
       colors.push(c.r, c.g, c.b);
     }
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
@@ -82,31 +113,52 @@ export async function createLook(THREE, renderer, scene, force = null) {
       import('three/addons/postprocessing/EffectComposer.js'), import('three/addons/postprocessing/RenderPass.js'),
       import('three/addons/postprocessing/UnrealBloomPass.js'), import('three/addons/postprocessing/ShaderPass.js')]);
     addons = { EffectComposer: c.EffectComposer, RenderPass: r.RenderPass, UnrealBloomPass: b.UnrealBloomPass, ShaderPass: s.ShaderPass };
+    // Ambient occlusion (soft contact shadows in corners and under karts), as in OpenWii. Optional.
+    try { addons.GTAOPass = (await import('three/addons/postprocessing/GTAOPass.js')).GTAOPass; } catch (err) { console.warn('No ambient occlusion:', err.message); }
   } catch (err) { console.warn('No screen effects:', err.message); }
 
   const chains = [];          // one effect chain per split-screen view
   let enabled = !!addons && force !== 'off';
   let low = 0, frames = 0, last = performance.now(), fps = 60;
-  let bloomStrength = 0.4;
+  let bloomStrength = 0.4, exposure = 1.05, aoOn = true, cartoonOn = false;
 
-  function chain(i, w, h) {
+  function chain(i, w, h, camera) {
     let c = chains[i];
     if (!c) {
       // half-float (so bright things stay brighter than white until the end) and 4x multisampled
       const target = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: 4 });
+      target.depthTexture = new THREE.DepthTexture(w, h); // (the outlines read it)
+      target.depthTexture.type = THREE.UnsignedIntType;
       const composer = new addons.EffectComposer(renderer, target);
       const pass = new addons.RenderPass(scene, null);
       // threshold 2: only things brighter than sunlit white glow (boost flames, sparks, neon, the sun)
       const bloom = new addons.UnrealBloomPass(new THREE.Vector2(w, h), bloomStrength, 0.4, 2);
       composer.addPass(pass);
+      const edge = new addons.ShaderPass(EdgeShader);
+      edge.uniforms.uTexel.value = new THREE.Vector2(1 / w, 1 / h);
+      edge.enabled = cartoonOn;
+      composer.addPass(edge);
+      let ao = null;
+      if (addons.GTAOPass) {
+        ao = new addons.GTAOPass(scene, camera, w, h);
+        ao.updateGtaoMaterial({ radius: 2.2, thickness: 1.1, distanceExponent: 1.5, samples: 8 });
+        ao.updatePdMaterial({ radius: 4, samples: 8, depthPhi: 3, normalPhi: 3 });
+        ao.blendIntensity = 0.6;
+        ao.enabled = aoOn;
+        composer.addPass(ao);
+      }
       composer.addPass(bloom);
-      composer.addPass(new addons.ShaderPass(FinalShader)); // last: vignette + tone mapping + screen colors
-      c = chains[i] = { composer, pass, bloom, w: 0, h: 0 };
+      const final = new addons.ShaderPass(FinalShader); // last: vignette + tone mapping + screen colors
+      final.uniforms.uExposure.value = exposure;
+      final.uniforms.uToon.value = cartoonOn ? 1 : 0;
+      composer.addPass(final);
+      c = chains[i] = { composer, pass, ao, edge, bloom, final, w: 0, h: 0 };
     }
     if (c.w !== w || c.h !== h) {
       c.composer.setPixelRatio(renderer.getPixelRatio());
       c.composer.setSize(w, h);
       c.w = w; c.h = h;
+      c.edge.uniforms.uTexel.value.set(1 / (w * renderer.getPixelRatio()), 1 / (h * renderer.getPixelRatio()));
     }
     return c;
   }
@@ -120,14 +172,22 @@ export async function createLook(THREE, renderer, scene, force = null) {
       scene.environment = environmentFor(def);
       bloomStrength = def.night ? 0.75 : 0.35;
       for (const c of chains) if (c) c.bloom.strength = bloomStrength;
+      exposure = def.lighting?.exposure ?? 1.05; // (a track can be exposed brighter or darker)
+      renderer.toneMappingExposure = exposure;
+      for (const c of chains) if (c) c.final.uniforms.uExposure.value = exposure;
     },
     // Draw view i (camera) into the screen rectangle x, y, w, h (pixels, from the bottom left)
     render(i, camera, x, y, w, h) {
       renderer.setViewport(x, y, w, h);
       renderer.setScissor(x, y, w, h);
       if (!enabled) { renderer.render(scene, camera); return; }
-      const c = chain(i, w, h);
+      const c = chain(i, w, h, camera);
       c.pass.camera = camera;
+      if (c.ao) c.ao.camera = camera;
+      if (cartoonOn) {
+        c.edge.uniforms.tDepth.value = c.composer.readBuffer.depthTexture;
+        c.edge.uniforms.uNear.value = camera.near; c.edge.uniforms.uFar.value = camera.far;
+      }
       c.composer.render();
     },
     // Call once per frame: watches the frame rate and turns the effects off if it's too low
@@ -140,6 +200,15 @@ export async function createLook(THREE, renderer, scene, force = null) {
       if (low > LOW_FOR_S) { enabled = false; console.info('Turbo Karts: screen effects off (low frame rate)'); }
     },
     setEnabled(on) { enabled = on && !!addons; low = 0; },
+    // Ambient occlusion on/off (a bit heavier on slow laptops)
+    // The cartoon look on/off: outlines, banded light, color grade (and the rim light on karts: see karts-style.js)
+    setCartoon(on) {
+      cartoonOn = on; STYLE.rim.value = on ? 1 : 0;
+      for (const c of chains) if (c) { c.edge.enabled = on; c.final.uniforms.uToon.value = on ? 1 : 0; }
+    },
+    // Reflections from a real sky picture (an equirectangular HDRI) instead of the generated gradient
+    setSkyTexture(tex) { scene.environment?.dispose(); scene.environment = pmrem.fromEquirectangular(tex).texture; },
+    setAO(on) { aoOn = on; for (const c of chains) if (c?.ao) c.ao.enabled = on; },
     dispose() {
       for (const c of chains) c?.composer.dispose();
       chains.length = 0;

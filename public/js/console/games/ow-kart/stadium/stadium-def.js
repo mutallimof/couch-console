@@ -36,6 +36,8 @@ export const STADIUM = {
   id: 'stadium', name: 'Grand Stadium', theme: 'stadium', night: true,
   blurb: 'A floodlit night race through pit lanes and under a bridge, with a big glide over the gap.',
   sky: ['#02050C', '#0B1330'], fog: [260, 900], ground: '#6F8F5A', road: '#6B6D70', curb: ['#C23B3B', '#F2F2F2'], wall: ['#2A5AA8', '#E7EEF8'],
+  // OpenWii's lighting for this course: a warm key light, a little sky light, soft reflections
+  lighting: { key: 1.7, keyColor: '#fff3dd', keyOffset: [-30, 60, 25], hemi: 0.45, hemiSky: '#a5c8f4', hemiGround: '#34384a', fill: 0.32, env: 0.28, fog: ['#111c30', 0.0011], exposure: 1.75 },
   grip: 1, scale: 0.85,
   points: RAW, // [x, height, z]
   // everything below is positioned in control-point numbers, as in OpenWii

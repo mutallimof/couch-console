@@ -8,6 +8,9 @@
 // Race rules adapted from OpenWii's games/mario-kart (MIT, Copyright (c) 2026 Patrick Sun; see
 // THIRD_PARTY_NOTICES.md).
 import { colorFor } from '../../shared/protocol.js';
+import { graphics } from '../graphics-prefs.js';
+import { skyFor, asphalt } from './karts-polyhaven.js';
+import { setPavementOverride } from './karts-materials.js';
 import { buildTrack, TRACKS, SUN_DIR } from './kart-track.js';
 import { STADIUM } from './ow-kart/stadium/stadium-def.js';
 import * as stadiumTrack from './ow-kart/stadium/track.js';
@@ -45,6 +48,7 @@ let views = [];        // one per racer: { racer, mesh, kart, char, color, playe
 let humans = [];       // the views of the human players
 let objectMeshes = new Map(); // item projectiles/slicks on the road: race object id -> mesh
 let boxMeshes = [], coinMeshes = [];
+let stopGraphics = null;
 let state, shown, overAt, paused = false, alive = 0, lastCount = 0;
 let portraits, select, selection, look, fx;
 const showrooms = new Map(); // playerId -> 3D preview on the select screen (karts-showroom.js)
@@ -105,17 +109,29 @@ async function loadModels(paths) {
   return true;
 }
 
+// The light rig for a track: the stadium takes OpenWii's numbers, the others the daylight/night defaults
+function applyLighting(def) {
+  const L = def.lighting, hemi = scene.userData.hemi, fill = scene.userData.fill;
+  sun.color.set(L?.keyColor || '#fff4e0');
+  sun.intensity = L ? L.key : def.night ? 0.6 : 2.2;
+  hemi.color.set(L?.hemiSky || '#CFE6FF'); hemi.groundColor.set(L?.hemiGround || '#5A6A4A');
+  hemi.intensity = L ? L.hemi : (def.night ? 0.7 : 1.1) * 0.6;
+  fill.intensity = L ? L.fill : 0.35;
+}
+
 async function startRace() {
   clearRace();
   const def = ALL_TRACKS[selection.track];
   if (track?.def !== def) {
     if (track) {
+      track.floodlights?.remove();
       scene.remove(track.group);
       track.group.traverse((o) => { o.geometry?.dispose(); [].concat(o.material || []).forEach((m) => { m.map?.dispose(); m.dispose(); }); });
       track = null;
     }
     state = 'loading';
     if (!(await loadModels([...THEME_MODELS.common, ...(THEME_MODELS[def.theme] || [])]))) return;
+    setPavementOverride(await asphalt(THREE)); // (real asphalt if the Poly Haven files are there)
     if (def.stadium) {
       // The Grand Stadium: OpenWii's procedural world, collected in one group so it can be removed again
       const model = stadiumTrack.model, before = new Set(scene.children);
@@ -126,7 +142,9 @@ async function startRace() {
       for (const c of [...scene.children]) if (!before.has(c)) group.add(c);
       scene.add(group);
       track = { def, group, model, world, mixers: [], pts: model.samples };
-      scene.fog = new THREE.Fog(def.sky[1], 220, 1100);
+      scene.fog = new THREE.FogExp2(...def.lighting.fog);
+      const { createStadiumLights } = await import('./ow-kart/stadium/lighting.js');
+      track.floodlights = createStadiumLights(THREE, scene);
     } else {
       const model = createTrackModel(def);
       const path = renderPath(THREE, model);
@@ -136,8 +154,12 @@ async function startRace() {
       scene.fog = new THREE.Fog(def.sky[1], def.fog[0] * 1.3, def.fog[1] * 1.3);
     }
     look.setTrack(def);
-    sun.intensity = def.night ? 0.6 : 2.2;
-    scene.userData.hemi.intensity = (def.night ? 0.7 : 1.1) * 0.6;
+    applyLighting(def);
+    // A real sky picture (Poly Haven HDRI) if there is one for this track; otherwise the generated sky stays
+    const sky = await skyFor(THREE, def.theme);
+    scene.background = sky || null;
+    track.group.traverse((o) => { if (o.userData.isSky) o.visible = !sky; });
+    if (sky) look.setSkyTexture(sky);
     mapBox = null;
   }
   const T = track.model;
@@ -219,7 +241,8 @@ function onRaceEvent(e) {
     case 'rocket': v.kick = 0; sfx('golden'); rumble(150); break;
     case 'burnout': sfx('bomb'); rumble(300); break;
     case 'drift': if (mine && e.tier) { api.sound.play('tick'); } break;
-    case 'hit': v.mesh.anim?.play('HitReact'); sfx('bomb'); rumble(300); break;
+    case 'hit': v.mesh.anim?.play('HitReact'); sfx('bomb'); rumble(300);
+      fx.burst(v.racer.x, v.racer.y + 1.1, v.racer.z, ['#FFE066', '#FFD43B', '#FFF3BF', '#FFA94D']); break; // gold stars, like OpenWii
     case 'wall': sfx('wall'); rumble(120); break;
     case 'land': v.bounce = 0; sfx('wall'); rumble(60); break;
     case 'glider': sfx('clear'); rumble(60); break;
@@ -355,7 +378,9 @@ function render() {
   renderer.setClearColor(0x000000, 1);
   humans.forEach((h, i) => {
     const r = h.racer, vh = H / humans.length, y = H - vh * (i + 1);
-    sun.position.set(r.x + SUN_DIR[0] * 80, r.y + SUN_DIR[1] * 80, r.z + SUN_DIR[2] * 80);
+    const off = track.def.lighting?.keyOffset || SUN_DIR.map((d) => d * 80);
+    sun.position.set(r.x + off[0], r.y + off[1], r.z + off[2]);
+    track.floodlights?.update(r.s);
     sun.target.position.set(r.x, r.y, r.z);
     sun.target.updateMatrixWorld();
     h.camera.aspect = W / vh;
@@ -431,7 +456,7 @@ function updateHud() {
     const r = h.racer;
     const q = (s) => h.hud.querySelector(s);
     const set = (s, v) => { const e = q(s); if (e.innerHTML !== v) e.innerHTML = v; };
-    set('.kart-place', ordinal(race.position(r)));
+    set('.kart-place', ordinal(race.position(r)).replace(/(\D+)$/, '<small>$1</small>'));
     set('.kart-lap', `Lap ${clamp(r.lap, 1, LAPS)}/${LAPS}`);
     set('.kart-coins', `<span class="coin"></span>${r.coins}`);
     const icon = r.roulette > 0 ? ITEM_ICONS[names[Math.floor(performance.now() / 90) % names.length]] : r.item ? ITEM_ICONS[r.item] : '';
@@ -543,6 +568,7 @@ async function init(token) {
   const fill = new THREE.DirectionalLight('#77BAFF', 0.35);
   fill.position.set(-80, 70, -20);
   scene.add(fill);
+  scene.userData.fill = fill;
   sun = new THREE.DirectionalLight('#fff4e0', 2.2);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -552,6 +578,14 @@ async function init(token) {
   sun.shadow.camera.far = 220;
   scene.add(sun, sun.target);
   look = await createLook(THREE, renderer, scene, new URLSearchParams(location.search).get('fx'));
+  // Settings: the cartoon look and ambient occlusion (?ao=off / ?cartoon=off in the link win, for testing)
+  const q = new URLSearchParams(location.search);
+  const applyGraphics = () => {
+    look.setAO(q.get('ao') ? q.get('ao') !== 'off' : graphics.ao);
+    look.setCartoon(q.get('cartoon') ? q.get('cartoon') !== 'off' : graphics.cartoon);
+  };
+  applyGraphics();
+  stopGraphics = graphics.onChange(applyGraphics);
   fx = createRaceFx(THREE, scene);
   if (token !== alive) return;
   portraits = makePortraits(renderer, CHARACTERS, assets);
@@ -597,6 +631,7 @@ export default {
     select?.destroy();
     showrooms.forEach((room) => room.dispose());
     showrooms.clear();
+    stopGraphics?.(); stopGraphics = null;
     look?.dispose();
     fx?.dispose();
     renderer?.dispose();

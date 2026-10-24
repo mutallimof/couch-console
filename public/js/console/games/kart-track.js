@@ -92,6 +92,7 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
         #include <colorspace_fragment>
       }`,
   }));
+  sky.userData.isSky = true; // (hidden when a real HDRI sky is available, see karts-polyhaven.js)
   group.add(sky);
   if (def.night) {
     const stars = new THREE.BufferGeometry(), sp = [];

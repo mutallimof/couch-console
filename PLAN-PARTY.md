@@ -1,8 +1,7 @@
 # PLAN-PARTY.md: Couch Console becomes "the party app for any TV"
 
-> **For Claude Code:** read `CLAUDE.md` and `PLAN.md` first. This file adds **Milestones 3–5** (Phases 35–44).
-> Start only after the current work (cursor fix + Turbo Karts port) is finished and tested.
-> Before building Phase 35, **review this whole plan critically**: list anything that's technically wrong, risky or unclear, propose fixes, and wait for my OK. After that, work phase by phase as usual.
+> **For Claude Code:** read `CLAUDE.md` and `PLAN.md` first. This file adds **Milestones 3–5** (Phases 43–52; the plan was first written as 35–44, renumbered because Phases 39–42 were the kart work).
+> Status: the cursor fix and the Turbo Karts port are done. The critical review was done (see "Review and fixes" below and `docs/DECISIONS.md`); the fixes are already folded into the text. Work phase by phase as usual; per `CLAUDE.md`, push + merge to `main` after each phase when `npm test` passes.
 
 ---
 
@@ -141,7 +140,7 @@ Everyone sends photos from their phone. They appear live on the TV, and **everyo
 
 ### The TV
 - **Now playing:** large thumbnail, title, "added by Sara" in her color, a progress bar, and **Up next** (3 songs).
-- The music **keeps playing in a mini-player** (bottom corner) when you leave the Music screen for Photos or the menu. It **pauses automatically** when a game or presentation that uses sound starts, and resumes afterwards (a Settings toggle).
+- The music **keeps playing in a mini-player** (bottom corner) when you leave the Music screen for Photos or the menu. *(Review fix: YouTube's rules require the embedded player to stay visible and at least 200×200 px, so the "mini-player" is a 200×200+ card in the corner, never a hidden or 1-pixel player.)* It **pauses automatically** when a game or presentation that uses sound starts, and resumes afterwards (a Settings toggle).
 - **Autoplay:** browsers need one click or keypress on the TV page before sound can play. Show a big "Click once to enable sound" overlay until that happens.
 
 ### The phone
@@ -236,7 +235,7 @@ Everyone sends photos from their phone. They appear live on the TV, and **everyo
 
 ### Shared camera core
 - **Webcam:** `getUserMedia` on the TV page (works on https or localhost). Settings → Camera: choose the camera, mirror on/off, and a test view.
-- **Vision:** **MediaPipe Tasks Vision** (`@mediapipe/tasks-vision`, pinned version) with the **Pose Landmarker (lite)** and the **Face Landmarker**. All processing happens locally in the browser.
+- **Vision:** **MediaPipe Tasks Vision** (`@mediapipe/tasks-vision`, pinned version) with the **Pose Landmarker (lite)** and the **Face Landmarker**. All processing happens locally in the browser. *(Review fix: the npm package only contains the WASM runtime. The model files `pose_landmarker_lite.task` and `face_landmarker.task` must be downloaded once into `public/assets/mediapipe/` and served locally, never fetched from Google at runtime, or the game would break offline.)*
 - **Performance target:** at least 25 fps of tracking on the laptop. Show the fps in `?debug=1`, and if it's slow, lower the input resolution automatically.
 - **Setup helper:** before each camera game, a "Can the camera see everyone?" screen shows outlines, plus "Step back" and "More light" hints.
 - **Privacy:** a visible camera-on indicator on the TV. Frames are never stored or sent anywhere, except photos someone deliberately takes in Photo Booth.
@@ -310,26 +309,26 @@ No paid services. The YouTube Data API key is optional and free.
 ### 🟩 Milestone 3: Party hub
 | Phase | What | Done when |
 |---|---|---|
-| **35** | **Roles + folders:** guest/player roles, the name join flow, phone tabs, the QR corner, events (`data/events/`), the tunnel-first party link, home folders (Party Games, Arcade, Camera, Channels) from the manifests | 10 phones (simulated) join as guests and 4 as players, folders open and close with the remote, and a phone without the mkcert CA can join without a warning |
-| **36** | **Photos:** upload queue with processing in the phone browser, the TV wall + grid, the phone gallery, Save via share sheet, Save selected, the ZIP, moderation, edge cases | 20 photos from 3 phones show up live on the TV and all phones; Save puts a photo into the iPhone Photos app; the ZIP downloads |
-| **37** | **Music:** paste-link adding + oEmbed check, the fair queue, votes, skip vote, the mini-player, host controls, autoplay overlay; optional search with a key | 3 phones queue songs, the order is fair, a skip vote works, and a non-embeddable video is rejected with a clear message |
-| **38** | **Present:** PDF/image upload (phone + laptop), the deck library, the presenter phone view, the laser, black screen, keyboard and clickers, notes | A 20-page PDF presents smoothly from a phone, the laser follows the pointer, and a `.pptx` shows the export steps |
+| **43** | **Roles + folders** (built as 43a roles/join/protocol, 43b events + upload security, 43c folders + QR corner): guest/player roles, the name join flow, phone tabs, the QR corner, events (`data/events/`), the tunnel-first party link, home folders (Party Games, Arcade, Camera, Channels) from the manifests | 10 phones (simulated) join as guests and 4 as players, folders open and close with the remote, and a phone without the mkcert CA can join without a warning |
+| **44** | **Photos:** upload queue with processing in the phone browser, the TV wall + grid, the phone gallery, Save via share sheet, Save selected, the ZIP, moderation, edge cases | 20 photos from 3 phones show up live on the TV and all phones; Save puts a photo into the iPhone Photos app; the ZIP downloads |
+| **45** | **Music:** paste-link adding + oEmbed check, the fair queue, votes, skip vote, the mini-player, host controls, autoplay overlay; optional search with a key | 3 phones queue songs, the order is fair, a skip vote works, and a non-embeddable video is rejected with a clear message |
+| **46** | **Present:** PDF/image upload (phone + laptop), the deck library, the presenter phone view, the laser, black screen, keyboard and clickers, notes | A 20-page PDF presents smoothly from a phone, the laser follows the pointer, and a `.pptx` shows the export steps |
 
 ### 🟨 Milestone 4: Party Games
 | Phase | What | Done when |
 |---|---|---|
-| **39** | The game framework (lobby, clock sync, gestures, phone game screens, results) + **Quick Draw Duel** | 2 phones play 5 rounds; the clock offset stays under ~20 ms (shown in debug); false starts are detected |
-| **40** | **Hot Potato**, both modes | Mode A with 3 phones and Mode B with a single guest phone both work start to finish |
-| **41** | **Steady Hands** | 2–4 phones play; eggs drop on a real jolt but not on normal careful movement (tune with my real tests) |
+| **47** | The game framework (lobby, clock sync, gestures, phone game screens, results) + **Quick Draw Duel** | 2 phones play 5 rounds; the clock offset stays under ~20 ms (shown in debug); false starts are detected |
+| **48** | **Hot Potato**, both modes | Mode A with 3 phones and Mode B with a single guest phone both work start to finish |
+| **49** | **Steady Hands** | 2–4 phones play; eggs drop on a real jolt but not on normal careful movement (tune with my real tests) |
 
 ### 🟦 Milestone 5: Camera
 | Phase | What | Done when |
 |---|---|---|
-| **42** | The camera core + **Photo Booth** | Filters track faces, any phone can trigger the shutter, and photos and strips land in the album |
-| **43** | **Party Workout** | 2 people doing squats in front of the webcam are counted within ±1 rep over 30 s |
-| **44** | **Mirror Match**, or "Freeze Pose" if it's unreliable | A full 2-player round works and scores feel fair to me |
+| **50** | The camera core + **Photo Booth** | Filters track faces, any phone can trigger the shutter, and photos and strips land in the album |
+| **51** | **Party Workout** | 2 people doing squats in front of the webcam are counted within ±1 rep over 30 s |
+| **52** | **Mirror Match**, or "Freeze Pose" if it's unreliable | A full 2-player round works and scores feel fair to me |
 
-**Each phase ends with:** `npm test`, browser checks with simulated phones, screenshots, the design pass, commit, and a YOUR TURN test checklist. Push only after my "yes".
+**Each phase ends with:** `npm test`, browser checks with simulated phones, screenshots, the design pass, commit, and the test checklist for me (collected into one YOUR TURN list at the end of an unattended run). Then push and merge into `main` if `npm test` passes (see `CLAUDE.md`).
 
 ---
 
@@ -340,3 +339,30 @@ No paid services. The YouTube Data API key is optional and free.
 - [ ] Presenting a real PDF from my phone in front of people
 - [ ] Party games with 3–4 people in a real room (latency and fairness)
 - [ ] The webcam in a normal living-room light: tracking holds at 2–3 m distance
+
+
+---
+
+## 12. Review and fixes (done at the start of Phase 43)
+
+Written by Claude Code after reading the whole plan. Each item is already fixed in the text above or listed as a rule for the phase that needs it.
+
+**Wrong or risky**
+1. **Tunnel vs. "everything stays local".** A cloudflared tunnel proxies all traffic (photos included) through Cloudflare, which contradicts principle 4. Fix: the tunnel is **opt-in** and the README says plainly what goes through it; the default QR stays the LAN link. Guests don't need HTTPS for Photos/Music/Present, but two features need a *secure context* (HTTPS or localhost): **Save to Photos via the share sheet** (`navigator.share({files})`) and **SHA-256 hashing / wake lock in the browser**. On plain-LAN http they fall back to a download link and server-side hashing.
+2. **Duplicate-photo detection** was described client-side; `crypto.subtle` doesn't exist on http pages. Fix: the server always hashes (SHA-256) after upload; the client hash is only an optional shortcut.
+3. **`createImageBitmap(file, {imageOrientation})`** is flaky on older iOS Safari. Fix: try it, fall back to `<img>` + canvas (browsers apply EXIF rotation when drawing).
+4. **Mini-player** had no size, but YouTube requires a visible player of at least 200×200 px (see the fix in section 4).
+5. **MediaPipe models** are not in the npm package (see section 7 fix): they are a manual download, so the camera phases must work without them (a clear "model files missing" screen) and their logic (rep counting, pose similarity) must be tested with recorded landmark data.
+6. **Uploads are an open door.** Anyone on the network (or the tunnel URL) could POST files. Fix: uploads need a `clientId` that joined the room, a per-event party token, magic-byte sniffing (don't trust the MIME type), random server-side file names (no path traversal), per-client rate limits, a per-event size cap and a disk-space check. Host-only actions (hide, delete, approve, end party) are checked against the console's own socket, never a phone's claim.
+7. **Protocol change.** Guests (unlimited) need an id space apart from players (P1-P4): `role` + `guestId` in the join message, and slot ids stay 1-4. This is a deliberate, backward-compatible addition to `shared/protocol.js` (documented there).
+8. **Screen wake lock.** Phones sleeping during a party or a presentation would drop the connection. Fix: request `navigator.wakeLock` on the presenter/party phones and the TV page where available.
+9. **Memory on the TV.** Decoding many 3000 px photos kills a laptop browser. Fix: the TV wall shows one full-size image at a time, the grid uses the 480 px thumbnails, everything else is lazy.
+10. **Phase 43 was too big.** Split into 43a (roles + join + protocol), 43b (events + upload security + tunnel option), 43c (folders + QR corner).
+11. **Acceptance criteria that can't be automated** (a phone without the mkcert certificate; an iPhone saving to Photos; a real hour of music) are moved to the real-world checklist (section 11); the phase's automated criteria use simulated sockets and a headless browser.
+12. **Tests must not touch real data.** The server takes `DATA_DIR` (default `data/`, git-ignored); tests use a temp folder.
+
+**Unclear, now decided**
+- Players keep P1-P4 and their colors; guests get a name + emoji + their own color, never a P-number.
+- "Continue last party" is the default on boot.
+- Everything the plan calls "synth sounds" reuses the existing sound engine; no audio files.
+- Kart racing on the TV and party features share the one socket room; a party event is not a new room.
