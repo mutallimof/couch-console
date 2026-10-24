@@ -250,9 +250,9 @@ export function createMenu({ grid, clock, date, crumb, apps, folders = {}, icons
       if (phones !== undefined) { $('phones-n').textContent = String(phones); $('phones').classList.toggle('on', phones > 0); }
       if (online !== undefined) $('wifi').classList.toggle('off', !online);
     },
-    setProfile({ name, emoji } = {}) {
+    setProfile({ name, faceHtml } = {}) {
       if (name) $('who-name').textContent = name;
-      if (emoji) $('who-face').textContent = emoji;
+      if (faceHtml) $('who-face').innerHTML = faceHtml;
     },
     refresh() { renderAll(); },
   };

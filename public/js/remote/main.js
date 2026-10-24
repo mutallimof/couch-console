@@ -62,9 +62,11 @@ let motionOk = false, laserEmit = false;
 import * as photosPane from './photos.js';
 import * as musicPane from './music.js';
 import * as presentPane from './present.js';
+import * as activityPane from './activity.js';
 party.registerPane('photos', 'Photos', '📸', photosPane);
 party.registerPane('music', 'Music', '🎵', musicPane);
 party.registerPane('present', 'Present', '🖥️', presentPane);
+party.registerPane('activity', 'Activity', '🔔', activityPane);
 
 function setConnected(on, text) {
   $('dot').classList.toggle('on', on);
@@ -100,7 +102,7 @@ function join() {
   }
   setConnected(false, 'Joining…');
   const p = party.profile;
-  socket.emit(EV.REMOTE_JOIN, { room, clientId, name: p.name, emoji: p.emoji, role: p.role === 'guest' ? 'guest' : 'player' }, (res) => {
+  socket.emit(EV.REMOTE_JOIN, { room, clientId, name: p.name, emoji: p.emoji, avatar: p.avatar, role: p.role === 'guest' ? 'guest' : 'player' }, (res) => {
     if (!res?.ok) {
       setConnected(false, 'Not joined');
       return showJoinForm(ERRORS[res?.error] || 'Could not join.');

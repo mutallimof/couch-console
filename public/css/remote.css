@@ -398,3 +398,20 @@ body.kart-mode .tabs, body.kart-mode .panes { display: none; }
 .pr-laser.on { background: #e03131; color: #fff; }
 .pr-black.on { background: #222; color: #fff; }
 .pr-notes { min-height: 90px; border: 2px solid #d5dce8; border-radius: 14px; padding: 10px; font: 600 15px 'Nunito', system-ui, sans-serif; resize: none; user-select: text; -webkit-user-select: text; touch-action: pan-y; }
+
+/* ---------- Avatar maker and Activity (Phase 55) ---------- */
+.av-edit { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 360px; }
+.av-preview svg { width: 112px; height: 112px; border-radius: 50%; box-shadow: 0 6px 18px rgba(60, 80, 130, 0.25); }
+.av-rows { width: 100%; display: grid; gap: 6px; }
+.av-row { display: grid; grid-template-columns: 1fr 44px 96px 44px; align-items: center; gap: 6px; font-weight: 800; font-size: 15px; }
+.av-row button { height: 44px; border: 0; border-radius: 14px; background: #fff; font: 900 24px var(--display, 'Nunito'); color: var(--text); box-shadow: 0 1px 4px rgba(20, 30, 50, 0.15); touch-action: manipulation; }
+.av-row b { text-align: center; font-size: 14px; }
+.av-row i { display: inline-block; width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2); vertical-align: middle; }
+.me-btn svg { border-radius: 50%; display: block; }
+.act-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.act-item { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 18px; padding: 8px 12px; box-shadow: 0 1px 4px rgba(20, 30, 50, 0.12); }
+.act-face { font-size: 30px; line-height: 1; display: grid; place-items: center; }
+.act-face svg { border-radius: 50%; display: block; }
+.act-text { font-weight: 800; font-size: 16px; display: grid; }
+.act-text small { font-weight: 700; color: var(--muted); font-size: 13px; }
+.act-empty { text-align: center; padding: 20px; }

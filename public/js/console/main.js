@@ -12,6 +12,7 @@ import { createSettings } from './settings.js';
 import { sound } from './sound.js';
 import { playBoot } from './boot.js';
 import { loadApps } from './apps.js';
+import { avatarSvg } from '../shared/avatar.js';
 
 const $ = (id) => document.getElementById(id);
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -101,6 +102,13 @@ function renderGuests() {
   $('guest-list').textContent = guests.length ? `Also here: ${guests.map((g) => `${g.emoji} ${g.name}`).join('  ·  ')}` : '';
 }
 
+// The profile chip in the status bar shows whoever drives the menu (P1): their face and name
+function faceHtml(p, size) { return p?.avatar ? avatarSvg(p.avatar, size) : escHtml(p?.emoji || '🙂'); }
+function renderProfileChip() {
+  const id = driverId(), p = party.personOfPlayer(Number.isFinite(id) ? id : 0) || party.people.find((x) => x.online);
+  menu.setProfile({ name: p?.name || 'Guest', faceHtml: p ? faceHtml(p, 40) : '🙂' });
+}
+
 // A new room is created on every (re)connect, e.g. after the server restarts.
 function onConnect() {
   $('status').textContent = '';
@@ -134,7 +142,8 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
     current.allowed.add(playerId);
   }
 });
-socket.on(EV.PARTY_ROSTER, (r) => { party.onRoster(r); renderGuests(); });
+socket.on(EV.PARTY_ROSTER, (r) => { party.onRoster(r); renderGuests(); renderProfileChip(); });
+socket.on(EV.PARTY_ACTIVITY, ({ entry }) => { party.emitActivity(entry); if (overlayOpen === 'activity') showOverlay(activityHtml(), 'activity'); });
 socket.on(EV.PARTY_PHOTO, (e) => party.emitPhoto(e));
 socket.on(EV.MUSIC_STATE, (s) => musicPlayer.onState(s));
 socket.on(EV.PRESENT_DECK, (e) => { party.emitDeck(e); if (e.kind !== 'removed') slides.processDeck(e.deck); }); // (PDFs: count the pages, make little pictures)
@@ -180,6 +189,7 @@ function renderSlots() {
 
 players.onChange(() => {
   menu.setStatus({ phones: players.list().length });
+  renderProfileChip();
   renderSlots();
   setPairing();
   // The focus ring shows who's driving the menu
@@ -299,6 +309,8 @@ function makeApi(cur, mode) {
     pointer: (playerId) => pointers.position(playerId),
     rumble: (playerId, ms) => socket.emit(EV.FEEDBACK_RUMBLE, { playerId, ms }),
     sound,
+    // Tell the activity feed a player won ("Cem won Turbo Karts")
+    reportWin: (playerId) => socket.emit(EV.ACTIVITY_GAME, { playerId, game: cur.app.title, what: 'won' }),
     exit: closeApp,
   };
 }
@@ -472,27 +484,31 @@ function pressTile() {
 }
 
 // ---------- Side buttons, the dock's Join, Sleep, and the little info panels ----------
-let overlayOpen = false, asleep = false;
-function showOverlay(html) {
-  overlayOpen = true;
+let overlayOpen = null, asleep = false; // overlayOpen: null, or 'profile' / 'activity'
+function showOverlay(html, kind = 'info') {
+  overlayOpen = kind;
   $('overlay').innerHTML = `<div class="card glass">${html}<p class="muted">Press A or B to close</p></div>`;
   $('overlay').hidden = false;
 }
-function closeOverlay() { overlayOpen = false; $('overlay').hidden = true; }
+function closeOverlay() { overlayOpen = null; $('overlay').hidden = true; }
 function sleepNow() { asleep = true; $('sleep').hidden = false; }
 function wake() { if (!asleep) return false; asleep = false; $('sleep').hidden = true; return true; }
 function doAction(action) {
   if (action === 'players' || action === 'join') prefs.showQR();
   else if (action === 'sleep') sleepNow();
-  else if (action === 'profile') showOverlay(profileHtml());
-  else if (action === 'activity') showOverlay(activityHtml());
+  else if (action === 'profile') showOverlay(profileHtml(), 'profile');
+  else if (action === 'activity') { party.loadActivity().then(() => { if (overlayOpen === 'activity') showOverlay(activityHtml(), 'activity'); }); showOverlay(activityHtml(), 'activity'); }
 }
 const escHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 function profileHtml() {
   const people = party.people.filter((p) => p.online);
-  return `<h1>Who is here</h1><ul>${people.map((p) => `<li>${escHtml(p.emoji)} <b>${escHtml(p.name)}</b> · ${p.role === 'player' ? `Player ${p.playerId}` : 'Guest'}</li>`).join('') || '<li class="muted">Nobody yet. Scan the QR code.</li>'}</ul>`;
+  return `<h1>Who is here</h1><ul class="who-list">${people.map((p) => `<li><span class="who-av">${faceHtml(p, 56)}</span><span><b>${escHtml(p.name)}</b><small>${p.role === 'player' ? `Player ${p.playerId}` : 'Guest'}</small></span></li>`).join('') || '<li class="muted">Nobody yet. Scan the QR code.</li>'}</ul><p class="muted">Each phone makes its own face: open the Me button on the phone.</p>`;
 }
-function activityHtml() { return '<h1>Activity</h1><p class="muted">Nothing yet.</p>'; }
+const ago = (t) => { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 45 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`; };
+function activityHtml() {
+  const list = party.activity.slice(0, 8);
+  return `<h1>Activity</h1><ul class="who-list">${list.map((e) => `<li><span class="who-av">${faceHtml(e.who, 56)}</span><span><b>${escHtml(e.text)}</b><small>${ago(e.at)}</small></span></li>`).join('') || '<li class="muted">Nothing yet. Add a photo or a song from your phone!</li>'}</ul>`;
+}
 
 socket.on(EV.INPUT_BUTTON, onInputButton);
 

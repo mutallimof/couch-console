@@ -5,6 +5,7 @@
 // Pictures from the laptop's photos/ folder join the album too.
 import { createFocusGrid } from './focus-grid.js';
 import { party } from '../party.js';
+import { avatarSvg } from '../../shared/avatar.js';
 
 const SLIDE_SECONDS = 7, NEW_SECONDS = 6;
 
@@ -16,6 +17,8 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 let api, root, photos = [], grid, mode = 'wall', index = 0, timer, frame, unlisten, confirmHide = null;
 let jumpUntil = 0;
 
+// The uploader's face: their avatar, or their emoji if they have none
+const face = (p) => (p.byAvatar ? avatarSvg(p.byAvatar, 28) : esc(p.byEmoji));
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const auth = () => `room=${party.room}&h=${encodeURIComponent(party.headers()['x-couch-host'])}`;
 const src = (p, kind) => (p.local ? p.url : `/api/party/photos/${p.id}/${kind}?${auth()}`);
@@ -42,7 +45,7 @@ function showWall(i = index, fresh = false) {
   el.className = `photo-view wall${fresh ? ' fresh' : ''}`;
   el.innerHTML = `<div class="photo-bg" style="background-image:url('${src(p, 'thumb').replace(/'/g, '%27')}')"></div>
     <img class="photo-full" src="${src(p, 'full')}" alt="">
-    <div class="photo-by" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : esc(p.byEmoji)} ${esc(p.byName || 'Laptop')}</div>
+    <div class="photo-by" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : face(p)} ${esc(p.byName || 'Laptop')}</div>
     <div class="photo-help">PLUS = all photos · B = menu</div>`;
   root.append(el);
   timer = setTimeout(() => showWall(index + 1), (fresh ? NEW_SECONDS : SLIDE_SECONDS) * 1000);
@@ -70,7 +73,7 @@ function showGrid() {
   head.hidden = false;
   head.innerHTML = `<h1>Photos</h1><span>${shown().length} photos${queue.length ? ` · <b>${queue.length} waiting for you</b>` : ''} · A = full screen · MINUS = hide · PLUS = wall · B = back</span>`;
   el.innerHTML = list.map((p, i) => `<div class="photo-tile${p.pending ? ' pending' : ''}" data-index="${i}">
-      <img src="${src(p, 'thumb')}" alt="" loading="lazy"><span class="photo-by sm" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : esc(p.byEmoji)} ${esc(p.byName || 'Laptop')}</span>
+      <img src="${src(p, 'thumb')}" alt="" loading="lazy"><span class="photo-by sm" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : face(p)} ${esc(p.byName || 'Laptop')}</span>
       ${p.pending ? '<span class="photo-pending">Waiting: A = show</span>' : ''}</div>`).join('');
   grid = list.length ? createFocusGrid({ items: [...el.querySelectorAll('.photo-tile')], columns: 5, onChange: () => api.sound.play('hover') }) : null;
   grid?.setIndex(Math.min(index, list.length - 1), true);
@@ -86,7 +89,7 @@ function showFull(p) {
   el.className = 'photo-view';
   el.innerHTML = `<div class="photo-bg" style="background-image:url('${src(p, 'thumb').replace(/'/g, '%27')}')"></div>
     <img class="photo-full" src="${src(p, 'full')}" alt="">
-    <div class="photo-by" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : esc(p.byEmoji)} ${esc(p.byName || 'Laptop')}</div>
+    <div class="photo-by" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : face(p)} ${esc(p.byName || 'Laptop')}</div>
     <div class="photo-help">◀ ▶ browse · MINUS hide · B back</div>`;
   root.append(el);
 }

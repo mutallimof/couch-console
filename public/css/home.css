@@ -92,3 +92,14 @@ kbd { display: inline-grid; place-items: center; min-width: 1.7em; height: 1.7em
 .tile-icon img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; filter: drop-shadow(0 6px 6px rgba(30, 40, 80, 0.25)); }
 .folder .mini-grid span { position: relative; }
 .folder .mini-grid img { position: static; filter: none; }
+
+/* Faces (avatars) and the info panels */
+.who-face svg, .who-av svg, .res-face svg { display: block; border-radius: 50%; width: 100%; height: 100%; }
+.who-face { overflow: hidden; background: none; }
+.who-list { list-style: none; margin: 0 0 1em; padding: 0; display: grid; gap: calc(var(--u) * 0.8); }
+.who-list li { display: flex; align-items: center; gap: calc(var(--u) * 1.2); }
+.who-av { flex: none; width: calc(var(--u) * 3.6); height: calc(var(--u) * 3.6); display: grid; place-items: center; font-size: calc(var(--u) * 2.4); }
+.who-list b { display: block; font-size: calc(var(--u) * 1.6); }
+.who-list small { color: var(--muted); font-size: calc(var(--u) * 1.1); font-weight: 700; }
+.photo-by svg { vertical-align: middle; border-radius: 50%; margin-right: 4px; }
+.res-face { display: inline-block; width: 30px; height: 30px; vertical-align: middle; margin-right: 6px; }

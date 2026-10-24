@@ -30,6 +30,8 @@ export const RECONNECT_GRACE_MS = 30_000;
 export const EV = {
   CONSOLE_CREATE: 'console:create',
   REMOTE_JOIN: 'remote:join',
+  PARTY_ACTIVITY: 'party:activity', // server -> console + phones: { entry } (a new line in the activity feed; an entry with a known id replaces it)
+  ACTIVITY_GAME: 'activity:game', // console -> server: { playerId, game, what: 'won' } (the feed says who won)
   REMOTE_REPLACED: 'remote:replaced', // server -> an older tab of the same phone: a newer tab took over
   PLAYER_JOINED: 'player:joined',
   PLAYER_LEFT: 'player:left',

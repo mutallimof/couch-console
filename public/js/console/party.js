@@ -18,6 +18,8 @@ function toast(text) {
 
 // Photo notices (new photo, removed...) go to whoever is listening; if the Photos app is not open, a toast
 const photoListeners = new Set();
+const activityListeners = new Set();
+let activity = []; // newest first
 const deckListeners = new Set();
 
 export const party = {
@@ -36,6 +38,20 @@ export const party = {
     photoListeners.forEach((fn) => fn(e));
     if (e.kind === 'added' && !party.photosOpen) toast(`📸 New photo from ${e.photo.byName}`);
   },
+  // The activity feed ("Ana added 5 photos"): newest first; new lines also pop up as a note
+  get activity() { return activity; },
+  onActivity(fn) { activityListeners.add(fn); return () => activityListeners.delete(fn); },
+  emitActivity(entry) {
+    const i = activity.findIndex((e) => e.id === entry.id);
+    if (i >= 0) activity.splice(i, 1);
+    activity.unshift(entry);
+    activity.length = Math.min(activity.length, 60);
+    activityListeners.forEach((fn) => fn(entry));
+    if (entry.kind !== 'join' && i < 0) toast(entry.text);
+  },
+  async loadActivity() { try { activity = (await party.call('GET', '/activity')).entries; activityListeners.forEach((fn) => fn()); } catch { /* offline */ } },
+  // The person of a player slot (name, emoji, avatar), if known
+  personOfPlayer: (playerId) => roster.people.find((p) => p.playerId === playerId),
   get roster() { return roster; },
   get people() { return roster.people; },
   get event() { return event; },

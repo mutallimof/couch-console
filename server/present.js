@@ -29,7 +29,7 @@ export function exportHelp(filename) {
 export const isPdf = (buf) => buf.length > 8 && buf.subarray(0, 5).toString('latin1') === '%PDF-';
 const cleanName = (n) => String(n ?? '').replace(/[\u0000-\u001f\u007f<>\\/]/g, '').replace(/\.(pdf|jpe?g|png|webp)$/i, '').trim().slice(0, 80) || 'Slides';
 
-export function createPresent({ app, io, rooms, party }) {
+export function createPresent({ app, io, rooms, party, activity }) {
   const { events, need } = party;
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_PDF_BYTES, files: MAX_PAGES * 2, fields: 12 } });
   const router = express.Router();
@@ -159,6 +159,7 @@ export function createPresent({ app, io, rooms, party }) {
     if (s.deckId && s.presenter && s.presenter.id !== whoAmI(req.auth).id && !req.auth.host) return res.status(409).json({ error: 'BUSY', message: `${s.presenter.name} is presenting.` });
     Object.assign(s, { deckId: d.id, page: Math.min(d.lastPage || 1, d.pages || 1) || 1, black: false, presenter: whoAmI(req.auth), laser: false });
     broadcast(req.auth.code);
+    if (req.auth.person) activity?.add(req.auth.code, req.auth.person, 'present');
     res.json(publicState());
   });
   router.post('/present/goto', need(), (req, res) => {

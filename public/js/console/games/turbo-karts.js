@@ -8,6 +8,8 @@
 // Race rules adapted from OpenWii's games/mario-kart (MIT, Copyright (c) 2026 Patrick Sun; see
 // THIRD_PARTY_NOTICES.md).
 import { colorFor } from '../../shared/protocol.js';
+import { party } from '../party.js';
+import { avatarSvg } from '../../shared/avatar.js';
 import { graphics } from '../graphics-prefs.js';
 import { skyFor, skyDome, SKY_GAIN, roadTextures, stadiumRoadTextures, groundTextures } from './turbo-karts/karts-polyhaven.js';
 import { setStadiumPavement } from './turbo-karts/ow-kart/stadium/materials.js';
@@ -491,15 +493,21 @@ function showResults() {
   } else {
     const w = order[0];
     banner = `${w.playerId ? `P${w.playerId}` : w.char.name} wins!`;
-    if (w.playerId) color = w.color;
+    if (w.playerId) { color = w.color; api.reportWin?.(w.playerId); }
   }
-  const rows = order.map((v, i) => `<tr><td>${ordinal(i + 1)}</td><td><img src="${portraits[v.char.id]}" alt="">${v.playerId ? `<b style="color:${v.color}">P${v.playerId}</b> ` : ''}${v.char.name}</td>
+  const rows = order.map((v, i) => `<tr><td>${ordinal(i + 1)}</td><td><img src="${portraits[v.char.id]}" alt="">${v.playerId ? `<b style="color:${v.color}">P${v.playerId}</b> ${personFace(v.playerId)}` : ''}${v.char.name}</td>
     <td>${v.kart.name}</td><td>${formatTime(v.racer.finishTime)}</td>${api.mode === 'coop' ? `<td>${POINTS[i]} pts</td>` : ''}</tr>`).join('');
   const el = document.createElement('div');
   el.className = 'kart-results';
   el.innerHTML = `<div class="kart-card"><h1 style="background:${color}">${banner}</h1><table>${rows}</table>
     <p>A = race again · B = change racers/track · HOME = menu</p></div>`;
   root.append(el);
+}
+
+// A player's little face (their avatar) for the results table
+function personFace(playerId) {
+  const p = party.personOfPlayer(playerId);
+  return p?.avatar ? `<span class="res-face">${avatarSvg(p.avatar, 30)}</span>` : '';
 }
 
 // ---------- Loop & input ----------
