@@ -85,7 +85,7 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
 
     // Menu -> Turbo Karts (Versus) -> each picks a character and a kart -> P1 picks the track
     const [p1, p2] = phones;
-    await focusOn(lap, (b) => press(p1, b).then(() => lap.waitForTimeout(300)), 'hero:turbo-karts');
+    await focusOn(lap, (b) => press(p1, b).then(() => lap.waitForTimeout(300)), 'turbo-karts');
     await press(p1, 'A');
     await lap.waitForSelector('.picker', { timeout: 30000 });
     await press(p1, 'A');

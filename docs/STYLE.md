@@ -1,5 +1,8 @@
 # Couch Console: style guide
 
+> **Two looks to choose from (waiting for the user's pick).** A) LIGHT: pastel gradient and frosted glass (the default now). B) DARK: the "plum living room at dusk". Same tiles, icons, type and layout; only the room and the glass change. Try B on the TV with `?theme=dark`. Screenshots: `docs/screenshots/home-options-light-vs-dark.png`, `style-board-light.png`, `style-board-dark.png`. When one is chosen, the other is deleted and every screen (pairing, settings, games' menus, phone) follows it.
+> The home screen is ONE grid of big tiles (Turbo Karts large, then Arcade, Channels, Photos, Music, Present, Settings; folders with no games are hidden); a folder opens as its own screen (B = back).
+
 One identity for everything: the TV, the phone remote, the games, the sounds. The references are the clean, glossy look of living-room console menus and bright toy-diorama icons; they are STYLE references only (no artwork, logos, characters or names are copied).
 Style board: `docs/screenshots/style-board.png` (source `docs/style-board.html`, which uses the real `public/css/theme.css`).
 

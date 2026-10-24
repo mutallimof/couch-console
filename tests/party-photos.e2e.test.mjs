@@ -95,7 +95,7 @@ test('guest uploads 3 photos; phones and the TV show them live; save and delete 
     // The TV: open Photos (tile 3: Turbo Karts, Arcade, Photos) with Ana's D-pad; the wall shows a picture with Ben's name on it
     await tv.waitForSelector('.tile:not(.empty)');
     const press = (btn) => ana.evaluate((b) => { const el = document.querySelector(`#controller [data-button="${b}"]`); el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); }, btn).then(() => tv.waitForTimeout(350));
-    await focusOn(tv, press, 'dock:photos');
+    await focusOn(tv, press, 'photos');
     await press('A');
     await tv.waitForSelector('.photo-view.wall .photo-by', { timeout: 15000 });
     assert.match(await tv.textContent('.photo-view.wall .photo-by'), /Ben/);

@@ -1,6 +1,7 @@
 // The party in real (headless) browsers (Phase 43): the welcome card, players and guests with their
 // tabs, "Ana joined" on the TV, and the home folders opening and closing. Skipped without Playwright. npm test
 import test from 'node:test';
+import { focusOn } from './helpers-home.mjs';
 import assert from 'node:assert/strict';
 import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
@@ -75,19 +76,18 @@ test('welcome card, player and guest tabs, joined notes, folders', { skip: !pw &
     assert.equal(await ben.textContent('#badge'), 'P2');
     assert.ok((await tabs(ben)).includes('remote'));
 
-    // The TV's home: the D-pad on phone 1 walks to a folder tile, A shows its games in the panel, B hops back to the folder tile
+    // The TV's home: the D-pad on phone 1 walks to the Arcade tile, A opens it as its own screen, B comes back
     await tv.waitForSelector('.tile:not(.empty)');
     const titles = () => tv.$$eval('.menu [data-focus] .tile-title', (t) => t.map((x) => x.textContent));
     assert.ok((await titles()).includes('Arcade') && (await titles()).includes('Turbo Karts'));
     await ana.tap('#start-btn');
     const press = (btn) => ana.evaluate((b) => { const el = document.querySelector(`#controller [data-button="${b}"]`); el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); }, btn).then(() => tv.waitForTimeout(350));
-    const zone = () => tv.evaluate(() => document.querySelector('.menu .focused')?.dataset.zone);
-    const onArcade = () => tv.evaluate(() => document.querySelector('.menu .focused .tile-title')?.textContent === 'Arcade');
-    for (let i = 0; i < 14 && !(await onArcade()); i++) await press('RIGHT');
-    assert.equal(await zone(), 'folder', 'the D-pad reaches the folder tiles');
-    const folderName = await tv.evaluate(() => document.querySelector('.menu .focused .tile-title').textContent);
+    await focusOn(tv, press, 'folder:arcade');
     await press('A');
-    assert.equal(await tv.textContent('#crumb'), folderName, 'A on a folder tile shows its games in the panel');
+    assert.equal(await tv.textContent('#crumb'), 'Arcade', 'A on a folder opens it as its own screen');
+    assert.ok((await titles()).includes('Bowling') && !(await titles()).includes('Turbo Karts'), 'only the folder\'s games show');
+    await press('B');
+    assert.ok((await titles()).includes('Turbo Karts') && (await tv.isHidden('#crumb')), 'B goes back to the home grid');
     assert.deepEqual(errors, [], 'no page errors');
   } finally {
     await browser.close();
