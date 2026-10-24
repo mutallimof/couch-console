@@ -1,6 +1,11 @@
 // Settings screen. It uses the same interface as a game, so the menu can open it like one.
 //   D-pad up/down: choose a row · left/right: change the value · A: press · B: back
 // Pointer + A also works on every control.
+// Settings has a second page, "Party" (Phase 43): the party's name, a new party, photo approval,
+// the photo limit, and ending the party (which asks three times).
+import { graphics } from './graphics-prefs.js';
+import { party } from './party.js';
+import { PHOTO_LIMITS_GB } from '../shared/protocol.js';
 
 const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round">
   <path d="M8 14h32M8 24h32M8 34h32"/>
@@ -8,16 +13,21 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 </svg>`;
 
 // prefs: { getSensitivity(), setSensitivity(n), getPhoneSounds(), setPhoneSounds(on), showQR() } from main.js
-const ROWS = 5;
+const MAIN_ACTIONS = ['sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'party', 'qr'];
+const PARTY_ACTIONS = ['rename', 'new-party', 'approve', 'limit-up', 'music-pause', 'download', 'end-party', 'back'];
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export function createSettings(prefs) {
-  let root, api, row = 0;
+  let root, api, row = 0, page = 'main';
+  let endStep = 0; // "End party": 0 = not asked, 1-2 = asked, the third A deletes
+  let message = '';
+  const actions = () => (page === 'main' ? MAIN_ACTIONS : PARTY_ACTIONS);
 
-  function render() {
+  function renderMain() {
     const level = prefs.getSensitivity();
     const bars = Array.from({ length: 10 }, (_, i) => `<span class="lvl ${i < level ? 'on' : ''}"></span>`).join('');
-    root.innerHTML = `
-      <div class="settings">
+    const on = (v) => (v ? 'On' : 'Off');
+    return `
         <h1>Settings</h1>
         <div class="set-row" data-row="0">
           <span class="set-label">Pointer speed</span>
@@ -25,28 +35,96 @@ export function createSettings(prefs) {
           <span class="levels">${bars}</span>
           <button class="set-btn" data-action="sens-up">+</button>
         </div>
-        <div class="set-row" data-row="1">
-          <span class="set-label">Sound</span>
-          <button class="set-btn wide" data-action="mute">${api.sound.muted ? 'Off' : 'On'}</button>
-        </div>
-        <div class="set-row" data-row="2">
-          <span class="set-label">Phone sounds</span>
-          <button class="set-btn wide" data-action="phone-sounds">${prefs.getPhoneSounds() ? 'On' : 'Off'}</button>
-        </div>
-        <div class="set-row" data-row="3">
-          <span class="set-label">Steady cursor</span>
-          <button class="set-btn wide" data-action="steady">${prefs.getSteady() ? 'On' : 'Off'}</button>
-        </div>
-        <div class="set-row" data-row="4">
-          <span class="set-label">Add a phone</span>
-          <button class="set-btn wide" data-action="qr">Show QR code</button>
-        </div>
-        <p class="set-hint">Steady cursor: turn it On if the cursor wanders or shakes. D-pad to choose · A to press · B to go back</p>
-      </div>`;
+        <div class="set-row" data-row="1"><span class="set-label">Sound</span>
+          <button class="set-btn wide" data-action="mute">${api.sound.muted ? 'Off' : 'On'}</button></div>
+        <div class="set-row" data-row="2"><span class="set-label">Phone sounds</span>
+          <button class="set-btn wide" data-action="phone-sounds">${on(prefs.getPhoneSounds())}</button></div>
+        <div class="set-row" data-row="3"><span class="set-label">Steady cursor</span>
+          <button class="set-btn wide" data-action="steady">${on(prefs.getSteady())}</button></div>
+        <div class="set-row" data-row="4"><span class="set-label">Cartoon look (karts)</span>
+          <button class="set-btn wide" data-action="cartoon">${on(graphics.cartoon)}</button></div>
+        <div class="set-row" data-row="5"><span class="set-label">Soft shadows (karts)</span>
+          <button class="set-btn wide" data-action="ao">${on(graphics.ao)}</button></div>
+        <div class="set-row" data-row="6"><span class="set-label">Party</span>
+          <button class="set-btn wide" data-action="party">Open ›</button></div>
+        <div class="set-row" data-row="7"><span class="set-label">Add a phone</span>
+          <button class="set-btn wide" data-action="qr">Show QR code</button></div>
+        <p class="set-hint">Steady cursor: turn it On if the cursor wanders or shakes. Cartoon look and soft shadows make Turbo Karts prettier; turn them Off if it runs slowly. D-pad to choose · A to press · B to go back</p>`;
+  }
+
+  function renderParty() {
+    const ev = party.event || {}, s = ev.settings || {};
+    const people = party.people.filter((p) => p.online);
+    const end = ['End party & delete data', 'Delete everything? Press A again', 'Really? This cannot be undone. A again'][endStep];
+    return `
+        <h1>Party</h1>
+        <div class="set-row" data-row="0"><span class="set-label">Name</span>
+          <button class="set-btn wide" data-action="rename">${esc(ev.name || '…')} ✎</button></div>
+        <div class="set-row" data-row="1"><span class="set-label">Start a new party</span>
+          <button class="set-btn wide" data-action="new-party">New ›</button></div>
+        <div class="set-row" data-row="2"><span class="set-label">Approve photos first</span>
+          <button class="set-btn wide" data-action="approve">${s.approvePhotos ? 'On' : 'Off'}</button></div>
+        <div class="set-row" data-row="3"><span class="set-label">Photo storage limit</span>
+          <button class="set-btn wide" data-action="limit-up">${s.photoLimitGB ?? 3} GB</button></div>
+        <div class="set-row" data-row="4"><span class="set-label">Pause music in games</span>
+          <button class="set-btn wide" data-action="music-pause">${s.pauseMusicInGames === false ? 'Off' : 'On'}</button></div>
+        <div class="set-row" data-row="5"><span class="set-label">All photos</span>
+          <button class="set-btn wide" data-action="download">Download ZIP ⬇</button></div>
+        <div class="set-row ${endStep ? 'danger' : ''}" data-row="6"><span class="set-label">${endStep ? '⚠️' : ''} Danger zone</span>
+          <button class="set-btn wide" data-action="end-party">${end}</button></div>
+        <div class="set-row" data-row="7"><span class="set-label"> </span>
+          <button class="set-btn wide" data-action="back">‹ Back</button></div>
+        <p class="set-hint">${message || `${people.length} here now (${people.filter((p) => p.role === 'player').length} playing). Data is saved on this laptop in the data folder. B = back`}</p>`;
+  }
+
+  function render() {
+    root.innerHTML = `<div class="settings">${page === 'main' ? renderMain() : renderParty()}</div>`;
     root.querySelectorAll('.set-row').forEach((r, i) => r.classList.toggle('focused', i === row));
   }
 
+  async function partyAction(action) {
+    try {
+      if (action !== 'end-party') endStep = 0;
+      if (action === 'rename') {
+        message = 'Type the new name on your phone…';
+        render();
+        api.setController('keyboard', 'New party name');
+      } else if (action === 'new-party') {
+        await party.call('POST', '/event/new', {});
+        await party.refreshEvent();
+        message = 'A new, empty party has started.';
+      } else if (action === 'approve') {
+        await party.call('PATCH', '/event/settings', { approvePhotos: !party.event.settings.approvePhotos });
+        await party.refreshEvent();
+      } else if (action === 'limit-up') {
+        const i = PHOTO_LIMITS_GB.indexOf(party.event.settings.photoLimitGB);
+        await party.call('PATCH', '/event/settings', { photoLimitGB: PHOTO_LIMITS_GB[(i + 1) % PHOTO_LIMITS_GB.length] });
+        await party.refreshEvent();
+      } else if (action === 'music-pause') {
+        await party.call('PATCH', '/event/settings', { pauseMusicInGames: party.event.settings.pauseMusicInGames === false });
+        await party.refreshEvent();
+      } else if (action === 'download') {
+        window.open(`/api/party/photos.zip?room=${party.room}&h=${encodeURIComponent(party.headers()['x-couch-host'])}`, '_blank');
+        message = 'The ZIP is downloading in a new tab.';
+      } else if (action === 'end-party') {
+        if (endStep < 2) { endStep++; } else {
+          await party.call('DELETE', '/event', { confirm: party.event.id });
+          await party.refreshEvent();
+          endStep = 0;
+          message = 'Everything was deleted. A new, empty party has started.';
+        }
+      } else if (action === 'back') {
+        page = 'main'; row = 6; endStep = 0; message = '';
+      }
+    } catch (err) {
+      message = 'That did not work. Is the laptop server still running?';
+      console.error(err);
+    }
+    render();
+  }
+
   function act(action) {
+    if (page === 'party') { api.sound.play('select'); return partyAction(action); }
     if (action === 'sens-down' || action === 'sens-up') {
       const next = prefs.getSensitivity() + (action === 'sens-up' ? 1 : -1);
       if (next < 1 || next > 10) return;
@@ -61,6 +139,13 @@ export function createSettings(prefs) {
     } else if (action === 'steady') {
       prefs.setSteady(!prefs.getSteady());
       api.sound.play('select');
+    } else if (action === 'cartoon' || action === 'ao') {
+      graphics.set(action, !graphics[action]);
+      api.sound.play('select');
+    } else if (action === 'party') {
+      page = 'party'; row = 0; message = '';
+      api.sound.play('select');
+      party.refreshEvent().then(render).catch(() => {});
     } else if (action === 'qr') {
       api.sound.play('select');
       prefs.showQR();
@@ -70,14 +155,19 @@ export function createSettings(prefs) {
 
   function onButton({ playerId, button, state }) {
     if (state !== 'down') return;
-    if (button === 'B') return api.exit();
+    if (button === 'B') {
+      if (page === 'party') { page = 'main'; row = 6; endStep = 0; message = ''; return render(); }
+      return api.exit();
+    }
+    const rows = actions().length;
     if (button === 'UP' || button === 'DOWN') {
-      row = (row + (button === 'DOWN' ? 1 : ROWS - 1)) % ROWS;
+      row = (row + (button === 'DOWN' ? 1 : rows - 1)) % rows;
+      endStep = 0;
       api.sound.play('hover');
       return render();
     }
     if (button === 'LEFT' || button === 'RIGHT') {
-      if (row === 0) act(button === 'RIGHT' ? 'sens-up' : 'sens-down');
+      if (page === 'main' && row === 0) act(button === 'RIGHT' ? 'sens-up' : 'sens-down');
       return;
     }
     if (button === 'A') {
@@ -85,8 +175,15 @@ export function createSettings(prefs) {
       const p = api.pointer(playerId);
       const hit = p && document.elementFromPoint(p.x, p.y)?.closest('[data-action]');
       if (hit && root.contains(hit)) return act(hit.dataset.action);
-      act(['sens-up', 'mute', 'phone-sounds', 'steady', 'qr'][row]);
+      act(actions()[row]);
     }
+  }
+
+  // A new party name typed on a phone
+  function onText({ text }) {
+    api.setController('pointer');
+    if (page !== 'party' || !text) { message = ''; return render(); }
+    party.call('PATCH', '/event', { name: text }).then(() => party.refreshEvent()).then(() => { message = 'Renamed.'; render(); }).catch(() => { message = 'Could not rename.'; render(); });
   }
 
   return {
@@ -99,8 +196,9 @@ export function createSettings(prefs) {
     mount(container, gameApi) {
       api = gameApi;
       root = container;
-      row = 0;
+      row = 0; page = 'main'; endStep = 0; message = '';
       api.onButton(onButton);
+      api.onText?.(onText);
       render();
     },
     unmount() {

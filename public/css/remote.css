@@ -277,3 +277,123 @@ body.kart-mode .top { display: none; }
 .kb-prompt { margin: 0; font-size: 24px; font-weight: 900; }
 .kb-input { font-size: 26px; letter-spacing: normal; text-transform: none; text-align: left; user-select: text; -webkit-user-select: text; }
 .kb-cancel { background: #8A94A6; }
+
+/* ---------- Party (Phase 43): welcome card, tabs, "me" sheet ---------- */
+.me-btn { display: flex; align-items: center; gap: 6px; max-width: 42vw; padding: 6px 12px; border: 0; border-radius: 22px; background: #fff;
+  font: 800 15px/1 'Nunito', system-ui, sans-serif; color: var(--text); box-shadow: 0 1px 4px rgba(20, 30, 50, 0.15); touch-action: manipulation; }
+.me-btn span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#me-emoji { font-size: 22px; }
+.welcome { gap: 14px; }
+.w-title { margin: 0; font-size: 30px; font-weight: 900; }
+.w-name { text-align: center; letter-spacing: 0; font-size: 26px; text-transform: none; }
+.emoji-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; width: 100%; max-width: 360px; }
+.emoji-row button { aspect-ratio: 1; border: 2px solid transparent; border-radius: 12px; background: #fff; font-size: 24px; padding: 0; touch-action: manipulation; }
+.emoji-row button[aria-pressed='true'] { border-color: var(--player); background: #eef4ff; }
+.join-btn.ghost { background: #fff; color: var(--text); border: 2px solid #d5dce8; }
+.w-note { min-height: 1.2em; margin: 0; font-size: 14px; }
+.panes { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+.pane { display: flex; flex-direction: column; gap: 12px; }
+.pane h2 { margin: 4px 0; font-size: 24px; font-weight: 900; }
+.tabs { display: flex; gap: 6px; padding: 8px 0 0; }
+.tab { flex: 1; min-height: 56px; border: 0; border-radius: 16px; background: #fff; color: var(--muted); font: 800 13px/1.1 'Nunito', system-ui, sans-serif;
+  display: grid; place-items: center; gap: 2px; padding: 6px 2px; touch-action: manipulation; box-shadow: 0 1px 3px rgba(20, 30, 50, 0.12); }
+.tab b { font-size: 22px; line-height: 1; }
+.tab[aria-selected='true'] { background: var(--player); color: #fff; }
+body.kart-mode .tabs, body.kart-mode .panes { display: none; }
+.sheet { position: fixed; inset: 0; z-index: 20; display: grid; align-items: end; background: rgba(20, 30, 50, 0.45); }
+.sheet-card { background: var(--bg); border-radius: 24px 24px 0 0; padding: 20px 16px calc(env(safe-area-inset-bottom) + 16px); display: flex; flex-direction: column; align-items: center; gap: 12px;
+  max-height: 92dvh; overflow-y: auto; touch-action: pan-y; }
+.sheet-title { margin: 0; font-size: 22px; }
+.s-qr { width: min(60vw, 260px); border-radius: 12px; background: #fff; padding: 8px; }
+.toast-msg { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 84px); transform: translateX(-50%); z-index: 30; max-width: 86vw;
+  padding: 10px 16px; border-radius: 16px; background: rgba(30, 40, 60, 0.92); color: #fff; font-weight: 800; font-size: 15px; text-align: center; }
+
+/* ---------- Photos tab (Phase 44) ---------- */
+.add-photos { display: grid; place-items: center; min-height: 64px; border-radius: 20px; background: var(--player); color: #fff; font-weight: 900; font-size: 22px; touch-action: manipulation; }
+.ph-keep { margin: 0; text-align: center; font-weight: 800; color: #b45309; }
+.ph-queue { display: flex; flex-direction: column; gap: 8px; }
+.up { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: #fff; overflow: hidden; }
+.up img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex: none; }
+.up-info { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 14px; }
+.up-info b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.up-info span { color: var(--muted); }
+.up-info i { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--player); transition: width 160ms; }
+.up.failed .up-info span { color: #c0392b; font-weight: 700; }
+.up.done .up-info i { background: #27ae60; }
+.up-retry { border: 0; border-radius: 12px; padding: 10px 14px; background: #c0392b; color: #fff; font-weight: 800; }
+.ph-error { margin: 0; padding: 10px 12px; border-radius: 12px; background: #fdecea; color: #922b21; font-weight: 700; }
+.ph-bar { display: flex; align-items: center; gap: 8px; }
+.ph-chips { display: flex; gap: 6px; }
+.ph-chips button, .ph-small { border: 0; border-radius: 14px; padding: 8px 14px; background: #fff; color: var(--text); font: 800 14px 'Nunito', system-ui, sans-serif; touch-action: manipulation; }
+.ph-chips button[aria-pressed='true'] { background: var(--player); color: #fff; }
+.ph-count { flex: 1; text-align: right; color: var(--muted); font-weight: 700; font-size: 14px; }
+.ph-empty { text-align: center; margin: 24px 0; }
+.ph-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.ph { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 8px; background: #dfe6f0; overflow: hidden; touch-action: manipulation; }
+.ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ph-none { display: grid; place-items: center; width: 100%; height: 100%; text-align: center; font-size: 13px; color: var(--muted); }
+.ph-by { position: absolute; left: 4px; bottom: 4px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; }
+.ph-wait { position: absolute; inset: auto 0 0 0; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 11px; padding: 2px; }
+.ph-tick { position: absolute; right: 4px; top: 4px; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); border: 2px solid var(--player); color: var(--player); font-weight: 900; display: grid; place-items: center; }
+.ph.sel { outline: 4px solid var(--player); outline-offset: -4px; }
+.ph-viewer { position: fixed; inset: 0; z-index: 25; background: #000; display: flex; flex-direction: column; touch-action: none; }
+.ph-vstage { flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; touch-action: none; }
+.ph-vstage img { max-width: 100%; max-height: 100%; transform-origin: center; user-select: none; -webkit-user-drag: none; }
+.ph-vbar { position: absolute; top: env(safe-area-inset-top); left: 0; right: 0; display: flex; align-items: center; gap: 12px; padding: 12px; color: #fff; font-weight: 800; background: linear-gradient(#0009, transparent); }
+.ph-vbar button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.2); color: #fff; font-size: 20px; }
+.ph-vact { display: flex; gap: 8px; padding: 12px 12px calc(env(safe-area-inset-bottom) + 12px); background: #000; }
+.ph-vact button { flex: 1; min-height: 52px; border: 0; border-radius: 16px; background: #fff3; color: #fff; font: 800 16px 'Nunito', system-ui, sans-serif; touch-action: manipulation; }
+.ph-vact button:nth-child(2) { flex: 2; background: var(--player); }
+
+/* Music tab (Phase 45) */
+.mp-views { margin-bottom: 4px; }
+.mp-card { background: #fff; border-radius: 20px; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 4px rgba(20, 30, 50, 0.12); }
+.mp-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; background: #000; }
+.mp-card h3 { margin: 0; font-size: 20px; line-height: 1.2; }
+.mp-card p { margin: 0; }
+.mp-by { display: inline-block; padding: 2px 10px; border-radius: 12px; color: #fff; font-weight: 800; font-size: 14px; }
+.mp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.mp-list li { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: #fff; }
+.mp-list img { width: 64px; height: 36px; object-fit: cover; border-radius: 8px; flex: none; background: #000; }
+.mp-n { width: 22px; text-align: center; color: var(--muted); font-weight: 900; }
+.mp-t { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13px; }
+.mp-t b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.mp-up, .mp-x { min-width: 48px; min-height: 48px; border: 0; border-radius: 14px; background: #eef2f8; font: 800 16px 'Nunito', system-ui, sans-serif; touch-action: manipulation; }
+.mp-up.on { background: var(--player); color: #fff; }
+.mp-add { display: flex; flex-direction: column; gap: 10px; }
+.mp-how { margin: 0; font-size: 14px; }
+.mp-msg { margin: 0; font-weight: 800; }
+.mp-empty { text-align: center; margin: 28px 0; }
+
+/* Present tab (Phase 46) */
+.pr-busy { margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff7e0; color: #7a5200; font-weight: 700; }
+.pr-help { padding: 12px; border-radius: 14px; background: #fdecea; color: #922b21; display: flex; flex-direction: column; gap: 8px; }
+.pr-help p { margin: 0; font-weight: 700; }
+.pr-stage { display: flex; flex-direction: column; gap: 10px; }
+.pr-order { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pr-order li { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 12px; padding: 6px; }
+.pr-order img { width: 72px; height: 48px; object-fit: cover; border-radius: 8px; }
+.pr-order span { flex: 1; font-weight: 900; }
+.pr-order button { width: 44px; height: 44px; border: 0; border-radius: 12px; background: #eef2f8; font-size: 16px; touch-action: manipulation; }
+.pr-msg { margin: 0; font-weight: 800; }
+.pr-how { margin: 0; font-size: 14px; text-align: center; }
+.pr-decks { display: flex; flex-direction: column; gap: 8px; }
+.pr-deck { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: #fff; }
+.pr-deck img { width: 72px; height: 48px; object-fit: contain; background: #111; border-radius: 8px; flex: none; }
+.pr-t { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13px; color: var(--muted); }
+.pr-t b { color: var(--text); font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pr-remote { display: flex; flex-direction: column; gap: 10px; }
+.pr-top { display: flex; align-items: center; justify-content: space-between; font-size: 22px; }
+.pr-timer { border: 0; border-radius: 14px; padding: 8px 14px; background: #fff; font: 900 20px 'Nunito', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.pr-thumbs { display: flex; gap: 10px; }
+.pr-thumbs figure { flex: 1; margin: 0; text-align: center; font-size: 12px; color: var(--muted); }
+.pr-thumbs img { width: 100%; aspect-ratio: 16 / 10; object-fit: contain; background: #111; border-radius: 10px; }
+.pr-end { display: grid; place-items: center; background: #dfe6f0; border-radius: 10px; font-weight: 800; }
+.pr-swipe { display: flex; gap: 10px; min-height: 28vh; touch-action: pan-y; }
+.pr-nav { flex: 1; border: 0; border-radius: 24px; background: #fff; font: 900 26px 'Nunito', system-ui, sans-serif; color: var(--text); touch-action: manipulation; box-shadow: 0 2px 6px rgba(20, 30, 50, 0.15); }
+.pr-nav.next { flex: 1.6; background: var(--player); color: #fff; }
+.pr-row { display: flex; gap: 10px; }
+.pr-laser, .pr-black { flex: 1; min-height: 60px; border: 0; border-radius: 18px; background: #fff; font: 800 17px 'Nunito', system-ui, sans-serif; touch-action: manipulation; user-select: none; }
+.pr-laser.on { background: #e03131; color: #fff; }
+.pr-black.on { background: #222; color: #fff; }
+.pr-notes { min-height: 90px; border: 2px solid #d5dce8; border-radius: 14px; padding: 10px; font: 600 15px 'Nunito', system-ui, sans-serif; resize: none; user-select: text; -webkit-user-select: text; touch-action: pan-y; }

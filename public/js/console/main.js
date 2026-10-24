@@ -1,6 +1,10 @@
 // Console (laptop) entry point: socket, pairing/lobby, and the router menu <-> apps.
 import { EV, colorFor } from '../shared/protocol.js';
 import { players } from './players.js';
+import { party } from './party.js';
+import { socket } from './socket.js';
+import { musicPlayer } from './music-hub.js';
+import { createSlides } from './slides.js';
 import { createPointers } from './pointer.js';
 import { createGyroPointers } from './pointer/engine.js';
 import { createMenu } from './menu.js';
@@ -16,7 +20,8 @@ const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoo
 // Games and channels, from their .game.json files (each loads on its own; see apps.js).
 // Loaded before connecting, so no server message can arrive before we're listening.
 const gameApps = await loadApps();
-const socket = io(); // global from /socket.io/socket.io.js
+const slides = createSlides({ socket, party });
+const folders = await fetch('/js/console/folders.json').then((r) => r.json()).catch(() => ({}));
 const pointers = createPointers($('cursors'));
 const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
 const ZOOM_MS = 320;       // opening a game: the one big motion in the menu
@@ -69,7 +74,7 @@ const prefs = {
 
 const apps = [...gameApps, createSettings(prefs)]; // Settings is built in, always last
 const menu = createMenu({
-  grid: $('tiles'), clock: $('clock'), date: $('date'), apps,
+  grid: $('tiles'), clock: $('clock'), date: $('date'), crumb: $('crumb'), apps, folders,
   onFocusChange: (column) => sound.play('hover', { step: column }),
 });
 
@@ -85,17 +90,29 @@ function setPairing(forced = pairingForced) {
   $('pairing').hidden = !(forced || (none && !current?.mounted)); // a running game shows its own pause screen
   if (wasShown && $('pairing').hidden && !current) menu.enter(); // the menu appears: tiles rise in
   $('pairing-close').hidden = !(forced && !none);
-  const full = players.slots().every((s) => s.connected);
-  $('mini-join').hidden = full || none;
+  $('mini-join').hidden = none; // (guests are unlimited, so the QR stays: the next person can always join)
+}
+
+// Who is here besides the players (shown on the pairing screen)
+function renderGuests() {
+  const guests = party.people.filter((p) => p.online && p.role === 'guest');
+  $('guest-list').hidden = !guests.length;
+  $('guest-list').textContent = guests.length ? `Also here: ${guests.map((g) => `${g.emoji} ${g.name}`).join('  ·  ')}` : '';
 }
 
 // A new room is created on every (re)connect, e.g. after the server restarts.
-socket.on('connect', () => {
+function onConnect() {
   $('status').textContent = '';
   players.clear();
   if (desk.active) players.join(desk.id, colorFor(desk.id)); // still playing with the mouse
-  socket.emit(EV.CONSOLE_CREATE, ({ room }) => showRoom(room));
-});
+  socket.emit(EV.CONSOLE_CREATE, (res) => {
+    party.setRoom(res);
+    showRoom(res.room);
+    party.call('GET', '/music').then((s) => musicPlayer.onState(s)).catch(() => {}); // (a song may already be queued)
+    slides.init(); // (a presentation may already be running)
+  });
+}
+socket.on('connect', onConnect);
 
 socket.on('disconnect', () => {
   $('status').textContent = 'Lost connection to the server. Is `npm start` still running?';
@@ -115,6 +132,11 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
     current.allowed.add(playerId);
   }
 });
+socket.on(EV.PARTY_ROSTER, (r) => { party.onRoster(r); renderGuests(); });
+socket.on(EV.PARTY_PHOTO, (e) => party.emitPhoto(e));
+socket.on(EV.MUSIC_STATE, (s) => musicPlayer.onState(s));
+socket.on(EV.PRESENT_DECK, (e) => { party.emitDeck(e); if (e.kind !== 'removed') slides.processDeck(e.deck); }); // (PDFs: count the pages, make little pictures)
+socket.on(EV.PRESENT_MOTION, (e) => { if ([e.alpha, e.beta, e.gamma].every(Number.isFinite)) gyro.feed('laser', { alpha: e.alpha, beta: e.beta, gamma: e.gamma, motion: e.motion && [e.motion.rx, e.motion.ry, e.motion.rz].every(Number.isFinite) ? e.motion : null }); });
 socket.on(EV.PLAYER_LEFT, ({ playerId }) => {
   players.leave(playerId);
   sound.play('leave');
@@ -166,6 +188,7 @@ players.onChange(() => {
 // current = { app, handlers, allowed: Set<playerId>, missing: Set<playerId>, mounted }
 
 let current = null;
+slides.setGameOpen(() => !!current && current.app.id !== 'present'); // (a running game covers the slides)
 // Phones show the normal remote ('pointer'), a steering wheel ('wheel') or a text box ('keyboard')
 let controllerMode = 'pointer', controllerPrompt = '';
 function setController(mode, prompt = '') {
@@ -197,6 +220,9 @@ function openApp(app) {
   const stage = $('stage');
   current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set(), text: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
   stage.style.setProperty('--tile', app.color);
+  // Games (not the hubs and channels) pause the party music, unless Settings -> Party says otherwise
+  musicPlayer.setGameActive(!['music', 'photos', 'present', 'settings'].includes(app.id) && app.folder !== 'channels');
+  queueMicrotask(() => slides.refresh()); // (a running game covers the slides)
   menu.press();
   stage.hidden = false;
   const anim = REDUCED_MOTION
@@ -234,6 +260,8 @@ function closeApp() {
   sound.play('back');
   if (current.mounted) current.app.unmount();
   if (controllerMode !== 'pointer') setController('pointer');
+  musicPlayer.setGameActive(false);
+  queueMicrotask(() => slides.refresh());
   pointers.setStyle('arrow');
   hidePicker();
   hidePause();
@@ -249,7 +277,7 @@ function closeApp() {
   anim.onfinish = () => { stage.hidden = true; busy = false; setPairing(); };
 }
 
-// The `api` object every game gets in mount(). See PLAN.md, Phase 4.
+// The `api` object every game gets in mount(). See docs/PLAN.md, Phase 4.
 function makeApi(cur, mode) {
   const { handlers, allowed } = cur;
   return {
@@ -353,6 +381,7 @@ socket.on(EV.INPUT_MOTION, (e) => {
 });
 (function gyroLoop(now) {
   for (const { playerId, x, y } of gyro.frame(now)) {
+    if (playerId === 'laser') { slides.laser(x, y); continue; } // (the presenter's laser dot, not a cursor)
     pointers.move(playerId, x * 2 - 1, y * 2 - 1, colorFor(playerId), true);
   }
   requestAnimationFrame(gyroLoop);
@@ -394,9 +423,19 @@ function onInputButton(e) {
     if (down && (button === 'B' || button === 'HOME')) closeApp();
     return;
   }
+  // While slides are on screen the remote turns pages: A / RIGHT next, LEFT back, B black screen, HOME ends the show
+  if (slides.active && !slides.el.hidden) {
+    if (down) {
+      if (button === 'HOME') slides.end();
+      else if (button === 'A' || button === 'RIGHT' || button === 'DOWN') slides.next();
+      else if (button === 'LEFT' || button === 'UP') slides.prev();
+      else if (button === 'B') slides.black();
+    }
+    return;
+  }
   // HOME always goes back to the menu (only the driver opens and closes things).
   if (button === 'HOME') {
-    if (down && isDriver) closeApp();
+    if (down && isDriver) { if (!current && menu.back()) sound.play('back'); else closeApp(); }
     return;
   }
   if (busy) return;
@@ -412,7 +451,17 @@ function onInputButton(e) {
   if (!down || !isDriver) return;
   if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(button)) menu.move(button);
   // Open the focused tile (moving the cursor over a tile focuses it, see below).
-  else if (button === 'A') openApp(menu.focusedApp());
+  else if (button === 'A') pressTile();
+  else if (button === 'B' && menu.back()) sound.play('back');
+}
+
+// A on the focused tile: a game opens, a folder zooms in, the Back tile goes back
+function pressTile() {
+  const tile = menu.focusedApp();
+  if (!tile) return;
+  if (tile.isBack) { menu.press(); menu.back(); sound.play('back'); return; }
+  if (tile.isFolder) { menu.press(); menu.openFolder(tile.id); sound.play('select'); return; }
+  openApp(tile);
 }
 socket.on(EV.INPUT_BUTTON, onInputButton);
 
@@ -536,3 +585,6 @@ if (DEBUG) {
   addEventListener('keydown', (e) => { if (e.key === 'l' || e.key === 'L') gyro.toggleLead(); });
   addEventListener('keydown', (e) => { if (e.key === 'g' || e.key === 'G') prefs.setSteady(!prefs.getSteady()); }); // G = steady cursor on/off
 }
+
+// The connection may already be up (it starts while the games load): then 'connect' came too early to hear
+if (socket.connected) onConnect();

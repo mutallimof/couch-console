@@ -3,6 +3,7 @@
 // Needs Playwright (not part of this project). Without it this test is skipped. To run it:
 //   npm install --no-save playwright && npx playwright install chromium && npm test
 import test from 'node:test';
+import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -19,7 +20,7 @@ const PORT = 3900 + Math.floor(Math.random() * 300);
 
 test('the kart pad appears on every phone during a race, and steers', { skip: !pw && 'Playwright is not installed', timeout: 300000 }, async () => {
   const server = spawn(process.execPath, ['server.js'], {
-    cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1) }, stdio: 'pipe',
+    cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));
   const browser = await pw.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
@@ -34,7 +35,7 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
     });
     await lctx.route('**/games/turbo-karts.js', async (route) => {
       const r = await route.fetch();
-      route.fulfill({ response: r, body: (await r.text()).replace('const clamp =', 'window.__tk = { state: () => state };\nconst clamp =') });
+      route.fulfill({ response: r, body: (await r.text()).replace('let state, shown,', 'window.__tk = { state: () => state };\nlet state, shown,') });
     });
     const lap = await lctx.newPage();
     await lap.goto(`${B}/console.html?noboot=1&fx=off`);
@@ -58,6 +59,7 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
           } });
         });
       }
+      await ctx.addInitScript(() => localStorage.setItem('couch.profile', JSON.stringify({ name: 'Tester', emoji: '🦊', role: 'player' }))); // (skips the welcome card)
       const ph = await ctx.newPage();
       await ph.goto(`${B}/remote.html?room=${room}`);
       await ph.locator('#start-btn').tap();

@@ -1,14 +1,38 @@
 # Third-party notices
 
-Couch Console includes code adapted from the projects below.
+Couch Console includes assets and code adapted from the projects below. This list covers only what is
+still in the project (unused files were removed in Phase 53).
 
 ## Quaternius Ultimate Animated Character Pack
 
 - Source: https://quaternius.com (Quaternius, "LowPoly Models by @Quaternius")
 - Used in: `public/assets/quaternius-characters/` (glTF models and `License.txt`), the racers of
-  Turbo Karts GP (`public/js/console/games/ow-kart/characters.js`)
+  Turbo Karts (`public/js/console/games/turbo-karts/ow-kart/characters.js`)
 - License: CC0 1.0 Universal (public domain dedication), https://creativecommons.org/publicdomain/zero/1.0/
   Credit is not required but given with thanks. The pack's `License.txt` is kept next to the models.
+
+## Kenney: Toy Car Kit and Racing Kit
+
+- Source: https://kenney.nl (Kenney)
+- Used in: `public/assets/car-kit/` (the karts, the item box, the coin, two trees: 12 models and their
+  colour texture) and `public/assets/racing-kit/` (11 trackside models: grandstand, tents, flags, banners,
+  light post, pylon, billboard). Each kit's `License.txt` is kept next to its models.
+- License: CC0 1.0 Universal (public domain dedication). Credit is not required but given with thanks.
+
+## Quaternius: Ultimate Pirate Kit
+
+- Source: https://quaternius.com (Quaternius)
+- Used in: `public/assets/pirate-kit/glTF/` (16 models: palms, rocks, cliffs, houses, ships, a dock, barrels,
+  a chest and the sea monster of the Pirate Cove track). `rdf.rdf` keeps the license marker.
+- License: CC0 1.0 Universal (public domain dedication). Credit is not required but given with thanks.
+
+## Libraries and services the pages load
+
+- **three.js** (MIT, https://threejs.org): served from `node_modules` (3D games).
+- **pdf.js** (Apache-2.0, https://mozilla.github.io/pdf.js/, `pdfjs-dist`): served from `node_modules` (PDF slides).
+- **Nunito** font (SIL Open Font License, Google Fonts): loaded from Google Fonts by both pages.
+- **YouTube** (Music and Video): played with YouTube's own embedded player under YouTube's terms of service; nothing is downloaded or stored.
+- **Poly Haven** (CC0, https://polyhaven.com): optional, only if you add files to `public/assets/polyhaven/`.
 
 ## OpenWii
 
@@ -17,24 +41,23 @@ Couch Console includes code adapted from the projects below.
   - `public/js/console/pointer/gyro-pointer.js` (from `core/pointer.js`)
   - `public/js/console/pointer/orientation.js` (from `core/orientation.js`)
   - `tests/gyro-pointer.test.mjs` (from `core/core.test.mjs`)
-  - `public/js/console/games/karts-fx.js` (drift sparks, smoke, sparkle bursts and the boost
+  - `public/js/console/games/turbo-karts/karts-fx.js` (drift sparks, smoke, sparkle bursts and the boost
     flame, adapted from `games/mario-kart/race-effects.js` and `boost-effect.js`)
-  - `public/js/console/games/karts-materials.js` (procedural asphalt with normal/roughness maps
+  - `public/js/console/games/turbo-karts/karts-materials.js` (procedural asphalt with normal/roughness maps
     and tyre-wear shader, adapted from `games/mario-kart/materials.js`)
   - Techniques (no code copied verbatim) in `karts-look.js` (PBR Neutral tone mapping,
-    multisampled half-float effect chain), `turbo-karts.js` (chase camera composition, fill
-    light, tight follow-shadow) and `karts-rules.js` (three drift-charge levels, smoothed steering)
+    multisampled half-float effect chain) and `turbo-karts.js` (fill light, tight follow-shadow)
   - `public/js/console/games/juicy-slash.js`, `juicy-slash-rules.js`, `tests/juicy-slash.test.mjs`
     (from `games/fruit-ninja/game.js`, `logic.js`, `logic.test.mjs` and `core/trail.js`)
   - `public/js/console/games/alien-strike.js`, `alien-strike-rules.js`, `tests/alien-strike.test.mjs`
     (from `games/alien-attack/game.js`, `logic.js`, `logic.test.mjs`)
   - `public/js/console/games/ow-audio.js` (from `core/audio.js`, the synthesized sound effects engine)
-  - `public/js/console/games/ow-kart/` and `ow-kart.js` (Turbo Karts GP): `rules.js`, `frame.js`,
+  - `public/js/console/games/turbo-karts/ow-kart/` and `turbo-karts.js` (Turbo Karts): `rules.js`, `frame.js`,
     `contact.js` and `track-model.js` follow `games/mario-kart/logic.js`, `visual-frame.js`,
     `contact.js` and `track.js` (physics, handling, drifting, items, computer drivers, camera pose);
-    `ow-kart.js` follows `game.js` (camera smoothing, HUD, race flow); `tests/ow-kart-rules.test.mjs`
+    `turbo-karts.js` follows `game.js` (camera smoothing, HUD, race flow); `tests/ow-kart-rules.test.mjs`
     is adapted from `logic.test.mjs`
-  - `public/js/console/games/ow-kart/stadium/` (the Grand Stadium scenery, from `world.js`,
+  - `public/js/console/games/turbo-karts/ow-kart/stadium/` (the Grand Stadium scenery, from `world.js`,
     `atmosphere.js`, `materials.js`, `stadium-*.js`) and its turf texture `art/turf-v1.png`.
     Signs, sponsors, lettering and the tower statue were replaced with original ones, and the
     course layout (`stadium/stadium-def.js`) is our own original shape, not OpenWii's.

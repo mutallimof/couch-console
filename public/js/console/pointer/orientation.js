@@ -12,7 +12,6 @@
  */
 
 export const DEG = Math.PI / 180;
-export const TAU = Math.PI * 2;
 
 export const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
@@ -75,34 +74,4 @@ export function axesFromSample(sample) {
   return sample.quat
     ? bodyAxesFromQuat(sample.quat)
     : bodyAxes(sample.alpha || 0, sample.beta || 0, sample.gamma || 0);
-}
-
-/** Shortest signed difference a−b, wrapped to (−180, 180]. */
-export function angleDelta(a, b) {
-  let d = a - b;
-  while (d > 180) d -= 360;
-  while (d <= -180) d += 360;
-  return d;
-}
-
-/**
- * Tilt of the phone relative to the horizon, in degrees — the input for
- * steering-wheel and flight-stick style controls.
- *
- *   bank  — roll about the pointing direction. Positive = right edge dipped
- *           below the horizon = steer/bank right. (Numerically pinned in
- *           tests: for a flat grip this equals the W3C gamma angle.)
- *   pitch — elevation of the beam. Positive = pointing above the horizon.
- *
- * Uses the same most-horizontal beam selection as the pointer, so it works in
- * flat, upright and landscape grips without calibration.
- */
-export function gripTilt(axes) {
-  const beamY = axes.y;
-  const beamZ = scale(axes.z, -1);
-  const fwd = Math.abs(beamY.z) <= Math.abs(beamZ.z) ? beamY : beamZ;
-  return {
-    bank: -Math.asin(clamp(axes.x.z, -1, 1)) / DEG,
-    pitch: Math.asin(clamp(fwd.z, -1, 1)) / DEG,
-  };
 }

@@ -3,5 +3,6 @@
   "color": "#E0548F",
   "order": 6,
   "players": 4,
-  "hidden": false
+  "hidden": false,
+  "folder": "arcade"
 }

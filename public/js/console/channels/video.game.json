@@ -3,5 +3,6 @@
   "color": "#E03131",
   "order": 12,
   "players": 1,
-  "hidden": false
+  "hidden": false,
+  "folder": "channels"
 }

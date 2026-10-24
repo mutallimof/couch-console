@@ -3,12 +3,12 @@
 // THIRD_PARTY_NOTICES.md): the same checks, run on one of our tracks with our item names.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Race as BaseRace, topSpeed, turboTier, rollItem, seeded, EVENT_TYPES } from "../public/js/console/games/ow-kart/rules.js";
-import { createTrackModel, wrap, angle } from "../public/js/console/games/ow-kart/track-model.js";
-import { TRACKS as KART_TRACKS } from "../public/js/console/games/kart-path.js";
-import { STADIUM } from "../public/js/console/games/ow-kart/stadium/stadium-def.js";
+import { Race as BaseRace, topSpeed, turboTier, rollItem, seeded, EVENT_TYPES } from "../public/js/console/games/turbo-karts/ow-kart/rules.js";
+import { createTrackModel, wrap, angle } from "../public/js/console/games/turbo-karts/ow-kart/track-model.js";
+import { TRACKS as KART_TRACKS } from "../public/js/console/games/turbo-karts/kart-path.js";
+import { STADIUM } from "../public/js/console/games/turbo-karts/ow-kart/stadium/stadium-def.js";
 const TRACKS = [...KART_TRACKS, STADIUM]; // our six courses plus the Grand Stadium
-import { CHARACTERS } from "../public/js/console/games/karts-data.js";
+import { GP_CHARACTERS as CHARACTERS } from "../public/js/console/games/turbo-karts/ow-kart/characters.js";
 
 const T = createTrackModel(TRACKS.find((t) => t.id === "park"));
 const L = T.length, TRACK_SAMPLES = T.samples, BOOST_PADS = T.boostPads;
@@ -530,4 +530,26 @@ test("computer drivers stay on the road on every track (no wall-hugging, no gett
     assert.ok(walls <= 20, `${def.id}: ${walls} wall touches in 30 seconds with 8 racers`);
     assert.ok(minSpeed > 0, `${def.id}: a racer came to a standstill`);
   }
+});
+
+// ---- Turbo Karts additions: the kart pad's input and the kart stats ----
+import { kartInput } from "../public/js/console/games/turbo-karts/ow-kart/input.js";
+test("holding DRIFT or ITEM keeps accelerating; BRAKE wins over everything", () => {
+  assert.equal(kartInput({ gas: false, drift: true }).gas, true);
+  assert.equal(kartInput({ item: true }).gas, true);
+  assert.equal(kartInput({ gas: true, brake: true }).gas, false);
+  assert.equal(kartInput({ gas: true, brake: true }).brake, true);
+  assert.equal(kartInput({ steer: -1 }).steer, -1);
+  assert.equal(kartInput({ tapped: true }).tapped, true);
+});
+test("kart stats nudge top speed, acceleration and turning (a 5-5-5 kart beats a 1-1-1 kart, 3-3-3 is OpenWii exactly)", () => {
+  const run = (kart) => {
+    const race = new BaseRace({ track: T, characters: CHARACTERS.slice(0, 8), karts: [kart], humans: 1, seed: 3 });
+    race.start();
+    for (let i = 0; i < 60 * 14; i++) race.update(1 / 60, pilot(race, race.player));
+    return race.player;
+  };
+  const fast = run({ speed: 5, accel: 5, handling: 5 }), slow = run({ speed: 1, accel: 1, handling: 1 }), plain = run({ speed: 3, accel: 3, handling: 3 }), none = run(undefined);
+  assert.ok(fast.progress > plain.progress && plain.progress > slow.progress, `${fast.progress} ${plain.progress} ${slow.progress}`);
+  assert.equal(plain.progress, none.progress);
 });

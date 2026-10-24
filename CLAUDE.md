@@ -1,15 +1,15 @@
 # CLAUDE.md: Working rules for this project
 
 This project is a phone-controlled, Wii-style console that runs in the browser.
-**The full spec is in `PLAN.md`. Read it before doing anything.**
+**The full spec is in `docs/PLAN.md` (and `docs/PLAN-PARTY.md` for the party features). Decisions are written in `docs/DECISIONS.md`. Read the plan before doing anything.**
 
 ## How we work
-1. **Phases in test groups.** Build only the current test group from `PLAN.md`. Do not start the next group until I confirm the current one works on my real phone. Groups: Phase 0 · Phase 1 · Phases 2+3 · Phases 4+5 · Phase 6 · Phase 7 · Phase 8 · Phase 9. Commit each phase separately (`Phase N: <name>`).
+1. **Phases in test groups.** Build only the current test group from `docs/PLAN.md`. Do not start the next group until I confirm the current one works on my real phone. Groups: Phase 0 · Phase 1 · Phases 2+3 · Phases 4+5 · Phase 6 · Phase 7 · Phase 8 · Phase 9. Commit each phase separately (`Phase N: <name>`).
 2. **Ask before:**
-   - installing any dependency that isn't listed in `PLAN.md`
+   - installing any dependency that isn't listed in `docs/PLAN.md` (or approved in `docs/PLAN-PARTY.md`)
    - deleting or renaming files
    - **Pushing (updated rule):** after each finished phase, if `npm test` passes, you may push the phase branch **and merge it into `main` and push `main`** without asking me. Run `npm test` on `main` after the merge. If tests fail, do **not** push; fix them or tell me. Never force-push, and never push secrets (`config.json`, `certs/`, `*.pem`, `photos/*`, `videos.txt`). Pushes other than finished-phase pushes still need my explicit "yes".
-   - changing the socket protocol from what `PLAN.md` says
+   - changing the socket protocol from what `docs/PLAN.md` says
 3. **Manual steps.** Whenever something needs me (installing a tool, running a command in a second terminal, scanning a QR code, testing on my phone, allowing a permission, creating something on GitHub), stop and print a block exactly like this, then wait for my answer:
 
    ```
