@@ -1,5 +1,11 @@
 /* Couch Console theme (docs/STYLE.md): light, clean and glossy. Shared by the TV and the phone. */
 :root {
+  color-scheme: light;
+  --surface: #fff; --surface-2: #eef2f7; --surface-3: #dfe6ef; --line: #dbe2ec; --edge: #C5D2E6;
+  --bg-top: #f7f9fc; --bg-bottom: #dfe8f3; --card: #fff; --text: #2b3445; --btn: #fff; --btn-down: #dfe6f0;
+  --err-bg: #fdecea; --err-text: #922b21; --pad-bg: #DCE7F8; --pad-ink: #2B3445; --pad-chip: rgba(43, 52, 69, 0.1); --pad-chip-down: rgba(43, 52, 69, 0.3);
+  --link: #1A5CC8; --warn-bg: #FFF3BF; --warn-text: #7A4D00; --danger: #c0392b;
+  --room: linear-gradient(160deg, #EEF4FC, #E4ECF9); --meta-bar: #f7f9fc;
   --ink: #25304A; --muted: #66728C; --cloud: #F3F6FB;
   --cushion: #FF8A3D; --sky: #3FA9FF; --pop: #FF5C8A; --mint: #2FD6A4; --butter: #FFC93C;
   --glass: rgba(255, 255, 255, 0.55); --glass-edge: rgba(255, 255, 255, 0.85);
@@ -44,23 +50,29 @@
 .round-btn.is-focus { transform: scale(1.12); box-shadow: 0 0 0 5px #fff, 0 0 0 9px var(--sky), var(--shadow); }
 @media (prefers-reduced-motion: reduce) { .gloss, .round-btn { transition: none; } }
 
-/* ---------- Option B: the dark "plum living room at dusk" (add class theme-dark to <body>; ?theme=dark on the TV) ---------- */
-.theme-dark {
-  --ink: #FFF3D6; --muted: rgba(255, 243, 214, 0.68); --cloud: #1B1633;
+/* ---------- Dark: the "plum living room at dusk". Chosen in Settings -> Theme; applies to every screen ----------
+   (html[data-theme] is set by shared/theme.js; "Auto" follows the device's own setting.) */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #FFF3D6; --muted: rgba(255, 243, 214, 0.72); --cloud: #1B1633; --text: #FFF3D6;
   --glass: rgba(60, 48, 115, 0.5); --glass-edge: rgba(255, 255, 255, 0.16);
   --shadow: 0 10px 30px rgba(6, 3, 24, 0.55), 0 2px 6px rgba(6, 3, 24, 0.45);
-  --bg-top: #221B45; --bg-bottom: #130F2B; --text: #FFF3D6;
-  color: var(--ink);
+  --surface: #2E2658; --surface-2: #3B3270; --surface-3: #4A4084; --line: #4A4084; --edge: #1A1438;
+  --bg-top: #241C4A; --bg-bottom: #130F2B; --card: #2E2658; --btn: #3B3270; --btn-down: #2A2250;
+  --err-bg: #4A1F2A; --err-text: #FFB3B3; --pad-bg: #1B1633; --pad-ink: #fff; --pad-chip: rgba(255, 255, 255, 0.12); --pad-chip-down: rgba(255, 255, 255, 0.3);
+  --link: #8FC2FF; --warn-bg: #4A3A12; --warn-text: #FFD98A; --danger: #FF8A80;
+  --room: linear-gradient(170deg, #241C4A, #130F2B);
 }
-.theme-dark, .theme-dark .theme-bg {
+html[data-theme="dark"] .theme-bg {
   background:
     radial-gradient(900px 600px at 50% 0%, rgba(110, 80, 200, 0.45), transparent 62%),
     radial-gradient(800px 600px at 100% 100%, rgba(255, 120, 80, 0.16), transparent 60%),
     linear-gradient(170deg, #241C4A, #130F2B);
 }
-.theme-dark .glass { box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
-.theme-dark .gloss { box-shadow: 0 12px 28px rgba(4, 2, 18, 0.55), inset 0 2px 0 rgba(255, 255, 255, 0.6), inset 0 -4px 0 rgba(0, 0, 0, 0.16); }
-.theme-dark .gloss.is-focus { box-shadow: 0 18px 40px rgba(4, 2, 18, 0.6), 0 0 0 5px #FFF3D6, 0 0 0 9px color-mix(in srgb, var(--tile, #4DA3FF) 80%, #fff), 0 0 40px color-mix(in srgb, var(--tile, #4DA3FF) 60%, transparent), inset 0 2px 0 rgba(255, 255, 255, 0.6); }
-.theme-dark kbd { background: #FFF3D6; color: #241C4A; }
-.theme-dark .chip { background: rgba(255, 255, 255, 0.1); }
-.theme-dark .mini-join img { background: #FFF3D6; }
+html[data-theme="dark"] .glass { box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+html[data-theme="dark"] .gloss { box-shadow: 0 12px 28px rgba(4, 2, 18, 0.55), inset 0 2px 0 rgba(255, 255, 255, 0.6), inset 0 -4px 0 rgba(0, 0, 0, 0.16); }
+html[data-theme="dark"] .gloss.is-focus { box-shadow: 0 18px 40px rgba(4, 2, 18, 0.6), 0 0 0 5px #FFF3D6, 0 0 0 9px color-mix(in srgb, var(--tile, #4DA3FF) 80%, #fff), 0 0 40px color-mix(in srgb, var(--tile, #4DA3FF) 60%, transparent), inset 0 2px 0 rgba(255, 255, 255, 0.6); }
+html[data-theme="dark"] .round-btn { background: linear-gradient(180deg, #4A4084, #34296A); color: var(--ink); }
+html[data-theme="dark"] kbd { background: #FFF3D6; color: #241C4A; }
+html[data-theme="dark"] .chip { background: rgba(255, 255, 255, 0.1); }
+html[data-theme="dark"] .mini-join img, html[data-theme="dark"] .qr-img { background: #FFF3D6; }

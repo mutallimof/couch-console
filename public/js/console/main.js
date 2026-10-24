@@ -12,10 +12,9 @@ import { createSettings } from './settings.js';
 import { sound } from './sound.js';
 import { playBoot } from './boot.js';
 import { loadApps } from './apps.js';
+import { applyTheme, normalizeChoice, resolveTheme, systemPrefersDark } from '../shared/theme.js';
 
 const $ = (id) => document.getElementById(id);
-// Look: light (default) or the dark option (?theme=dark), for choosing between them
-if (new URLSearchParams(location.search).get('theme') === 'dark') document.documentElement.classList.add('theme-dark'), document.body.classList.add('theme-dark');
 const DEBUG = new URLSearchParams(location.search).has('debug');
 // Boot animation (skip it with ?noboot=1)
 const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoot({ sound });
@@ -49,7 +48,20 @@ gyro.setSteady(steady);
 // Phone sounds: each phone plays a small sound when its own game feedback (rumble) arrives
 let phoneSounds = true;
 try { phoneSounds = localStorage.getItem('couch.phoneSounds') !== '0'; } catch { /* ignore */ }
-const sendSettings = () => socket.emit(EV.FEEDBACK_SETTINGS, { phoneSounds });
+const sendSettings = () => socket.emit(EV.FEEDBACK_SETTINGS, { phoneSounds, theme: resolvedTheme });
+
+// Theme: Light / Dark / Auto (follows the laptop), remembered in this browser ("per console").
+// ?theme=light|dark|auto forces a choice for this visit. The phones get the resolved value.
+let themeChoice = 'auto';
+try { themeChoice = normalizeChoice(new URLSearchParams(location.search).get('theme') || localStorage.getItem('couch.theme')); } catch { /* ignore */ }
+let resolvedTheme = 'light';
+function refreshTheme() {
+  const next = applyTheme(resolveTheme(themeChoice, systemPrefersDark()));
+  resolvedTheme = next;
+  if (socket.connected) sendSettings();
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => themeChoice === 'auto' && refreshTheme());
+refreshTheme();
 
 const prefs = {
   getSensitivity: () => sensitivity,
@@ -63,6 +75,12 @@ const prefs = {
     steady = on;
     try { localStorage.setItem('couch.steadyCursor', on ? '1' : '0'); } catch { /* ignore */ }
     gyro.setSteady(on);
+  },
+  getTheme: () => themeChoice,
+  setTheme(choice) {
+    themeChoice = normalizeChoice(choice);
+    try { localStorage.setItem('couch.theme', themeChoice); } catch { /* ignore */ }
+    refreshTheme();
   },
   getPhoneSounds: () => phoneSounds,
   setPhoneSounds(on) {
@@ -111,6 +129,7 @@ function onConnect() {
   socket.emit(EV.CONSOLE_CREATE, (res) => {
     party.setRoom(res);
     showRoom(res.room);
+    sendSettings(); // (the phones' theme, for those who join later it is also in their join answer)
     party.call('GET', '/music').then((s) => musicPlayer.onState(s)).catch(() => {}); // (a song may already be queued)
     slides.init(); // (a presentation may already be running)
   });

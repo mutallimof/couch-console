@@ -267,6 +267,9 @@ io.on('connection', (socket) => {
   // Settings for all phones: { rangeX, rangeY }
   socket.on(EV.FEEDBACK_SETTINGS, (payload) => {
     if (socket.data.role !== 'console') return;
+    // (the room remembers the theme so a phone that joins later gets it with its join answer)
+    const room = rooms.get(socket.data.room);
+    if (room && (payload?.theme === 'light' || payload?.theme === 'dark')) room.theme = payload.theme;
     io.to(remotesChannel(socket.data.room)).emit(EV.FEEDBACK_SETTINGS, payload);
   });
 
@@ -319,7 +322,7 @@ io.on('connection', (socket) => {
     socket.join(remotesChannel(code));
     const color = colorOf(person);
     if (playerId) io.to(room.consoleId).emit(EV.PLAYER_JOINED, { playerId, color });
-    ack({ ok: true, role: playerId ? 'player' : 'guest', playerId: playerId || null, color, layout: room.layout,
+    ack({ ok: true, role: playerId ? 'player' : 'guest', playerId: playerId || null, color, layout: room.layout, theme: room.theme,
       person: { id: person.id, name: person.name, emoji: person.emoji, avatar: person.avatar }, full, ...roster(room) });
     broadcastRoster(room, code);
     console.log(`Room ${code}: ${playerId ? `P${playerId}` : `guest ${person.name}`} joined`);

@@ -41,7 +41,7 @@ export const EV = {
   INPUT_SWING: 'input:swing',
   INPUT_RECENTER: 'input:recenter', // { relearn?: true } = the phone's screen turned: the console learns its gyro axes again
   FEEDBACK_RUMBLE: 'feedback:rumble',
-  FEEDBACK_SETTINGS: 'feedback:settings',
+  FEEDBACK_SETTINGS: 'feedback:settings', // { phoneSounds?, theme?: 'light' | 'dark', rangeX?, rangeY? } (`theme` is also in the join answer)
   FEEDBACK_MODE: 'feedback:mode',   // { mode: 'pointer' | 'wheel' | 'keyboard', prompt? } (also in the join answer as `layout`)
   INPUT_WHEEL: 'input:wheel',       // { steer: -1..1 }
   INPUT_TEXT: 'input:text',         // { text } typed on the phone ('' = cancelled)
