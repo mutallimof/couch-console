@@ -35,7 +35,7 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Phone tilt steering is raw (no smoothing/dead zone). iPhones can't vibrate (Phase 4).
 - Headless checks: all 8 tracks and the other games load with no console errors; real-GPU fps is still unmeasured.
 - Grand Stadium is the heaviest scene; GTAO + 4x MSAA may be slow on weak laptops (auto-fallback under 40 fps).
-- Headless/software-GL numbers are not real fps; check on the real laptop with `?debug=1`.
+- Headless/software-GL numbers are not real fps; check on the real laptop (F3).
 
 ## Phases (from `docs/REBUILD-PLAN.md`)
 | # | What | Status |
