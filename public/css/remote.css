@@ -307,3 +307,40 @@ body.kart-mode .tabs, body.kart-mode .panes { display: none; }
 .s-qr { width: min(60vw, 260px); border-radius: 12px; background: #fff; padding: 8px; }
 .toast-msg { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 84px); transform: translateX(-50%); z-index: 30; max-width: 86vw;
   padding: 10px 16px; border-radius: 16px; background: rgba(30, 40, 60, 0.92); color: #fff; font-weight: 800; font-size: 15px; text-align: center; }
+
+/* ---------- Photos tab (Phase 44) ---------- */
+.add-photos { display: grid; place-items: center; min-height: 64px; border-radius: 20px; background: var(--player); color: #fff; font-weight: 900; font-size: 22px; touch-action: manipulation; }
+.ph-keep { margin: 0; text-align: center; font-weight: 800; color: #b45309; }
+.ph-queue { display: flex; flex-direction: column; gap: 8px; }
+.up { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: #fff; overflow: hidden; }
+.up img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex: none; }
+.up-info { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 14px; }
+.up-info b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.up-info span { color: var(--muted); }
+.up-info i { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--player); transition: width 160ms; }
+.up.failed .up-info span { color: #c0392b; font-weight: 700; }
+.up.done .up-info i { background: #27ae60; }
+.up-retry { border: 0; border-radius: 12px; padding: 10px 14px; background: #c0392b; color: #fff; font-weight: 800; }
+.ph-error { margin: 0; padding: 10px 12px; border-radius: 12px; background: #fdecea; color: #922b21; font-weight: 700; }
+.ph-bar { display: flex; align-items: center; gap: 8px; }
+.ph-chips { display: flex; gap: 6px; }
+.ph-chips button, .ph-small { border: 0; border-radius: 14px; padding: 8px 14px; background: #fff; color: var(--text); font: 800 14px 'Nunito', system-ui, sans-serif; touch-action: manipulation; }
+.ph-chips button[aria-pressed='true'] { background: var(--player); color: #fff; }
+.ph-count { flex: 1; text-align: right; color: var(--muted); font-weight: 700; font-size: 14px; }
+.ph-empty { text-align: center; margin: 24px 0; }
+.ph-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.ph { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 8px; background: #dfe6f0; overflow: hidden; touch-action: manipulation; }
+.ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ph-none { display: grid; place-items: center; width: 100%; height: 100%; text-align: center; font-size: 13px; color: var(--muted); }
+.ph-by { position: absolute; left: 4px; bottom: 4px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; }
+.ph-wait { position: absolute; inset: auto 0 0 0; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 11px; padding: 2px; }
+.ph-tick { position: absolute; right: 4px; top: 4px; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); border: 2px solid var(--player); color: var(--player); font-weight: 900; display: grid; place-items: center; }
+.ph.sel { outline: 4px solid var(--player); outline-offset: -4px; }
+.ph-viewer { position: fixed; inset: 0; z-index: 25; background: #000; display: flex; flex-direction: column; touch-action: none; }
+.ph-vstage { flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; touch-action: none; }
+.ph-vstage img { max-width: 100%; max-height: 100%; transform-origin: center; user-select: none; -webkit-user-drag: none; }
+.ph-vbar { position: absolute; top: env(safe-area-inset-top); left: 0; right: 0; display: flex; align-items: center; gap: 12px; padding: 12px; color: #fff; font-weight: 800; background: linear-gradient(#0009, transparent); }
+.ph-vbar button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.2); color: #fff; font-size: 20px; }
+.ph-vact { display: flex; gap: 8px; padding: 12px 12px calc(env(safe-area-inset-bottom) + 12px); background: #000; }
+.ph-vact button { flex: 1; min-height: 52px; border: 0; border-radius: 16px; background: #fff3; color: #fff; font: 800 16px 'Nunito', system-ui, sans-serif; touch-action: manipulation; }
+.ph-vact button:nth-child(2) { flex: 2; background: var(--player); }
