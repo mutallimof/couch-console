@@ -184,3 +184,9 @@ Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "ever
 - `?polyhaven=off` shows the old look. Listing at `/api/polyhaven`.
 - Before/after: `docs/screenshots/polyhaven-before-after-track0.png` (left = before) and `-track6.png`.
 - Known: stadium lane paint is a bit saturated against the concrete; tune later.
+
+### Phone: tabs reachable, re-scan and two tabs (bug from a real test)
+- Cause found: on a player's phone the full-screen "Tap to start" overlay covered the Photos/Music/Present tabs until the player tapped it. It now leaves the tab bar free and only shows on the Remote tab.
+- Same clientId joining again (QR scanned on the same phone, a second tab) never disconnects the player: the slot and name are kept, the NEWEST tab becomes live, the older tab gets `remote:replaced` (new protocol event, requested by the user), stops reconnecting and shows "Opened in another tab" with a "Use this tab" button.
+- TV hint "Already joined? Open the Photos/Music/Present tab on your phone." on those screens. Tabs are bigger.
+- Test: `tests/party-retab.e2e.test.mjs`.

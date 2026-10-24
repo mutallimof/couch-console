@@ -171,6 +171,7 @@ body {
 }
 
 /* ---------- Overlays ---------- */
+#start { bottom: calc(env(safe-area-inset-bottom) + 92px); } /* leaves the tabs tappable */
 .overlay {
   position: fixed;
   inset: 0;
@@ -295,9 +296,9 @@ body.kart-mode .top { display: none; }
 .pane { display: flex; flex-direction: column; gap: 12px; }
 .pane h2 { margin: 4px 0; font-size: 24px; font-weight: 900; }
 .tabs { display: flex; gap: 6px; padding: 8px 0 0; }
-.tab { flex: 1; min-height: 56px; border: 0; border-radius: 16px; background: #fff; color: var(--muted); font: 800 13px/1.1 'Nunito', system-ui, sans-serif;
+.tab { flex: 1; min-height: 64px; border: 0; border-radius: 16px; background: #fff; color: var(--text); font: 900 14px/1.1 'Nunito', system-ui, sans-serif;
   display: grid; place-items: center; gap: 2px; padding: 6px 2px; touch-action: manipulation; box-shadow: 0 1px 3px rgba(20, 30, 50, 0.12); }
-.tab b { font-size: 22px; line-height: 1; }
+.tab b { font-size: 26px; line-height: 1; }
 .tab[aria-selected='true'] { background: var(--player); color: #fff; }
 body.kart-mode .tabs, body.kart-mode .panes { display: none; }
 .sheet { position: fixed; inset: 0; z-index: 20; display: grid; align-items: end; background: rgba(20, 30, 50, 0.45); }

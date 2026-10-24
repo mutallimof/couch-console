@@ -282,6 +282,12 @@ io.on('connection', (socket) => {
     if (!playerId && wantPlayer) playerId = freeSlot(room); // otherwise the lowest free slot
     const full = wantPlayer && !playerId; // asked to play, but all 4 slots are taken: join as a guest
 
+    // Same phone, another tab already joined? The newest tab takes over: tell the old one and drop it quietly.
+    if (person.socketId && person.socketId !== socket.id) {
+      const older = io.sockets.sockets.get(person.socketId);
+      if (older) { older.data = {}; older.emit(EV.REMOTE_REPLACED); older.leave(remotesChannel(code)); }
+    }
+
     if (playerId) {
       const old = room.slots.get(playerId);
       if (old) clearTimeout(old.leaveTimer);
