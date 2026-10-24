@@ -3,6 +3,7 @@
 // are our own (the original drew Nintendo-themed sponsors and lettering).
 import * as THREE from "three";
 import { surfaceAt, SECTIONS } from "./track.js";
+import { drawEmblem } from "./emblem.js";
 
 /** Large illuminated cup markers frame the glider landing in the reference. */
 export function buildLandingPylons(
@@ -18,7 +19,7 @@ export function buildLandingPylons(
     c.strokeStyle = "#bd903d";
     c.lineWidth = 12;
     c.strokeRect(9, 9, 494, 494);
-    // Two chequered flags, a gold medallion and an original mushroom drawing.
+    // Two chequered flags, a gold medallion with the Couch Console emblem.
     for (const side of [-1, 1]) {
       c.save();
       c.translate(256 + side * 113, 296);
@@ -41,20 +42,7 @@ export function buildLandingPylons(
     disk(256, 196, 131, "#29254b");
     disk(256, 196, 117, "#e4b74f");
     disk(256, 196, 110, "#352450");
-    c.fillStyle = "#f5dfa8";
-    c.beginPath();
-    c.roundRect(211, 188, 90, 84, 29);
-    c.fill();
-    c.fillStyle = "#d53940";
-    c.beginPath();
-    c.ellipse(256, 164, 81, 63, 0, 0, Math.PI * 2);
-    c.fill();
-    disk(256, 144, 24, "#fff9d9");
-    disk(199, 175, 18, "#fff9d9");
-    disk(313, 175, 18, "#fff9d9");
-    c.fillStyle = "#302830";
-    c.fillRect(234, 228, 9, 24);
-    c.fillRect(269, 228, 9, 24);
+    drawEmblem(c, 256, 200, 200);
     c.textAlign = "center";
     c.lineJoin = "round";
     c.font = "italic 900 57px Arial Black, Arial";

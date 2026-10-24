@@ -90,6 +90,44 @@ const glyphs = {
     [1.75, 0],
     [1.75, 5.5],
   ],
+  C: [
+    [0, 1.1],
+    [0, 5.9],
+    [1.1, 7],
+    [5, 7],
+    [5, 5.5],
+    [1.5, 5.5],
+    [1.5, 1.5],
+    [5, 1.5],
+    [5, 0],
+    [1.1, 0],
+  ],
+  U: [
+    [0, 1.1],
+    [0, 7],
+    [1.5, 7],
+    [1.5, 1.5],
+    [3.5, 1.5],
+    [3.5, 7],
+    [5, 7],
+    [5, 1.1],
+    [3.9, 0],
+    [1.1, 0],
+  ],
+  H: [
+    [0, 0],
+    [0, 7],
+    [1.5, 7],
+    [1.5, 4.2],
+    [3.5, 4.2],
+    [3.5, 7],
+    [5, 7],
+    [5, 0],
+    [3.5, 0],
+    [3.5, 2.8],
+    [1.5, 2.8],
+    [1.5, 0],
+  ],
 };
 const holes = {
   A: [
@@ -130,9 +168,9 @@ export function buildLandmark(world, { box, standard }) {
     p.closePath();
     return p;
   };
-  const letters = "MOTOKART";
+  const letters = "COUCH";
   for (let i = 0; i < letters.length; i++) {
-    const s = 1375 - i * 7.8 - (i >= 5 ? 3 : 0),
+    const s = 1363 - i * 7.8, // (five letters, centred where the eight of the original were)
       p = surfaceAt(s, 23.5);
     if (project(p.x, p.z).d2 < 18 ** 2) continue;
     const g = new THREE.Group();
