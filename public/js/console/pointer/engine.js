@@ -8,13 +8,14 @@ const STALE_MS = 500;           // no samples for this long = the phone stopped 
 
 export function createGyroPointers() {
   const all = new Map(); // playerId -> { pointer, lastAt, count, hz }
-  let speed = 1;
+  let speed = 1, steady = false;
 
   function get(playerId) {
     let p = all.get(playerId);
     if (!p) {
       const pointer = new Pointer({ degPerScreen: BASE_DEG_PER_SCREEN });
       pointer.sensitivity = speed;
+      pointer.steady = steady;
       p = { pointer, lastAt: 0, count: 0, hz: 0 };
       all.set(playerId, p);
     }
@@ -50,6 +51,8 @@ export function createGyroPointers() {
     remove(playerId) { all.delete(playerId); },
     // Debug: switch the "draw slightly ahead" prediction on/off for every player
     toggleLead() { for (const p of all.values()) p.pointer.displayLead = !p.pointer.displayLead; },
+    // Steady cursor: use only the phone's fused orientation (slower to react, but no learned gyro map)
+    setSteady(on) { steady = on; for (const p of all.values()) p.pointer.steady = on; },
     // Settings level 1 (slow) ... 10 (fast); 5 = BASE_DEG_PER_SCREEN
     setSpeed(level) {
       speed = 1.2 ** (level - 5);
@@ -60,7 +63,7 @@ export function createGyroPointers() {
       return [...all].map(([id, p]) => {
         const r = p.pointer.rateDps;
         return `P${id} motion ${p.hz}/s  ${p.pointer.describeMap()}\n`
-          + `   yaw ${r.yaw.toFixed(0)}°/s  pitch ${r.pitch.toFixed(0)}°/s  lead ${p.pointer.displayLead ? 'on' : 'off'}`;
+          + `   yaw ${r.yaw.toFixed(0)}°/s  pitch ${r.pitch.toFixed(0)}°/s  lead ${p.pointer.displayLead ? 'on' : 'off'}  ${p.pointer.steady ? 'STEADY' : 'gyro'}`;
       });
     },
   };

@@ -165,6 +165,7 @@ export class Pointer {
     this.emaM = { x: 0, y: 0, z: 0 };
     this.resBad = 0;
     this.resAll = 0;
+    this.steady = false;   // Settings > Steady cursor: ignore the learned gyro, use the fused orientation only
     this.gyroTrusted = false;
 
     this.live = false;
@@ -341,7 +342,7 @@ export class Pointer {
     // ── Live body rates: learned gyro if trusted, ground truth otherwise ──
     let omega;
     let deadzone;
-    if (this.gyroTrusted && r) {
+    if (this.gyroTrusted && r && !this.steady) {
       omega = this.applyMap(r);
       deadzone = this.deadzoneDps;
     } else {

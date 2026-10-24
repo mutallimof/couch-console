@@ -393,6 +393,7 @@ audio.register('aa-down', (a) => {
 
   // ── Steering: where you point (left of centre = bank left), or the D-pad held ──
   const held = { left: false, right: false };
+  let aHeld = false; // holding A keeps firing
   function steerFromInput() {
     let steer = 0;
     const me = api.players[0], pos = me && api.pointer(me.playerId);
@@ -465,11 +466,31 @@ function handleEvent(e) {
     audio.unlock();
     if (button === 'LEFT') held.left = state === 'down';
     if (button === 'RIGHT') held.right = state === 'down';
+    if (button === 'A') aHeld = state === 'down';
     if (state !== 'down') return;
-    if (button === 'A') { if (game.state === 'done') startRun(); else fireNow(); }
+    if (button === 'A') {
+      if (waiting) { waiting = false; startRun(); game.nextSpawnMs = performance.now() + 1200; }
+      else if (game.state === 'done') startRun();
+      else fireNow();
+    }
     else if (button === 'B') api.exit();
   });
 
+  // The how-to-play screen: shown first, and the ship waits until A is pressed
+  let waiting = true;
+  function showIntro() {
+    waiting = true;
+    $('panel').innerHTML = `<h1>👾 <em>Alien Strike</em></h1>
+      <p class="as-goal"><b>Shoot the flying saucers</b> before they hit you.<br>
+      Each saucer you destroy = <b>+100 points</b>. You also score for every metre you fly.</p>
+      <div class="as-how">
+        <div><span>Point left or right</span>fly your ship sideways</div>
+        <div><span>Hold A</span>fire your laser</div>
+        <div><span>💚💚💚</span>3 lives: saucer shots and crashes cost one</div>
+      </div>
+      <div class="cta"><strong>Press A</strong> to take off · <strong>B</strong> menu</div>`;
+    $('overlay').classList.remove('hide');
+  }
   const easeOutBack = (k) => {
     const c1 = 1.70158, c3 = c1 + 1;
     return 1 + c3 * ((k - 1) ** 3) + c1 * ((k - 1) ** 2);
@@ -482,6 +503,7 @@ function handleEvent(e) {
     last = now;
     if (dt <= 0) return;
 
+  if (aHeld && !waiting && game.state === 'running') fireNow();
   steerFromInput();
   game.update(now, dt);
   if (game.state === 'running') syncHud();
@@ -617,8 +639,7 @@ function handleEvent(e) {
   renderer.setSize(W(), H(), false);
   camera.aspect = W() / H();
   camera.updateProjectionMatrix();
-  startRun();
-  game.nextSpawnMs = performance.now() + 1800;
+  showIntro();
   frame = requestAnimationFrame(loop);
 
   session.stop = () => {

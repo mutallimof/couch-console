@@ -802,3 +802,8 @@ img.qr-img:not([src]) { visibility: hidden; }
 .alien .stat span { font-size: 14px; font-weight: 800; color: #8fa3c9; text-transform: uppercase; letter-spacing: .1em; }
 .alien .cta { font-size: 20px; font-weight: 800; color: #9fb2d4; }
 .alien .cta strong { color: #fff; }
+.alien .as-goal { font-size: 24px; font-weight: 700; line-height: 1.4; margin: 0 0 18px; color: #dbe6ff; }
+.alien .as-goal b { color: #6fe08f; }
+.alien .as-how { display: grid; gap: 8px; text-align: left; margin: 0 auto 22px; max-width: 520px; font-size: 18px; font-weight: 700; color: #9fb2d4; }
+.alien .as-how div { padding: 10px 16px; border-radius: 12px; background: #0b1226cc; border: 1px solid #2b3a5e; }
+.alien .as-how span { display: block; font-size: 20px; font-weight: 900; color: #fff; }

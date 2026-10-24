@@ -8,7 +8,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 </svg>`;
 
 // prefs: { getSensitivity(), setSensitivity(n), getPhoneSounds(), setPhoneSounds(on), showQR() } from main.js
-const ROWS = 4;
+const ROWS = 5;
 
 export function createSettings(prefs) {
   let root, api, row = 0;
@@ -34,10 +34,14 @@ export function createSettings(prefs) {
           <button class="set-btn wide" data-action="phone-sounds">${prefs.getPhoneSounds() ? 'On' : 'Off'}</button>
         </div>
         <div class="set-row" data-row="3">
+          <span class="set-label">Steady cursor</span>
+          <button class="set-btn wide" data-action="steady">${prefs.getSteady() ? 'On' : 'Off'}</button>
+        </div>
+        <div class="set-row" data-row="4">
           <span class="set-label">Add a phone</span>
           <button class="set-btn wide" data-action="qr">Show QR code</button>
         </div>
-        <p class="set-hint">D-pad to choose · A to press · B to go back</p>
+        <p class="set-hint">Steady cursor: turn it On if the cursor wanders or shakes. D-pad to choose · A to press · B to go back</p>
       </div>`;
     root.querySelectorAll('.set-row').forEach((r, i) => r.classList.toggle('focused', i === row));
   }
@@ -53,6 +57,9 @@ export function createSettings(prefs) {
       api.sound.play('select');
     } else if (action === 'phone-sounds') {
       prefs.setPhoneSounds(!prefs.getPhoneSounds());
+      api.sound.play('select');
+    } else if (action === 'steady') {
+      prefs.setSteady(!prefs.getSteady());
       api.sound.play('select');
     } else if (action === 'qr') {
       api.sound.play('select');
@@ -78,7 +85,7 @@ export function createSettings(prefs) {
       const p = api.pointer(playerId);
       const hit = p && document.elementFromPoint(p.x, p.y)?.closest('[data-action]');
       if (hit && root.contains(hit)) return act(hit.dataset.action);
-      act(['sens-up', 'mute', 'phone-sounds', 'qr'][row]);
+      act(['sens-up', 'mute', 'phone-sounds', 'steady', 'qr'][row]);
     }
   }
 

@@ -426,3 +426,35 @@ test('drifts charge through three levels, and a longer drift gives a longer turb
   assert.ok(short > 0 && long > short, `turbo after 1 s: ${short.toFixed(2)} s, after 3.5 s: ${long.toFixed(2)} s`);
   assert.ok(Math.abs(long - TIER_BOOST[3]) < 0.05, 'a long drift reaches the purple level');
 });
+
+// ---- Phase 34: no more hopping down hills ----
+test('driving a lap never makes a kart hop down the road (only real crests and ramps lift it)', () => {
+  for (const def of TRACKS) {
+    const tr = trackPath(THREE, def), k = kart(tr, { kartId: 'racer' });
+    let launches = 0, walls = 0, was = false, minV = 99;
+    const world = { track: tr, topScale: 1, raceTime: 0, onEvent: (e) => { if (e === 'wall') walls++; } };
+    for (let s = 0; s < 60; s += DT) {
+      stepKart(k, DT, { steer: followRoad(tr, k), gas: true, brake: false }, world);
+      if (k.air && !was && !k.gliding) launches++;
+      was = k.air;
+      if (s > 6) minV = Math.min(minV, k.v);
+    }
+    assert.ok(launches <= 5, `${def.id}: ${launches} take-offs in a minute (a designed jump comes about once a lap)`);
+    assert.ok(walls <= 1, `${def.id}: ${walls} wall hits while following the road`);
+    assert.ok(minV > 20, `${def.id}: never slower than ${minV.toFixed(0)} m/s after the start`);
+  }
+});
+
+test('landing on a downhill keeps moving with the road instead of taking off again', () => {
+  const desert = trackPath(THREE, TRACKS.find((t) => t.id === 'desert'));
+  const k = kart(desert, { i: 395, kartId: 'racer' });
+  k.v = 30; k.air = true; k.vy = -2; k.y += 0.05;
+  const world = { track: desert, topScale: 1, raceTime: 0, onEvent: () => {} };
+  let takeoffs = 0, was = true;
+  for (let s = 0; s < 3; s += DT) {
+    stepKart(k, DT, { steer: followRoad(desert, k), gas: true, brake: false }, world);
+    if (k.air && !was) takeoffs++;
+    was = k.air;
+  }
+  assert.ok(takeoffs <= 1, `${takeoffs} take-offs right after landing`);
+});

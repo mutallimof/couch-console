@@ -506,3 +506,13 @@ test('the default pointer speed is the rebased 20°-per-screen (old 150%)', () =
   assert.equal(new Pointer({}).degPerScreen, 20);
   assert.equal(new Pointer({}).sensitivity, 1);
 });
+
+// ── Steady cursor (Settings): orientation only, so a bad gyro can't throw the cursor around ──
+test('steady cursor ignores a nonsense gyro: it tracks exactly like a phone with no gyro at all', () => {
+  const garbage = () => [Math.random() * 400 - 200, Math.random() * 400 - 200, Math.random() * 400 - 200]; // pure noise
+  const steady = new Pointer({ degPerScreen: DEG_PER_SCREEN });
+  steady.steady = true;
+  const noisy = yawError(drive({ ...WANDER, device: garbage, secs: 8, pointer: steady }).track, 3000);
+  const noGyro = yawError(drive({ ...WANDER, device: null, secs: 8 }).track, 3000);
+  assert.ok(Math.abs(noisy - noGyro) < 0.01, `steady+noise ${noisy.toFixed(3)} vs no gyro ${noGyro.toFixed(3)}`);
+});
