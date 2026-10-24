@@ -238,6 +238,7 @@ function openApp(app) {
   queueMicrotask(() => slides.refresh()); // (a running game covers the slides)
   menu.recordPlay(app);
   menu.press();
+  menu.hideTooltip();
   stage.hidden = false;
   const anim = REDUCED_MOTION
     ? stage.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: 'ease' })
@@ -288,7 +289,7 @@ function closeApp() {
       [{ clipPath: 'inset(0px 0px 0px 0px round 0px)' }, { clipPath: tileClip(menu.focusedTile()) }],
       { duration: ZOOM_BACK_MS, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
     );
-  anim.onfinish = () => { stage.hidden = true; busy = false; setPairing(); };
+  anim.onfinish = () => { stage.hidden = true; busy = false; setPairing(); menu.showTooltip(); };
 }
 
 // The `api` object every game gets in mount(). See docs/PLAN.md, Phase 4.

@@ -254,6 +254,9 @@ export function createMenu({ grid, clock, date, crumb, apps, folders = {}, icons
       if (name) $('who-name').textContent = name;
       if (faceHtml) $('who-face').innerHTML = faceHtml;
     },
+    // The tooltip bubble hides while a game is open
+    hideTooltip() { tooltip.hidden = true; },
+    showTooltip() { if (focusEl) showTooltip(focusEl); },
     refresh() { renderAll(); },
   };
 }

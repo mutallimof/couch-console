@@ -8,14 +8,14 @@ export const ENABLED = new URLSearchParams(location.search).get('polyhaven') !==
 // Which sky for which track theme (we have five pictures for seven themes)
 const SKY_FOR = {
   park: 'kloofendal_48d_partly_cloudy_2k', pirate: 'kloofendal_48d_partly_cloudy_2k', desert: 'kloofendal_48d_partly_cloudy_2k',
-  snow: 'snowy_field_2k', sky: 'cloud_layers_2k', city: 'solitude_night_2k', stadium: 'rogland_moonlit_night_2k',
+  snow: 'snowy_field_2k', sky: 'cloud_layers_2k', city: 'solitude_night_2k', avenue: 'solitude_night_2k', stadium: 'rogland_moonlit_night_2k',
 };
 // How bright each sky is drawn (the pictures are real photographs: night ones need to be dimmer than our own light rig expects)
-export const SKY_GAIN = { park: 1, pirate: 1, desert: 1, snow: 1, sky: 1, city: 0.45, stadium: 0.5 };
+export const SKY_GAIN = { park: 1, pirate: 1, desert: 1, snow: 1, sky: 1, city: 0.45, avenue: 0.5, stadium: 0.5 };
 // Road and ground materials: [group folder, material name]
 export const ROAD = ['asphalt', 'asphalt_03'];
 export const STADIUM_ROAD = ['concrete', 'concrete_pavement_03'];
-const GROUND_FOR = { desert: ['grass', 'rocky_terrain'], snow: ['snow', 'snow_01'], city: ['concrete', 'pavement_02'] };
+const GROUND_FOR = { desert: ['grass', 'rocky_terrain'], snow: ['snow', 'snow_01'], city: ['concrete', 'pavement_02'], avenue: ['concrete', 'pavement_02'] };
 
 let listing = null;
 const loaded = new Map();

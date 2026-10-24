@@ -23,6 +23,7 @@ export const THEME_MODELS = {
   desert: [PIRATE('Environment_Rock_1'), PIRATE('Environment_Rock_2'), PIRATE('Environment_Rock_3'), RACE('tent')],
   snow: [CAR('tree-pine')],
   city: [],
+  avenue: [],
   sky: [CAR('tree')],
   pirate: [PIRATE('Environment_PalmTree_1'), PIRATE('Environment_PalmTree_2'), PIRATE('Environment_PalmTree_3'),
     PIRATE('Environment_Rock_1'), PIRATE('Environment_Rock_2'), PIRATE('Environment_House1'), PIRATE('Environment_House2'),
