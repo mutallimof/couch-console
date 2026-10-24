@@ -196,3 +196,4 @@ Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "ever
 - The preview is ONE showroom: the racer is SEATED in the chosen kart (last frame of the pack's SitDown clip, held), on one podium, idle bounce, a hop + spin + cheer on Ready. Warmer, brighter lights.
 - Karts: 4 left (Speedster, Roadster, Dragster, Racer; they share the same toy-car style). Characters: 8 (Anne, Suki, Merlo, Bjorn, Glint, Grub, Biscuit, Daisy). The unused glTF/GLB files (Monster, Hauler, Trekker, Coupe, other characters) are still on disk: tell me if you want them deleted.
 - Before/after: `docs/screenshots/character-select-before-after.png`.
+- Tests: random ports now avoid Chrome's blocked ports (4045, 6000, 6566, 6665-6669 caused ERR_UNSAFE_PORT flakes).
