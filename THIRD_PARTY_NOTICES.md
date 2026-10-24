@@ -16,6 +16,11 @@ Couch Console includes code adapted from the projects below.
   - Techniques (no code copied verbatim) in `karts-look.js` (PBR Neutral tone mapping,
     multisampled half-float effect chain), `turbo-karts.js` (chase camera composition, fill
     light, tight follow-shadow) and `karts-rules.js` (three drift-charge levels, smoothed steering)
+  - `public/js/console/games/juicy-slash.js`, `juicy-slash-rules.js`, `tests/juicy-slash.test.mjs`
+    (from `games/fruit-ninja/game.js`, `logic.js`, `logic.test.mjs` and `core/trail.js`)
+  - `public/js/console/games/alien-strike.js`, `alien-strike-rules.js`, `tests/alien-strike.test.mjs`
+    (from `games/alien-attack/game.js`, `logic.js`, `logic.test.mjs`)
+  - `public/js/console/games/ow-audio.js` (from `core/audio.js`, the synthesized sound effects engine)
 - Only OpenWii's MIT-licensed code was used. None of its Nintendo-derived models, textures,
   course, item art, names or sounds are included or imitated.
 - License: MIT

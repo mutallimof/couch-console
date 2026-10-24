@@ -339,6 +339,9 @@ OpenWii (https://github.com/pattssun/OpenWii, MIT) was studied; code reused from
 - Studied OpenWii's `games/mario-kart` (MIT). Its polished look mostly comes from a converted Nintendo asset pack (racers, the stadium course), which we can't use; we adapted only its techniques: PBR Neutral tone mapping, 4x MSAA half-float effect chain, low close chase camera aimed between straight ahead and the road ahead, fill light + tight follow-shadow, cellular asphalt with normal/roughness maps and tyre-wear lanes, streak drift sparks with three charge colors, curling boost exhaust jets, sparkle bursts from item boxes, squash-and-spring landings, three drift levels and smoothed steering. Plus mowed-grass stripes and more trackside props (billboards, flags, corner cones) from the Kenney Racing Kit.
 - New characters (Quaternius) need a download by the user: see DECISIONS.md.
 
+### Phase 32: Games ported from OpenWii
+- **Juicy Slash** (OpenWii fruit-ninja: 3D wall, painted fruit, juice splats, blade ribbons; 4 blades) and **Alien Strike** (OpenWii alien-attack: toy-box space shooter), with the rules in `juicy-slash-rules.js` / `alien-strike-rules.js` and the original tests (`tests/juicy-slash.test.mjs`, `tests/alien-strike.test.mjs`). `ow-audio.js` = OpenWii's synthesized sounds. Shooting Range was not ported (ours is richer). Credits in THIRD_PARTY_NOTICES.md.
+
 ### Later
 - 4-player split screen for Turbo Karts.
 

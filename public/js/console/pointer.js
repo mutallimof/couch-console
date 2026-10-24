@@ -126,10 +126,12 @@ export function createPointers(layer) {
       const p = this.position(playerId);
       return p ? document.elementFromPoint(p.x, p.y) : null;
     },
-    // 'arrow' (default) or 'crosshair' (for aiming games; no trail there, it hides the target)
+    // 'arrow' (default), 'crosshair' (for aiming games; no trail there, it hides the target)
+    // or 'none' (the game draws its own, e.g. Juicy Slash's blades)
     setStyle(style) {
       layer.classList.toggle('crosshair', style === 'crosshair');
-      trailOn = style !== 'crosshair';
+      layer.classList.toggle('none', style === 'none');
+      trailOn = style === 'arrow' || !style;
     },
     // fn(x, y) -> { x, y, r } (the target under the cursor) or null. null = assist off.
     setAssist(fn) { assist = fn; },
