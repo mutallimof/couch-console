@@ -212,3 +212,7 @@ Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "ever
 - Profile and Activity open small info panels for now (who is here / nothing yet); they get real content in step 4. Sleep blanks the screen until any button. "Players" and "Join" open the QR screen.
 - Animation: GSAP (loaded on the side; the menu works without it) for the entrance, the press squash and the tooltip pop; focus lift/glow is CSS (`.gloss.is-focus`).
 - Tests: new `tests/home.e2e.test.mjs`; `party-ui.e2e` adapted. Before/after: `docs/screenshots/home-before-after.png`, `home.png`.
+
+### Phase 55 step 3: isometric toy-diorama icons
+- 22 icons (11 games, 3 hubs, 4 channels, 4 folders) in `public/assets/icons/<id>.png`, rendered by `node scripts/render-icons.mjs [id...]` from `public/js/tools/icon-scenes.js` (shapes only, no downloads) with ONE camera, ONE soft studio light and the same tiled base (`public/icons.html` + `icon-render.js` crop the empty margins). A new game gets an icon by adding a scene and its id to `scripts/icon-ids.mjs`; games without a PNG keep their SVG icon. The menu asks `/api/icons` which PNGs exist.
+- Screenshots: `docs/screenshots/icons-all.png`, `icons-before-after.png`.

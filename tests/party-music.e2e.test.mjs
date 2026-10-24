@@ -1,6 +1,7 @@
 // The party music in real (headless) browsers (Phase 45), with a pretend YouTube: phones add songs, the TV plays them in
 // a fair order (the TV player is a 5 second pretend one: ?fakeyt=1), skip votes, blocked links, the Music screen. npm test
 import test from 'node:test';
+import { focusOn } from './helpers-home.mjs';
 import assert from 'node:assert/strict';
 import { tmpdir } from 'node:os';
 import { createServer } from 'node:http';
@@ -86,7 +87,7 @@ test('three phones queue songs; the TV plays them fairly; skip and blocked links
     await cem.tap('.tab[data-tab="remote"]');
     await tv.waitForSelector('.tile:not(.empty)');
     const press = (b) => cem.evaluate((x) => { const el = document.querySelector(`#controller [data-button="${x}"]`); el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); }, b).then(() => tv.waitForTimeout(350));
-    for (let i = 0; i < 3; i++) await press('RIGHT');
+    await focusOn(tv, press, 'dock:music');
     await press('A');
     await tv.waitForSelector('.channel.music .mu-queue');
     assert.match(await tv.textContent('.mu-queue'), /bbbbbbbbbb1/);

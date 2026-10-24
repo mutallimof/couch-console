@@ -22,6 +22,7 @@ const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoo
 const gameApps = await loadApps();
 const slides = createSlides({ socket, party });
 const folders = await fetch('/js/console/folders.json').then((r) => r.json()).catch(() => ({}));
+const icons = await fetch('/api/icons').then((r) => r.json()).catch(() => []);
 const pointers = createPointers($('cursors'));
 const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
 const ZOOM_MS = 320;       // opening a game: the one big motion in the menu
@@ -74,7 +75,7 @@ const prefs = {
 
 const apps = [...gameApps, createSettings(prefs)]; // Settings is built in, always last
 const menu = createMenu({
-  grid: $('tiles'), clock: $('clock'), date: $('date'), crumb: $('crumb'), apps, folders,
+  grid: $('tiles'), clock: $('clock'), date: $('date'), crumb: $('crumb'), apps, folders, icons,
   onFocusChange: (column) => sound.play('hover', { step: column }),
 });
 

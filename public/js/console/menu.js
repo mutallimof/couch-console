@@ -18,7 +18,7 @@ const SIDE = [
 ];
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
-export function createMenu({ grid, clock, date, crumb, apps, folders = {}, onFocusChange, els = {} }) {
+export function createMenu({ grid, clock, date, crumb, apps, folders = {}, icons = [], onFocusChange, els = {} }) {
   const $ = (id) => document.getElementById(id);
   const hero = els.hero || $('hero'), side = els.side || $('side'), folderBox = els.folders || $('folders');
   const dock = els.dock || $('dock'), pager = els.pager || $('pager'), tooltip = els.tooltip || $('tooltip');
@@ -43,7 +43,13 @@ export function createMenu({ grid, clock, date, crumb, apps, folders = {}, onFoc
     if (html) el.innerHTML = html;
     return el;
   }
-  const iconOf = (app) => (/^(\/|https?:)/.test(app.icon || '') ? `<img src="${app.icon}" alt="">` : app.icon || '');
+  // A game's icon: its rendered diorama if there is one (public/assets/icons), else its own little SVG
+  const have = new Set(icons);
+  const iconOf = (app) => {
+    const id = app.isFolder ? `folder-${app.id}` : app.id;
+    if (have.has(id)) return `<img src="/assets/icons/${id}.png" alt="" draggable="false">`;
+    return /^(\/|https?:)/.test(app.icon || '') ? `<img src="${app.icon}" alt="">` : app.icon || '';
+  };
 
   function appTile(app, zone, big = false) {
     const el = make('div', `tile gloss${big ? ' big' : ''}`, zone, app, `<div class="tile-icon">${iconOf(app)}</div><div class="tile-title">${esc(app.title)}</div>`, app.id);
@@ -93,7 +99,7 @@ export function createMenu({ grid, clock, date, crumb, apps, folders = {}, onFoc
       { isAction: true, action: 'join', title: 'Join', color: '#3FA9FF', icon: '<svg viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="14" height="14" rx="3"/><rect x="28" y="6" width="14" height="14" rx="3"/><rect x="6" y="28" width="14" height="14" rx="3"/><path d="M28 28h6v6M42 28v14h-8M28 42v-2"/></svg>' },
     ];
     dock.replaceChildren(...items.map((it) => {
-      const el = make('div', 'dock-item gloss', 'dock', it, `<div class="tile-icon">${iconOf(it)}</div><div class="tile-title">${esc(it.title)}</div>`, it.id || it.action);
+      const el = make('div', 'tile dock-item gloss', 'dock', it, `<div class="tile-icon">${iconOf(it)}</div><div class="tile-title">${esc(it.title)}</div>`, it.id || it.action);
       el.dataset.tile = '';
       el.style.setProperty('--tile', it.color || '#5B6577');
       return el;

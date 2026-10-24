@@ -1,6 +1,7 @@
 // The party album in real (headless) browsers (Phase 44): a guest sends photos from a phone, other phones see them
 // live, the TV shows them (a toast, then the wall), saving falls back to a download, deleting works. Skipped without Playwright. npm test
 import test from 'node:test';
+import { focusOn } from './helpers-home.mjs';
 import assert from 'node:assert/strict';
 import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
@@ -94,7 +95,7 @@ test('guest uploads 3 photos; phones and the TV show them live; save and delete 
     // The TV: open Photos (tile 3: Turbo Karts, Arcade, Photos) with Ana's D-pad; the wall shows a picture with Ben's name on it
     await tv.waitForSelector('.tile:not(.empty)');
     const press = (btn) => ana.evaluate((b) => { const el = document.querySelector(`#controller [data-button="${b}"]`); el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); }, btn).then(() => tv.waitForTimeout(350));
-    for (let i = 0; i < 2; i++) await press('RIGHT');
+    await focusOn(tv, press, 'dock:photos');
     await press('A');
     await tv.waitForSelector('.photo-view.wall .photo-by', { timeout: 15000 });
     assert.match(await tv.textContent('.photo-view.wall .photo-by'), /Ben/);

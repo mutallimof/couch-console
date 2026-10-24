@@ -86,3 +86,9 @@ kbd { display: inline-grid; place-items: center; min-width: 1.7em; height: 1.7em
 .tiles .tile-title { font-size: calc(var(--u) * 1); padding-bottom: calc(var(--u) * 0.5); }
 .tiles .tile-icon { padding-top: 4%; }
 .tiles .tile-icon svg, .tiles .tile-icon img { max-height: calc(var(--u) * 3.6); }
+
+/* Rendered diorama icons fill the tile's icon area (the title sits under them) */
+.tile-icon { position: relative; }
+.tile-icon img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; filter: drop-shadow(0 6px 6px rgba(30, 40, 80, 0.25)); }
+.folder .mini-grid span { position: relative; }
+.folder .mini-grid img { position: static; filter: none; }

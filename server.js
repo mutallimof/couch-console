@@ -80,6 +80,10 @@ app.use('/vendor/pdfjs-dist', express.static(file('./node_modules/pdfjs-dist')))
 // Three.js add-ons (model loader etc.), imported as "three/addons/..."
 app.use('/vendor/three-addons', express.static(file('./node_modules/three/examples/jsm')));
 
+// Which isometric icons exist (public/assets/icons/<id>.png, made by scripts/render-icons.mjs)
+app.get('/api/icons', (req, res) => {
+  try { res.json(readdirSync(fileURLToPath(new URL('./public/assets/icons', import.meta.url))).filter((f) => f.endsWith('.png')).map((f) => f.replace(/\.png$/, ''))); } catch { res.json([]); }
+});
 // Libraries for the visual upgrade (Phase 55): effects, tweening, 2D engine, sound, animations.
 // Imported by name through the importmap in console.html / remote.html.
 app.use('/vendor/postprocessing', express.static(file('./node_modules/postprocessing/build')));
