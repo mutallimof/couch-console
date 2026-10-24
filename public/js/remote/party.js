@@ -3,6 +3,8 @@
 // show a QR code so the next person can join). Photos, Music and Present live in their own files
 // and plug in with registerPane().
 import { EV, EMOJIS, NAME_MAX } from '../shared/protocol.js';
+import { cleanAvatar, randomAvatar, avatarSvg } from '../shared/avatar.js';
+import { mountAvatarEditor } from './avatar-editor.js';
 
 const $ = (id) => document.getElementById(id);
 const PROFILE_KEY = 'couch.profile';
@@ -21,6 +23,7 @@ export function createParty({ socket, getRoom, getClientId, onRoleRequest, onTab
   let role = 'guest', slotsFree = 0, tab = 'remote', mode = 'pointer', roster = { people: [] }, me = null;
   const panes = []; // { id, label, icon, mod, mounted }
   let emoji = profile.emoji || EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+  let avatar = cleanAvatar(profile.avatar || randomAvatar()); // the face this phone shows on the TV (saved on this phone)
 
   // ---- small helpers ----
   function toast(text, ms = 2600) {
@@ -43,17 +46,24 @@ export function createParty({ socket, getRoom, getClientId, onRoleRequest, onTab
   // ---- welcome card ----
   $('w-name').value = profile.name || '';
   emojiRow($('w-emoji'), emoji, (e) => { emoji = e; });
+  mountAvatarEditor($('w-avatar'), avatar, (a) => { avatar = a; });
   $('welcome').addEventListener('submit', (ev) => {
     ev.preventDefault();
     const chosen = ev.submitter?.value === 'guest' ? 'guest' : 'player';
     const name = $('w-name').value.trim().slice(0, NAME_MAX);
     if (!name) { $('w-note').textContent = 'Type your name first.'; $('w-name').focus(); return; }
-    profile = { name, emoji, role: chosen };
+    profile = { name, emoji, avatar, role: chosen };
     saveProfile(profile);
     $('w-name').blur();
     $('welcome').hidden = true;
     onRoleRequest(profile);
   });
+
+  // The little face on the "me" button: the avatar, or the emoji if there is none yet
+  function showMe() {
+    $('me-emoji').innerHTML = profile.avatar ? avatarSvg(profile.avatar, 30) : me?.emoji || '🙂';
+    $('me-name').textContent = me?.name || profile.name || '';
+  }
 
   // ---- tabs ----
   function renderTabs() {
@@ -82,11 +92,13 @@ export function createParty({ socket, getRoom, getClientId, onRoleRequest, onTab
   }
 
   // ---- "me" sheet ----
-  let sheetEmoji = emoji;
+  let sheetEmoji = emoji, sheetAvatar = avatar, sheetEditor = null;
   function openSheet() {
     $('s-name').value = me?.name || profile.name || '';
     sheetEmoji = me?.emoji || emoji;
     emojiRow($('s-emoji'), sheetEmoji, (e) => { sheetEmoji = e; });
+    sheetAvatar = cleanAvatar(profile.avatar || avatar);
+    if (sheetEditor) sheetEditor.set(sheetAvatar); else sheetEditor = mountAvatarEditor($('s-avatar'), sheetAvatar, (a) => { sheetAvatar = a; });
     $('s-qr').hidden = true;
     renderRoleButton();
     $('sheet').hidden = false;
@@ -105,9 +117,10 @@ export function createParty({ socket, getRoom, getClientId, onRoleRequest, onTab
   $('s-save').addEventListener('click', () => {
     const name = $('s-name').value.trim().slice(0, NAME_MAX);
     if (!name) return;
-    profile = { ...profile, name, emoji: sheetEmoji };
+    avatar = sheetAvatar;
+    profile = { ...profile, name, emoji: sheetEmoji, avatar };
     saveProfile(profile);
-    socket.emit(EV.REMOTE_PROFILE, { name, emoji: sheetEmoji }, (res) => { if (res?.ok) { $('sheet').hidden = true; toast('Saved'); } });
+    socket.emit(EV.REMOTE_PROFILE, { name, emoji: sheetEmoji, avatar }, (res) => { if (res?.ok) { $('sheet').hidden = true; toast('Saved'); showMe(); } });
   });
   $('s-role').addEventListener('click', () => {
     const to = role === 'player' ? 'guest' : 'player';
@@ -144,6 +157,7 @@ export function createParty({ socket, getRoom, getClientId, onRoleRequest, onTab
     ctx,
     get profile() { return profile; },
     needsWelcome: () => !profile.name,
+    avatarOf: () => profile.avatar,
     showWelcome(note = '') {
       $('w-note').textContent = note;
       $('w-play').hidden = false;
@@ -157,7 +171,7 @@ export function createParty({ socket, getRoom, getClientId, onRoleRequest, onTab
       slotsFree = res.slotsFree ?? slotsFree;
       roster = { people: res.people || [] };
       $('me-btn').hidden = false;
-      $('me-emoji').textContent = me?.emoji || '🙂';
+      showMe();
       $('me-name').textContent = me?.name || '';
       if (res.full) toast('All 4 player slots are taken: you are in as a guest.', 4000);
       if (role !== 'player' && tab === 'remote') tab = panes[0]?.id || 'remote';
@@ -168,7 +182,7 @@ export function createParty({ socket, getRoom, getClientId, onRoleRequest, onTab
       roster = r;
       slotsFree = r.slotsFree ?? slotsFree;
       const mine = r.people.find((p) => p.id === me?.id);
-      if (mine) { me = { ...me, name: mine.name, emoji: mine.emoji }; $('me-emoji').textContent = mine.emoji; $('me-name').textContent = mine.name; }
+      if (mine) { me = { ...me, name: mine.name, emoji: mine.emoji }; showMe(); }
       if (!$('sheet').hidden) renderRoleButton();
     },
     // The console changed the controller layout (pointer / wheel / keyboard)

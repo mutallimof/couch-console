@@ -91,3 +91,6 @@ SOFTWARE.
 
 ## Poly Haven (CC0)
 HDRIs: kloofendal_48d_partly_cloudy, snowy_field, cloud_layers, solitude_night, rogland_moonlit_night. Textures: asphalt_03, concrete_pavement_03 and ground sets. https://polyhaven.com, CC0.
+
+## Libraries added in Phase 55 (npm, served from node_modules under /vendor)
+gsap (GreenSock Standard License, free for this use), howler (MIT), lottie-web (MIT), pixi.js and pixi-filters (MIT), postprocessing (Zlib), three.quarks (MIT).

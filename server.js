@@ -9,6 +9,7 @@ import express from 'express';
 import { Server } from 'socket.io';
 import QRCode from 'qrcode';
 import { createParty } from './server/party.js';
+import { createActivity } from './server/activity.js';
 import { createPhotos } from './server/photos.js';
 import { createMusic } from './server/music.js';
 import { createPresent } from './server/present.js';
@@ -80,6 +81,10 @@ app.use('/vendor/pdfjs-dist', express.static(file('./node_modules/pdfjs-dist')))
 // Three.js add-ons (model loader etc.), imported as "three/addons/..."
 app.use('/vendor/three-addons', express.static(file('./node_modules/three/examples/jsm')));
 
+// Which isometric icons exist (public/assets/icons/<id>.png, made by scripts/render-icons.mjs)
+app.get('/api/icons', (req, res) => {
+  try { res.json(readdirSync(fileURLToPath(new URL('./public/assets/icons', import.meta.url))).filter((f) => f.endsWith('.png')).map((f) => f.replace(/\.png$/, ''))); } catch { res.json([]); }
+});
 // Libraries for the visual upgrade (Phase 55): effects, tweening, 2D engine, sound, animations.
 // Imported by name through the importmap in console.html / remote.html.
 app.use('/vendor/postprocessing', express.static(file('./node_modules/postprocessing/build')));
@@ -183,9 +188,10 @@ const rooms = new Map();
 
 // Party data (events, photos...) lives in data/ (git-ignored); DATA_DIR changes where (tests use a temp folder)
 const party = createParty({ app, rooms, dataDir: process.env.DATA_DIR || file('./data') });
-const photos = createPhotos({ app, io, rooms, party });
-const music = createMusic({ app, io, rooms, party });
-const present = createPresent({ app, io, rooms, party });
+const activity = createActivity({ io, rooms, party });
+const photos = createPhotos({ app, io, rooms, party, activity });
+const music = createMusic({ app, io, rooms, party, activity });
+const present = createPresent({ app, io, rooms, party, activity });
 
 function newRoomCode() {
   let code;
@@ -284,7 +290,9 @@ io.on('connection', (socket) => {
     // Who is this phone? (A phone without a stored id counts as new each time.)
     const key = clientId || `anon:${socket.id}`;
     if (!room.people.has(key) && !canAddGuest(room)) return ack({ ok: false, error: 'FULL' });
-    const person = upsertPerson(room, key, { name: payload?.name, emoji: payload?.emoji });
+    const isNew = !room.people.has(key);
+    const person = upsertPerson(room, key, { name: payload?.name, emoji: payload?.emoji, avatar: payload?.avatar });
+    if (isNew && payload?.name) activity.add(code, person, 'join');
     // Joining as a player (the default, so older phone pages keep working) or as a guest
     const wantPlayer = payload?.role !== 'guest';
     // Same phone coming back (refresh / reconnect)? Give it its old slot.
@@ -312,9 +320,17 @@ io.on('connection', (socket) => {
     const color = colorOf(person);
     if (playerId) io.to(room.consoleId).emit(EV.PLAYER_JOINED, { playerId, color });
     ack({ ok: true, role: playerId ? 'player' : 'guest', playerId: playerId || null, color, layout: room.layout,
-      person: { id: person.id, name: person.name, emoji: person.emoji }, full, ...roster(room) });
+      person: { id: person.id, name: person.name, emoji: person.emoji, avatar: person.avatar }, full, ...roster(room) });
     broadcastRoster(room, code);
     console.log(`Room ${code}: ${playerId ? `P${playerId}` : `guest ${person.name}`} joined`);
+  });
+
+  // The TV says a player won a game: the feed tells everyone
+  socket.on(EV.ACTIVITY_GAME, (payload) => {
+    if (socket.data.role !== 'console') return;
+    const room = rooms.get(socket.data.room);
+    const person = [...(room?.people.values() || [])].find((p) => p.playerId === Number(payload?.playerId));
+    if (room && person && payload?.what === 'won') activity.add(socket.data.room, person, 'won', { game: String(payload.game || '').slice(0, 40) });
   });
 
   // A phone changes role (take a free player slot / give it back) or its name and emoji
@@ -348,9 +364,9 @@ io.on('connection', (socket) => {
     const reply = typeof ack === 'function' ? ack : () => {};
     const room = rooms.get(socket.data.room), person = room?.people.get(socket.data.personKey);
     if (socket.data.role !== 'remote' || !person) return reply({ ok: false });
-    upsertPerson(room, person.key, { name: payload?.name, emoji: payload?.emoji });
+    upsertPerson(room, person.key, { name: payload?.name, emoji: payload?.emoji, avatar: payload?.avatar });
     broadcastRoster(room, socket.data.room);
-    reply({ ok: true, name: person.name, emoji: person.emoji });
+    reply({ ok: true, name: person.name, emoji: person.emoji, avatar: person.avatar });
   });
 
   // Relay every input event to the console, stamped with the sender's playerId.
