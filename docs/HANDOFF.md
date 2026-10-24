@@ -15,14 +15,17 @@ Everything must be original: no Nintendo names, art, sounds or logos.
 ## How the owner runs it
 `npm install` (after every pull), `npm start`, open the printed link on the laptop, scan the QR with a
 phone. Local https setup: `npm run certs`. Remote link: `cloudflared tunnel --url http://localhost:3000`.
-Debug readout: `?debug=1`, shown on the TV only after toggling it there (see step 5 below). Full guide: `README.md`.
+Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does not turn it on; phone: `&debug=1`, not remembered). Full guide: `README.md`.
 
-## Current state (Phase 1 in progress)
+## Current state (Phase 1 done, waiting for the owner's phone/TV test)
 - Home screen, profiles, party hub (photos, music, present), 11 arcade/camera games, theme switch (Light/Dark/Auto).
 - Turbo Karts: 8 tracks (Sunny Park, Dune Canyon, Frosty Peaks, Neon City, Neon Avenue, Pirate Cove,
   Cloud Gardens, Grand Stadium), 8 racers, 6 items, 3-tier drift turbo, CPU drivers, 1-2 human players.
   Rules are in `public/js/console/games/turbo-karts/ow-kart/rules.js` (from OpenWii, MIT, credited in
   `THIRD_PARTY_NOTICES.md`). No controller rewrite (audit decision).
+- three 0.186.1 (exact pin) + postprocessing 6.39.5 + three.quarks 0.17.1; `/vendor/three.core.js` and `quarks.core` routes in `server.js`. Don't bump three without checking postprocessing's peer range (< 0.187).
+- Select screen draws its 3D previews in small canvases (no full-window multisampled canvas).
+- Grand Stadium rebranded (Couch Console sofa emblem, TURBO KARTS, COUCH lettering); racer Daisy is now Clover.
 - Reference audit done: `docs/REFERENCE-AUDIT.md` (licenses, comparison, top-10, risks).
 
 ## Known issues
@@ -30,6 +33,7 @@ Debug readout: `?debug=1`, shown on the TV only after toggling it there (see ste
   (Phase 3). HUD item slot empty-looking, minimap translucent, track-select cards have no previews.
 - No skid marks, little camera juice (Phase 2).
 - Phone tilt steering is raw (no smoothing/dead zone). iPhones can't vibrate (Phase 4).
+- Headless checks: all 8 tracks and the other games load with no console errors; real-GPU fps is still unmeasured.
 - Grand Stadium is the heaviest scene; GTAO + 4x MSAA may be slow on weak laptops (auto-fallback under 40 fps).
 - Headless/software-GL numbers are not real fps; check on the real laptop with `?debug=1`.
 
@@ -37,7 +41,7 @@ Debug readout: `?debug=1`, shown on the TV only after toggling it there (see ste
 | # | What | Status |
 |---|---|---|
 | 0 | Reference audit | done |
-| 1 | Foundation: main merge, HANDOFF, three 0.186.1 upgrade, select fps, debug overlay, stadium rebrand | in progress |
+| 1 | Foundation: main merge, HANDOFF, three 0.186.1 upgrade, select fps, debug overlay, stadium rebrand | done (owner to test) |
 | 1b | Test on real phone and TV, theme switch (the theme switch already exists) | owner |
 | 2 | Kart feel v2 on top of `rules.js`: camera juice, skid marks, slip angle, tuning panel (lil-gui) | todo |
 | 3 | Kart look v2: sky/ground/fog/road art pass per track, HUD, track-select previews | todo |
