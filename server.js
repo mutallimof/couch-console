@@ -60,11 +60,17 @@ app.use(express.static(fileURLToPath(new URL('./public', import.meta.url)), {
 // kart game can use them when they are there (and not ask for files that don't exist)
 app.get('/api/polyhaven', (req, res) => {
   const base = fileURLToPath(new URL('./public/assets/polyhaven', import.meta.url));
-  const list = (dir, keep) => { try { return readdirSync(`${base}/${dir}`).filter(keep); } catch { return []; } };
-  res.json({
-    hdri: list('hdri', (f) => f.endsWith('.hdr')).map((f) => f.replace(/\.hdr$/, '')),
-    textures: list('textures', (f) => existsSync(`${base}/textures/${f}/diff.jpg`)),
-  });
+  const ls = (dir) => { try { return readdirSync(`${base}/${dir}`); } catch { return []; } };
+  // textures/<group>/textures/<name>_diff_1k.jpg (+ _nor_gl_1k.jpg, _arm_1k.jpg): one entry per material found
+  const textures = {};
+  for (const group of ls('textures')) {
+    const files = ls(`textures/${group}/textures`);
+    for (const f of files.filter((x) => x.endsWith('_diff_1k.jpg'))) {
+      const name = f.replace('_diff_1k.jpg', ''), url = (suffix) => (files.includes(`${name}_${suffix}_1k.jpg`) ? `/assets/polyhaven/textures/${group}/textures/${name}_${suffix}_1k.jpg` : null);
+      (textures[group] ||= []).push({ name, diff: url('diff'), nor: url('nor_gl'), arm: url('arm') });
+    }
+  }
+  res.json({ hdri: ls('hdri').filter((f) => f.endsWith('.hdr')).map((f) => f.replace(/\.hdr$/, '')), textures });
 });
 // Three.js (3D games) is served from node_modules, so it works without internet.
 app.get('/vendor/three.module.js', (req, res) =>

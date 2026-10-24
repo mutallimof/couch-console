@@ -39,7 +39,7 @@ function noiseTexture(THREE, { size = 256, base = 225, spread = 30, specks = 250
 
 // assets (optional): loaded models (Map path -> glTF) for item boxes, coins and trackside decor
 // opts.path: the center line of the kart rules' track model (see ow-kart/render-path.js), which also sets the road
-// and barrier width; opts.noPickups: leave out item boxes and coins (the game draws its own)
+// and barrier width; opts.groundMaps: a ground picture instead of the generated one; opts.noPickups: leave out item boxes and coins
 export function buildTrack(THREE, def, assets = null, opts = {}) {
   const path = opts.path;
   const ROAD_HALF = path.roadHalf ?? ROAD_HALF0, WALL = path.wallHalf ?? WALL0;
@@ -111,8 +111,11 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
     group.add(sea);
   }
   const groundR = island ? island.r : 800;
-  const groundTex = noiseTexture(THREE, { base: 222, spread: 16, specks: 1800, speckSize: 2, repeat: [groundR / 6, groundR / 6] });
-  const groundMat = new THREE.MeshStandardMaterial({ color: def.ground, map: groundTex, roughness: 1 });
+  // A real ground picture (Poly Haven, see karts-polyhaven.js) if given, tiled about every 5 m; otherwise generated grit
+  const gm = opts.groundMaps;
+  if (gm) for (const t of [gm.map, gm.normalMap, gm.roughnessMap]) t?.repeat.set(groundR / 2.5, groundR / 2.5);
+  const groundTex = gm ? gm.map : noiseTexture(THREE, { base: 222, spread: 16, specks: 1800, speckSize: 2, repeat: [groundR / 6, groundR / 6] });
+  const groundMat = new THREE.MeshStandardMaterial({ color: gm ? '#ffffff' : def.ground, map: groundTex, roughness: 1, ...(gm?.normalMap ? { normalMap: gm.normalMap } : {}) });
   // Mowed stripes: wide bands of lighter and darker grass, like a groomed race venue
   groundMat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vGround;')

@@ -101,7 +101,7 @@ not to stop for questions). Each entry says what was decided and why. Newest at 
 - The old shortcut ramps of Cloud Gardens are not part of the OpenWii engine and are gone with the old rules.
 
 ## Phase 40: Visual comparison loop with OpenWii
-- Ran OpenWii locally **with** its pack only to take reference screenshots (kept in a scratch folder outside the repo; none of its assets are copied). The side-by-sides in `docs/kart-compare/` contain Nintendo-derived pixels (the reference column) since the user asked for them: private repo only, delete the folder if the repo ever goes public.
+- Ran OpenWii locally **with** its pack only to take reference screenshots (kept in a scratch folder outside the repo; none of its assets are copied). (The side-by-sides first had a reference column with Nintendo-derived pixels; that column was deleted afterwards, see the Poly Haven entry below.)
 - Full difference list, with "code fix" vs "needs better art", in `docs/kart-compare/DIFFERENCES.md`. All code-side items fixed: stadium light rig and exposure (mean brightness 55-65 -> 70-90 vs the reference's 90-100), moving floodlights, exponential fog, ambient occlusion (GTAO, `?ao=off`), gold HUD lettering, calmer boost, gold hit burst.
 - Per-track light rig (`def.lighting`): only the stadium uses it; the day tracks keep their defaults.
 - Ambient occlusion is on by default; if the laptop is slow, the existing automatic effects-off switch (under 40 fps) turns all screen effects off. In the headless test the software renderer is far too slow with AO, so the capture scripts use `?ao=off` except one sample (`start-ambient-occlusion-on.png`).
@@ -175,3 +175,12 @@ Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "ever
 - **Folders tidied:** the Turbo Karts files that sat among the games (`karts-*.js`, `kart-*.js`) and the `ow-kart/` engine folder now live in `public/js/console/games/turbo-karts/` (the entry file `games/turbo-karts.js` stays where the menu looks for games). All imports were rewritten by a script and the tests and browser checks re-run. README has a short "what is where" section.
 - **Notices:** `THIRD_PARTY_NOTICES.md` now lists only what is still used: Quaternius (characters and Pirate Kit), Kenney, three.js, pdf.js, Nunito, YouTube, Poly Haven (optional), OpenWii.
 - **Not built (by instruction):** PLAN-PARTY phases 47-52 (Party Games and the camera games) were left out; the run covered Milestone 3 (roles, photos, music, present). They stay in `docs/PLAN-PARTY.md`.
+
+## Poly Haven wired in; reference screenshots removed
+- The OpenWii reference screenshots (they showed Nintendo-derived art) were deleted from `docs/kart-compare/`; the comparison pictures there are now ours only (before and after). They stay in git history.
+
+### Poly Haven wiring (details)
+- Sky: HDRI dome per theme (park/pirate/desert kloofendal, snow snowy_field, sky cloud_layers, city solitude_night, stadium rogland_moonlit_night). Roads: asphalt_03 / concrete_pavement_03 (stadium); ground textures for desert/snow/city.
+- `?polyhaven=off` shows the old look. Listing at `/api/polyhaven`.
+- Before/after: `docs/screenshots/polyhaven-before-after-track0.png` (left = before) and `-track6.png`.
+- Known: stadium lane paint is a bit saturated against the concrete; tune later.

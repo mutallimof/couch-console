@@ -9,7 +9,8 @@
 // THIRD_PARTY_NOTICES.md).
 import { colorFor } from '../../shared/protocol.js';
 import { graphics } from '../graphics-prefs.js';
-import { skyFor, asphalt } from './turbo-karts/karts-polyhaven.js';
+import { skyFor, skyDome, SKY_GAIN, roadTextures, stadiumRoadTextures, groundTextures } from './turbo-karts/karts-polyhaven.js';
+import { setStadiumPavement } from './turbo-karts/ow-kart/stadium/materials.js';
 import { setPavementOverride } from './turbo-karts/karts-materials.js';
 import { buildTrack, TRACKS, SUN_DIR } from './turbo-karts/kart-track.js';
 import { STADIUM } from './turbo-karts/ow-kart/stadium/stadium-def.js';
@@ -131,7 +132,10 @@ async function startRace() {
     }
     state = 'loading';
     if (!(await loadModels([...THEME_MODELS.common, ...(THEME_MODELS[def.theme] || [])]))) return;
-    setPavementOverride(await asphalt(THREE)); // (real asphalt if the Poly Haven files are there)
+    // Real asphalt, concrete and ground pictures (Poly Haven) if the files are there; otherwise the generated ones
+    setPavementOverride(await roadTextures(THREE));
+    setStadiumPavement(await stadiumRoadTextures(THREE));
+    const groundMaps = await groundTextures(THREE, def.theme, 1);
     if (def.stadium) {
       // The Grand Stadium: OpenWii's procedural world, collected in one group so it can be removed again
       const model = stadiumTrack.model, before = new Set(scene.children);
@@ -148,7 +152,7 @@ async function startRace() {
     } else {
       const model = createTrackModel(def);
       const path = renderPath(THREE, model);
-      track = buildTrack(THREE, def, assets, { path, noPickups: true });
+      track = buildTrack(THREE, def, assets, { path, noPickups: true, groundMaps });
       track.model = model;
       scene.add(track.group);
       scene.fog = new THREE.Fog(def.sky[1], def.fog[0] * 1.3, def.fog[1] * 1.3);
@@ -157,9 +161,9 @@ async function startRace() {
     applyLighting(def);
     // A real sky picture (Poly Haven HDRI) if there is one for this track; otherwise the generated sky stays
     const sky = await skyFor(THREE, def.theme);
-    scene.background = sky || null;
+    scene.background = null;
     track.group.traverse((o) => { if (o.userData.isSky) o.visible = !sky; });
-    if (sky) look.setSkyTexture(sky);
+    if (sky) { track.group.add(skyDome(THREE, sky, SKY_GAIN[def.theme] ?? 1)); look.setSkyTexture(sky); }
     mapBox = null;
   }
   const T = track.model;
