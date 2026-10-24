@@ -77,7 +77,7 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
     const s = seats.find((x) => x.playerId === playerId);
     if (!s) return;
     if (s.step === 'char') {
-      const cols = 7, n = CHARACTERS.length; // two rows of 7 characters
+      const cols = 4, n = CHARACTERS.length; // two rows of 4 characters
       const d = { LEFT: -1, RIGHT: 1, UP: -cols, DOWN: cols }[button];
       if (d) { s.char = (s.char + d + n) % n; sound.play('hover'); }
       else if (button === 'A') { s.step = 'kart'; sound.play('select'); onCelebrate(s.playerId, 'pick'); }
