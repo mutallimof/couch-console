@@ -22,4 +22,15 @@ This project is a phone-controlled, Wii-style console that runs in the browser.
 5. **Keep it simple:** plain HTML, CSS and JavaScript ES modules, with no frameworks and no build step. Keep files small and readable, and add short comments where the logic isn't obvious.
 6. **No Nintendo assets:** no logos, sounds, fonts, characters, channel art or the "Wii" name in the UI. Everything must be original.
 7. **When something doesn't work on my phone,** ask me for the specific symptom, and add a debug readout (`?debug=1`) rather than guessing.
-8. **Keep `README.md` updated** with how to run the project. Write it for a beginner.
+8. **`README.md` explains how to run the project,** written for a beginner. Update it only when the run steps change, at the end of a phase.
+
+## Token rules
+- Update docs ONCE at the end of a phase, never after each subtask.
+- By default update ONLY `docs/HANDOFF.md`, with targeted edits (change the lines that changed; never rewrite the whole file).
+- Touch `docs/DECISIONS.md` only when a decision actually changes; append one line.
+- Don't touch `docs/PLAN.md`, `docs/PLAN-PARTY.md` or `docs/STYLE.md` unless I ask.
+- Keep `docs/HANDOFF.md` under 80 lines; cut old details instead of adding.
+- At the start of a chat, read only `CLAUDE.md` and `docs/HANDOFF.md`, plus any doc the prompt names. Don't summarize them back to me.
+- While working, run only the tests for the files you changed; run the full suite once before pushing.
+- Screenshots: only the ones the prompt asks for.
+- Final report: max 15 lines, plus any table the prompt asks for.
