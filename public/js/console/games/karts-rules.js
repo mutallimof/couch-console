@@ -12,6 +12,11 @@ export const HOP_TIME = 0.25; // seconds of the little hop that starts a drift (
 export const GLIDE_LAUNCH = 9, GLIDE_GRAVITY = 0.28, GLIDE_SINK = 4.5;
 // Tricks: tap DRIFT in the air for a barrel roll; land it for a short boost.
 export const TRICK_TIME = 0.45, TRICK_BOOST = 0.8;
+// Drift charge levels (seconds-ish of charge): blue, orange, purple sparks, and the mini-turbo
+// each one gives when you let go. Three levels, as in OpenWii's kart game.
+export const DRIFT_TIERS = [0.8, 1.8, 3.0];
+export const TIER_BOOST = [0, 0.8, 1.3, 1.9];
+export const driftTier = (charge) => DRIFT_TIERS.filter((c) => charge >= c).length;
 export const COAST = 6, BRAKE = 30, OFFROAD = 0.5, BOOST_BONUS = 12, GRAVITY = 26, KART_SIZE = 3.2;
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -40,6 +45,9 @@ export function stepKart(k, dt, input, world) {
   const { track, onEvent } = world;
   const ph = k.phys, grip = track.def.grip;
   let { steer, gas, brake, drift = false } = input;
+  // The wheel follows the input quickly but never jumps (smooth for CPUs and button steering alike)
+  k.steerS = (k.steerS ?? 0) + (steer - (k.steerS ?? 0)) * (1 - Math.exp(-dt * 20));
+  steer = k.steerS;
   const tap = input.tapped || (drift && !k.driftHeld); // DRIFT pressed this step (not just held)
   k.driftHeld = drift;
   if (k.spin > 0) { k.spin -= dt; steer = 0; gas = false; brake = false; drift = false; k.drifting = false; }
@@ -58,7 +66,8 @@ export function stepKart(k, dt, input, world) {
   tickItemEffects(k, dt);
 
   if (!k.air) {
-    if (gas) k.v = Math.min(k.v + ph.accel * dt * (k.v < top * 0.4 ? 1.3 : 1), Math.max(top, k.v - 25 * dt));
+    // (a boost pushes much harder than the engine: it kicks you forward straight away)
+    if (gas) k.v = Math.min(k.v + ph.accel * dt * (k.boost > 0 ? 2.5 : k.v < top * 0.4 ? 1.3 : 1), Math.max(top, k.v - 25 * dt));
     else k.v -= Math.sign(k.v) * Math.min(Math.abs(k.v), COAST * dt);
     if (k.v > top) k.v = Math.max(top, k.v - 25 * dt);
   }
@@ -70,7 +79,8 @@ export function stepKart(k, dt, input, world) {
     }
     if (k.drifting && brake) k.drifting = false;
     if (k.drifting && (!drift || k.v < 10)) {
-      if (k.charge > 2.2) giveBoost(k, 1.6, onEvent); else if (k.charge > 1.0) giveBoost(k, 1.0, onEvent);
+      const tier = driftTier(k.charge);
+      if (tier) giveBoost(k, TIER_BOOST[tier], onEvent);
       k.drifting = false;
     }
   }
@@ -78,7 +88,8 @@ export function stepKart(k, dt, input, world) {
 
   let turn;
   if (k.drifting) {
-    turn = (k.driftDir * 0.65 + steer * 0.45) * ph.turn * 1.25;
+    // mostly your steering, with a lean into the drift: steer out to widen it, in to tighten it
+    turn = (k.driftDir * 0.45 + steer * 0.55) * ph.turn * 1.25;
     k.charge += dt * (0.8 + Math.abs(steer));
   } else {
     turn = steer * ph.turn * clamp(Math.abs(k.v) / 12, 0, 1) * Math.sign(k.v || 1) * (0.6 + 0.4 * grip);

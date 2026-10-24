@@ -9,6 +9,15 @@ Couch Console includes code adapted from the projects below.
   - `public/js/console/pointer/gyro-pointer.js` (from `core/pointer.js`)
   - `public/js/console/pointer/orientation.js` (from `core/orientation.js`)
   - `tests/gyro-pointer.test.mjs` (from `core/core.test.mjs`)
+  - `public/js/console/games/karts-fx.js` (drift sparks, smoke, sparkle bursts and the boost
+    flame, adapted from `games/mario-kart/race-effects.js` and `boost-effect.js`)
+  - `public/js/console/games/karts-materials.js` (procedural asphalt with normal/roughness maps
+    and tyre-wear shader, adapted from `games/mario-kart/materials.js`)
+  - Techniques (no code copied verbatim) in `karts-look.js` (PBR Neutral tone mapping,
+    multisampled half-float effect chain), `turbo-karts.js` (chase camera composition, fill
+    light, tight follow-shadow) and `karts-rules.js` (three drift-charge levels, smoothed steering)
+- Only OpenWii's MIT-licensed code was used. None of its Nintendo-derived models, textures,
+  course, item art, names or sounds are included or imitated.
 - License: MIT
 
 ```

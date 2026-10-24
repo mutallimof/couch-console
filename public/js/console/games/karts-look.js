@@ -1,5 +1,8 @@
 // Turbo Karts rendering: reflections, a soft glow on bright things (boost flames, drift
 // sparks, neon) and a gentle vignette. Each split-screen view gets its own effect chain.
+// Colors go through "PBR Neutral" tone mapping (Khronos), which keeps bright cartoon colors
+// saturated instead of washing them out like the ACES curve did; the effect chain renders
+// with 4x multisampling so edges stay smooth. (Techniques as in OpenWii's kart game, MIT.)
 // If the laptop can't keep up (under ~40 frames per second for a few seconds), the effects
 // switch off by themselves and the game renders plainly, like before.
 // Console link options: ?fx=on (always on) · ?fx=off (always off).
@@ -7,20 +10,51 @@
 const LOW_FPS = 40;
 const LOW_FOR_S = 3;
 
-const VignetteShader = {
-  uniforms: { tDiffuse: { value: null }, uStrength: { value: 0.55 }, uSize: { value: 0.78 } },
+// Khronos PBR Neutral tone mapping (three.js r160 doesn't have it yet)
+const neutral = (name) => `vec3 ${name}(vec3 color) {
+    const float start = 0.8 - 0.04; const float desaturation = 0.15;
+    float x = min(color.r, min(color.g, color.b));
+    float offset = x < 0.08 ? x - 6.25 * x * x : 0.04;
+    color -= offset;
+    float peak = max(color.r, max(color.g, color.b));
+    if (peak < start) return color;
+    float d = 1.0 - start;
+    float newPeak = 1.0 - d * d / (peak + d - start);
+    color *= newPeak / peak;
+    float g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
+    return mix(color, vec3(newPeak), g);
+  }`;
+
+// Use it for everything drawn straight to the screen (renderer.toneMapping = CustomToneMapping)
+let patched = false;
+function patchToneMapping(THREE) {
+  if (patched) return;
+  patched = true;
+  THREE.ShaderChunk.tonemapping_pars_fragment = THREE.ShaderChunk.tonemapping_pars_fragment.replace(
+    'vec3 CustomToneMapping( vec3 color ) { return color; }',
+    `${neutral('neutralTone')}\nvec3 CustomToneMapping( vec3 color ) { return neutralTone( color * toneMappingExposure ); }`);
+}
+
+// The last step of the effect chain: vignette, tone mapping and screen colors in one pass
+const FinalShader = {
+  uniforms: { tDiffuse: { value: null }, uStrength: { value: 0.45 }, uSize: { value: 0.8 }, uExposure: { value: 1.05 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStrength, uSize; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStrength, uSize, uExposure; varying vec2 vUv;
+    ${neutral('finalNeutral')} // (own name: three.js may also include the screen's version)
+    vec3 toSRGB(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
     void main(){
-      vec4 c = texture2D(tDiffuse, vUv);
+      vec3 c = texture2D(tDiffuse, vUv).rgb;
       float d = distance(vUv, vec2(0.5));
-      c.rgb *= mix(1.0, smoothstep(uSize, uSize - 0.5, d), uStrength);
-      gl_FragColor = c;
+      c *= mix(1.0, smoothstep(uSize, uSize - 0.5, d), uStrength);
+      gl_FragColor = vec4(toSRGB(clamp(finalNeutral(c * uExposure), 0.0, 1.0)), 1.0);
     }`,
 };
 
 // force: 'on' (never switch off by itself) · 'off' (plain rendering) · null (automatic)
 export async function createLook(THREE, renderer, scene, force = null) {
+  patchToneMapping(THREE);
+  renderer.toneMapping = THREE.CustomToneMapping;
+  renderer.toneMappingExposure = 1.05;
   // Reflections: made from each track's own sky and ground colors (see setTrack), so paint and
   // metal reflect a blue sky in the park and a purple glow in the city. No image files.
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -44,11 +78,10 @@ export async function createLook(THREE, renderer, scene, force = null) {
 
   let addons = null;
   try {
-    const [c, r, b, s, o] = await Promise.all([
+    const [c, r, b, s] = await Promise.all([
       import('three/addons/postprocessing/EffectComposer.js'), import('three/addons/postprocessing/RenderPass.js'),
-      import('three/addons/postprocessing/UnrealBloomPass.js'), import('three/addons/postprocessing/ShaderPass.js'),
-      import('three/addons/postprocessing/OutputPass.js')]);
-    addons = { EffectComposer: c.EffectComposer, RenderPass: r.RenderPass, UnrealBloomPass: b.UnrealBloomPass, ShaderPass: s.ShaderPass, OutputPass: o.OutputPass };
+      import('three/addons/postprocessing/UnrealBloomPass.js'), import('three/addons/postprocessing/ShaderPass.js')]);
+    addons = { EffectComposer: c.EffectComposer, RenderPass: r.RenderPass, UnrealBloomPass: b.UnrealBloomPass, ShaderPass: s.ShaderPass };
   } catch (err) { console.warn('No screen effects:', err.message); }
 
   const chains = [];          // one effect chain per split-screen view
@@ -59,14 +92,15 @@ export async function createLook(THREE, renderer, scene, force = null) {
   function chain(i, w, h) {
     let c = chains[i];
     if (!c) {
-      const composer = new addons.EffectComposer(renderer);
+      // half-float (so bright things stay brighter than white until the end) and 4x multisampled
+      const target = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: 4 });
+      const composer = new addons.EffectComposer(renderer, target);
       const pass = new addons.RenderPass(scene, null);
       // threshold 2: only things brighter than sunlit white glow (boost flames, sparks, neon, the sun)
-      const bloom = new addons.UnrealBloomPass(new THREE.Vector2(w, h), bloomStrength, 0.35, 2);
+      const bloom = new addons.UnrealBloomPass(new THREE.Vector2(w, h), bloomStrength, 0.4, 2);
       composer.addPass(pass);
       composer.addPass(bloom);
-      composer.addPass(new addons.ShaderPass(VignetteShader));
-      composer.addPass(new addons.OutputPass()); // last: tone mapping + colors for the screen
+      composer.addPass(new addons.ShaderPass(FinalShader)); // last: vignette + tone mapping + screen colors
       c = chains[i] = { composer, pass, bloom, w: 0, h: 0 };
     }
     if (c.w !== w || c.h !== h) {

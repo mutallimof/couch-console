@@ -215,8 +215,9 @@ test('tapping DRIFT in the air does a trick, and landing it gives a boost', () =
   drive(park, k, DT * 2, { drift: true, events }); // tap
   assert.ok(k.trick > 0, 'doing the trick');
   drive(park, k, 2, { drift: false, events });      // ...and land
-  assert.ok(!k.air);
+  // ('trick' only happens on landing; the boost may then carry the kart over a later crest)
   assert.ok(events.includes('trick') && events.includes('boost'));
+  assert.ok(events.indexOf('boost') > events.indexOf('trick'), 'the boost comes with the landing');
 });
 
 test('holding DRIFT from before the jump is not a trick (it has to be a fresh tap)', () => {
@@ -405,4 +406,23 @@ test('laps still count when you take every shortcut', () => {
   }
   assert.ok(k.finished != null, `finished the race (lap ${k.lap})`);
   assert.ok(flights >= LAPS * 2, `took both shortcuts every lap (${flights} flights)`);
+});
+
+// ---- Phase 31: three drift levels ----
+import { driftTier, TIER_BOOST } from '../public/js/console/games/karts-rules.js';
+
+test('drifts charge through three levels, and a longer drift gives a longer turbo', () => {
+  assert.deepEqual([0.5, 1, 2, 3.5].map(driftTier), [0, 1, 2, 3]);
+  const turbo = (secs) => {
+    const k = kart(park, { i: 300 });
+    drive(park, k, 3);
+    // start the drift with a hard turn, then follow the road (holding DRIFT)
+    drive(park, k, secs, { drift: true, steer: (kk) => (kk.drifting ? Math.max(-1, Math.min(1, followRoad(park, kk) + 0.3)) : 0.8) });
+    assert.ok(k.drifting, 'still drifting when DRIFT is let go');
+    drive(park, k, DT * 2, { drift: false });
+    return k.boost;
+  };
+  const short = turbo(1.0), long = turbo(3.5);
+  assert.ok(short > 0 && long > short, `turbo after 1 s: ${short.toFixed(2)} s, after 3.5 s: ${long.toFixed(2)} s`);
+  assert.ok(Math.abs(long - TIER_BOOST[3]) < 0.05, 'a long drift reaches the purple level');
 });

@@ -3,6 +3,7 @@
 import { makeScenery, makeItemBox, makeCoin } from './karts-models.js';
 import { CAR, cloneOf, fit } from './karts-assets.js';
 import { decorate } from './karts-decor.js';
+import { roadMaterial } from './karts-materials.js';
 import { trackPath, ROAD_HALF, WALL, SAMPLES, SHORTCUT_HALF, SHORTCUT_ARC } from './kart-path.js';
 
 // Track data and the center line live in kart-path.js (no graphics, testable)
@@ -61,7 +62,7 @@ export function buildTrack(THREE, def, assets = null) {
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     g.setIndex(idx);
     g.computeVertexNormals();
-    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: opts.rough ?? 0.85, ...opts.mat }));
+    const m = new THREE.Mesh(g, opts.material || new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: opts.rough ?? 0.85, ...opts.mat }));
     m.receiveShadow = true;
     group.add(m);
     return m;
@@ -107,20 +108,25 @@ export function buildTrack(THREE, def, assets = null) {
   }
   const groundR = island ? island.r : 800;
   const groundTex = noiseTexture(THREE, { base: 222, spread: 16, specks: 1800, speckSize: 2, repeat: [groundR / 6, groundR / 6] });
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(groundR, 64), new THREE.MeshStandardMaterial({ color: def.ground, map: groundTex, roughness: 1 }));
+  const groundMat = new THREE.MeshStandardMaterial({ color: def.ground, map: groundTex, roughness: 1 });
+  // Mowed stripes: wide bands of lighter and darker grass, like a groomed race venue
+  groundMat.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vGround;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGround = (modelMatrix * vec4(position, 1.0)).xz;');
+    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vGround;')
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        float band = smoothstep(-0.15, 0.15, sin((vGround.x * 0.72 + vGround.y * 0.69) * 0.32));
+        diffuseColor.rgb *= ${def.theme === 'city' ? '1.0' : 'mix(0.86, 1.08, band)'};`);
+  };
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(groundR, 64), groundMat);
   ground.rotation.x = -Math.PI / 2; ground.position.set(island?.x ?? 0, -0.05, island?.z ?? 0); ground.receiveShadow = true;
   group.add(ground);
 
   // Road, center dashes, curbs, side slab (thickness) and barriers
   const roadCol = C(def.road);
-  // Asphalt: fine grit plus darker tyre-worn bands in the racing lines
-  const asphalt = noiseTexture(THREE, { size: 256, base: 228, spread: 34, specks: 4000, speckSize: 1.5, repeat: [1, 1] });
+  // Asphalt: little stones with bumps and tyre-worn lanes (karts-materials.js)
   strip(ROAD_HALF, -ROAD_HALF, 0.02, 0.02, (i) => roadCol.clone().offsetHSL(0, 0, (i % 40 < 20 ? 0.01 : -0.01)),
-    { rough: 0.78, mat: { map: asphalt, ...(def.night ? { emissive: '#14182c' } : {}) } });
-  for (const lane of [-3.5, 3.5]) {
-    strip(lane - 1.2, lane + 1.2, 0.025, 0.025, () => roadCol.clone().offsetHSL(0, 0, -0.035),
-      { rough: 0.6, mat: { transparent: true, opacity: 0.35, depthWrite: false } });
-  }
+    { material: roadMaterial(THREE, { night: def.night }) });
   strip(0.3, -0.3, 0.03, 0.03, (i) => (Math.floor(i / 8) % 2 ? roadCol : C('#F4F7FB')));
   for (const s of [1, -1]) {
     strip(s * ROAD_HALF, s * (ROAD_HALF + 1.6), 0.05, 0.05, (i) => C(def.curb[Math.floor(i / 5) % 2]),

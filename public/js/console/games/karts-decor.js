@@ -6,7 +6,7 @@ import { CAR, RACE, PIRATE, cloneOf } from './karts-assets.js';
 // Height in meters we want each model to end up (they come in different sizes)
 const SIZES = {
   [RACE('grandStandCovered')]: 8, [RACE('bannerTowerRed')]: 9, [RACE('bannerTowerGreen')]: 9,
-  [RACE('lightPostLarge')]: 8, [RACE('tentLong')]: 4, [RACE('flagCheckers')]: 5, [RACE('tent')]: 4,
+  [RACE('lightPostLarge')]: 8, [RACE('billboard')]: 7, [RACE('flagGreen')]: 5, [RACE('flagRed')]: 5, [RACE('pylon')]: 1.1, [RACE('tentLong')]: 4, [RACE('flagCheckers')]: 5, [RACE('tent')]: 4,
   [CAR('tree')]: 8, [CAR('tree-pine')]: 9,
   [PIRATE('Environment_PalmTree_1')]: 11, [PIRATE('Environment_PalmTree_2')]: 10, [PIRATE('Environment_PalmTree_3')]: 12,
   [PIRATE('Environment_Rock_1')]: 4, [PIRATE('Environment_Rock_2')]: 5, [PIRATE('Environment_Rock_3')]: 3.5,
@@ -17,7 +17,8 @@ const SIZES = {
 
 // Which models each theme uses
 export const THEME_MODELS = {
-  common: [RACE('grandStandCovered'), RACE('bannerTowerRed'), RACE('bannerTowerGreen'), RACE('lightPostLarge'), RACE('flagCheckers')],
+  common: [RACE('grandStandCovered'), RACE('bannerTowerRed'), RACE('bannerTowerGreen'), RACE('lightPostLarge'), RACE('flagCheckers'),
+    RACE('billboard'), RACE('flagGreen'), RACE('flagRed'), RACE('pylon')],
   park: [CAR('tree'), RACE('tentLong'), RACE('tent')],
   desert: [PIRATE('Environment_Rock_1'), PIRATE('Environment_Rock_2'), PIRATE('Environment_Rock_3'), RACE('tent')],
   snow: [CAR('tree-pine')],
@@ -92,6 +93,19 @@ export function decorate(THREE, track, assets, spots) {
   const posts = [];
   for (let i = 90; i < SAMPLES - 40; i += 70) posts.push(beside(i, (Math.floor(i / 70) % 2 ? 1 : -1) * 15.5));
   add(RACE('lightPostLarge'), posts);
+  // More life along the lap: billboards facing the drivers, flags on both sides, cones at the corners
+  const boards = [], flags = [[], []], cones = [];
+  for (let i = 140; i < SAMPLES - 60; i += 110) boards.push(beside(i, (Math.floor(i / 110) % 2 ? -1 : 1) * 19, 1.1));
+  for (let i = 60; i < SAMPLES - 30; i += 45) flags[Math.floor(i / 45) % 2].push(beside(i, (i % 2 ? 1 : -1) * 14.2));
+  for (let i = 0; i < SAMPLES; i += 6) {
+    // a corner: the road turns a lot between here and a bit further on -> a row of cones on the outside
+    const a = tan[at(i)], b = tan[at(i + 20)], turn = a.x * b.z - a.z * b.x;
+    if (Math.abs(turn) > 0.25 && i % 18 === 0) cones.push(beside(i, (turn > 0 ? -1 : 1) * 13.4));
+  }
+  add(RACE('billboard'), boards);
+  add(RACE('flagGreen'), flags[0]);
+  add(RACE('flagRed'), flags[1]);
+  add(RACE('pylon'), cones);
 
   // Theme scenery at the free spots ([x, z, scale])
   const sp = (s, i) => ({ x: s[0], y: 0, z: s[1], rot: (i * 2.39) % 6.28, s: s[2] });
