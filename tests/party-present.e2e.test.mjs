@@ -37,6 +37,7 @@ test('a PDF from a phone is presented on the TV, with page turns, black screen, 
     await ph.goto(`${B}/remote.html?room=${room}`);
     await ph.waitForSelector('.tab[data-tab="present"]'); await ph.tap('.tab[data-tab="present"]');
     await ph.waitForSelector('#pr-file', { state: 'attached' });
+    await ph.waitForTimeout(1500); // (the pane's first refresh re-renders the page; under load it can swallow a file picked too early)
 
     // PowerPoint: help, no upload
     await ph.setInputFiles('#pr-file', [{ name: 'Talk.pptx', mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', buffer: Buffer.from('PK pretend') }]);
