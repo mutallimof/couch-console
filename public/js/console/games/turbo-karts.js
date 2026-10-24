@@ -426,7 +426,9 @@ function closePreviews() {
   previewGL.clear();
 }
 
+let previewFrame = 0;
 function renderShowrooms() {
+  previewFrame++;
   for (const s of select.seats()) {
     if (!s.stage) continue;
     let room = showrooms.get(s.playerId);
@@ -434,8 +436,11 @@ function renderShowrooms() {
     room.set(s.character, s.kartDef, s.color);
     const w = s.stage.clientWidth, h = s.stage.clientHeight;
     if (w < 10 || h < 10) continue;
-    const { gl } = previewFor(s.playerId, s.stage);
-    gl.setSize(w, h, false);
+    const { gl, canvas } = previewFor(s.playerId, s.stage);
+    const resized = canvas.width !== w || canvas.height !== h;
+    if (resized) gl.setSize(w, h, false);
+    // The previews turn slowly, so every second frame is enough (half the work); the canvas keeps the last picture
+    if (!resized && previewFrame % 2) continue;
     room.camera.aspect = w / h;
     room.camera.updateProjectionMatrix();
     gl.render(room.scene, room.camera);
