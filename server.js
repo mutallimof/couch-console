@@ -80,6 +80,16 @@ app.use('/vendor/pdfjs-dist', express.static(file('./node_modules/pdfjs-dist')))
 // Three.js add-ons (model loader etc.), imported as "three/addons/..."
 app.use('/vendor/three-addons', express.static(file('./node_modules/three/examples/jsm')));
 
+// Libraries for the visual upgrade (Phase 55): effects, tweening, 2D engine, sound, animations.
+// Imported by name through the importmap in console.html / remote.html.
+app.use('/vendor/postprocessing', express.static(file('./node_modules/postprocessing/build')));
+app.use('/vendor/three.quarks', express.static(file('./node_modules/three.quarks/dist')));
+app.use('/vendor/gsap', express.static(file('./node_modules/gsap')));
+app.use('/vendor/pixi.js', express.static(file('./node_modules/pixi.js/dist')));
+app.use('/vendor/pixi-filters', express.static(file('./node_modules/pixi-filters/dist')));
+app.use('/vendor/howler', express.static(file('./node_modules/howler/dist')));
+app.use('/vendor/lottie-web', express.static(file('./node_modules/lottie-web/build/player')));
+
 // ---------- Games and channels on the menu (Phase 21e) ----------
 // Any games/<name>.js or channels/<name>.js with a <name>.game.json next to it is on the menu.
 // game.json: { title, color, order (lower = first), players, hidden (true = not on the menu) }

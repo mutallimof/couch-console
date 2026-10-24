@@ -201,3 +201,7 @@ Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "ever
 ### Style guide (Phase 55 step 1): "toy-box living room at dusk"
 - `docs/STYLE.md` + `docs/style-board.html` (screenshot `docs/screenshots/style-board.png`). Fredoka (display) + Nunito (text); Night Den/Plum background with Cushion orange as the primary and the four player colors Sky, Pop, Mint, Butter. Waiting for the user's OK before applying it (logo, home, karts, 2D games, sounds, results).
 - Lottie files: `public/assets/lottie/` is not on origin/main yet (only the Kenney sounds arrived). Will use them as soon as they are pulled.
+
+### Phase 55 (visual upgrade) step 1: light glossy style (replaces the dusk-plum draft)
+- New direction from the user's reference images (style only, nothing copied): light, clean, glossy; frosted glass panels, glossy tiles, isometric toy-diorama icons, bright toy 3D. `docs/STYLE.md`, `docs/style-board.html`, shared `public/css/theme.css` (`.theme-bg`, `.glass`, `.gloss`, `.round-btn`).
+- Dependencies approved by the user and installed with `--legacy-peer-deps`: gsap, howler, lottie-web, pixi.js, pixi-filters, postprocessing@6.36.0 (last release that supports three r160), three.quarks@0.10.18 (the newest ones need three >= r165/r182; we stay on r160). Served from node_modules under `/vendor/*`; importmap in console.html.
