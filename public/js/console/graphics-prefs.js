@@ -1,7 +1,7 @@
 // Graphics preferences (Settings): the cartoon look and ambient occlusion for 3D games.
 // Saved in the laptop browser; games read them when they start and listen for changes.
-const KEYS = { cartoon: 'couch.cartoonLook', ao: 'couch.ambientOcclusion' };
-const DEFAULTS = { cartoon: true, ao: true };
+const KEYS = { cartoon: 'couch.cartoonLook', ao: 'couch.ambientOcclusion', classic: 'couch.classicHandling' };
+const DEFAULTS = { cartoon: true, ao: true, classic: false }; // classic = the older kart driving model (Settings -> Classic handling)
 const listeners = new Set();
 
 function read(name) {
@@ -14,6 +14,7 @@ function read(name) {
 export const graphics = {
   get cartoon() { return read('cartoon'); },
   get ao() { return read('ao'); },
+  get classic() { return read('classic'); },
   set(name, on) {
     try { localStorage.setItem(KEYS[name], on ? '1' : '0'); } catch { /* ignore */ }
     for (const fn of listeners) fn(name, on);

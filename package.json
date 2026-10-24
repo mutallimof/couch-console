@@ -24,10 +24,10 @@
     "pdfjs-dist": "^6.4.299",
     "pixi-filters": "^6.1.5",
     "pixi.js": "^8.22.0",
-    "postprocessing": "^6.36.0",
+    "postprocessing": "^6.39.5",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.4",
-    "three": "^0.160.0",
-    "three.quarks": "^0.10.18"
+    "three": "^0.186.1",
+    "three.quarks": "^0.17.1"
   }
 }

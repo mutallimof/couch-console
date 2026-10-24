@@ -24,3 +24,11 @@ test('changes are saved and announced, and listening can be stopped', () => {
   assert.equal(seen.length, 1, 'no notice after stopping');
   assert.equal(graphics.ao, false);
 });
+
+test('Classic handling is off by default (the new arcade handling is used) and can be switched on', () => {
+  assert.equal(graphics.classic, false);
+  graphics.set('classic', true);
+  assert.equal(graphics.classic, true);
+  assert.equal(store.get('couch.classicHandling'), '1');
+  graphics.set('classic', false);
+});

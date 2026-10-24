@@ -3,14 +3,11 @@
 // Colors go through "PBR Neutral" tone mapping (Khronos), which keeps bright cartoon colors
 // saturated instead of washing them out like the ACES curve did; the effect chain renders
 // with 4x multisampling so edges stay smooth. (Techniques as in OpenWii's kart game, MIT.)
-// If the laptop can't keep up (under ~40 frames per second for a few seconds), the effects
-// switch off by themselves and the game renders plainly, like before.
-// Console link options: ?fx=on (always on) · ?fx=off (always off).
+// If the laptop can't keep up, the game lowers the effects step by step (karts-quality.js decides when,
+// setQuality() below does it): 3 everything · 2 no ambient occlusion · 1 no bloom/anti-aliasing library · 0 plain.
+// Console link options: ?fx=on (never lowered) · ?fx=off (always plain).
 
 import { STYLE } from './karts-style.js';
-
-const LOW_FPS = 40;
-const LOW_FOR_S = 3;
 
 // Khronos PBR Neutral tone mapping (three.js r160 doesn't have it yet)
 const neutral = (name) => `vec3 ${name}(vec3 color) {
@@ -131,7 +128,7 @@ export async function createLook(THREE, renderer, scene, force = null) {
 
   const chains = [];          // one effect chain per split-screen view
   let enabled = !!addons && force !== 'off';
-  let low = 0, frames = 0, last = performance.now(), fps = 60;
+  let frames = 0, last = performance.now(), fps = 60, level = 3;
   let bloomStrength = 0.4, exposure = 1.05, aoOn = true, cartoonOn = false, libBloom = 0.35;
 
   function chain(i, w, h, camera) {
@@ -156,7 +153,7 @@ export async function createLook(THREE, renderer, scene, force = null) {
         ao.updateGtaoMaterial({ radius: 2.2, thickness: 1.1, distanceExponent: 1.5, samples: 8 });
         ao.updatePdMaterial({ radius: 4, samples: 8, depthPhi: 3, normalPhi: 3 });
         ao.blendIntensity = 0.6;
-        ao.enabled = aoOn;
+        ao.enabled = aoActive();
         composer.addPass(ao);
       }
       composer.addPass(bloom);
@@ -196,9 +193,13 @@ export async function createLook(THREE, renderer, scene, force = null) {
     return c;
   }
 
+  const libOn = () => level >= 2;
+  const aoActive = () => aoOn && level >= 3;
   return {
     get enabled() { return enabled; },
     get fps() { return fps; },
+    get force() { return force; },
+    get level() { return level; },
     // Neon city wants more glow than a sunny park
     setTrack(def) {
       scene.environment?.dispose();
@@ -217,13 +218,18 @@ export async function createLook(THREE, renderer, scene, force = null) {
       if (!enabled) { renderer.render(scene, camera); return; }
       const c = chain(i, w, h, camera);
       c.pass.camera = camera;
-      if (c.ao) c.ao.camera = camera;
+      if (c.lib) { // (level 1 and below: our own chain finishes the picture, without the bloom/SMAA library)
+        c.composer.renderToScreen = !libOn();
+        c.final.uniforms.uLinear.value = libOn() ? 1 : 0;
+        c.bloom.strength = libOn() ? bloomStrength * 0.5 : bloomStrength;
+      }
+      if (c.ao) { c.ao.camera = camera; c.ao.enabled = aoActive(); }
       if (cartoonOn) {
         c.edge.uniforms.tDepth.value = c.composer.readBuffer.depthTexture;
         c.edge.uniforms.uNear.value = camera.near; c.edge.uniforms.uFar.value = camera.far;
       }
       c.composer.render();
-      if (c.lib) {
+      if (c.lib && libOn()) {
         c.lib.show.texture = c.composer.readBuffer.texture;
         renderer.setViewport(x, y, w, h); renderer.setScissor(x, y, w, h);
         c.lib.lc.render(0.016);
@@ -234,11 +240,15 @@ export async function createLook(THREE, renderer, scene, force = null) {
       frames++;
       const now = performance.now();
       if (now - last >= 1000) { fps = Math.round((frames * 1000) / (now - last)); frames = 0; last = now; }
-      if (!enabled || force === 'on') return;
-      low = fps < LOW_FPS ? low + dt : 0;
-      if (low > LOW_FOR_S) { enabled = false; console.info('Turbo Karts: screen effects off (low frame rate)'); }
     },
-    setEnabled(on) { enabled = on && !!addons; low = 0; },
+    // The effect level (karts-quality.js): 3 everything · 2 no AO · 1 no library · 0 plain
+    setQuality(l) {
+      level = l;
+      if (force !== 'off') enabled = !!addons && l >= 1;
+      for (const c of chains) if (c?.ao) c.ao.enabled = aoActive();
+      if (l < 3) console.info(`Turbo Karts: effects lowered to level ${l} (frame rate ${fps})`);
+    },
+    setEnabled(on) { enabled = on && !!addons; },
     // Ambient occlusion on/off (a bit heavier on slow laptops)
     // The cartoon look on/off: outlines, banded light, color grade (and the rim light on karts: see karts-style.js)
     setCartoon(on) {
@@ -247,7 +257,7 @@ export async function createLook(THREE, renderer, scene, force = null) {
     },
     // Reflections from a real sky picture (an equirectangular HDRI) instead of the generated gradient
     setSkyTexture(tex) { scene.environment?.dispose(); scene.environment = pmrem.fromEquirectangular(tex).texture; },
-    setAO(on) { aoOn = on; for (const c of chains) if (c?.ao) c.ao.enabled = on; },
+    setAO(on) { aoOn = on; for (const c of chains) if (c?.ao) c.ao.enabled = aoActive(); },
     dispose() {
       for (const c of chains) { c?.composer.dispose(); c?.lib?.lc.dispose(); }
       chains.length = 0;

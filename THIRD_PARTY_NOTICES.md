@@ -28,9 +28,9 @@ still in the project (unused files were removed in Phase 53).
 
 ## Libraries and services the pages load
 
-- **three.js** (MIT, https://threejs.org): served from `node_modules` (3D games).
+- **three.js** (MIT, https://threejs.org) 0.186, **postprocessing** (Zlib, https://github.com/pmndrs/postprocessing) 6.39 and **three.quarks** (MIT, https://github.com/Alchemist0823/three.quarks) 0.17: served from `node_modules` (3D games, screen effects, particles). **GSAP** (https://gsap.com, standard no-charge license) animates the menus.
 - **pdf.js** (Apache-2.0, https://mozilla.github.io/pdf.js/, `pdfjs-dist`): served from `node_modules` (PDF slides).
-- **Nunito** font (SIL Open Font License, Google Fonts): loaded from Google Fonts by both pages.
+- **Nunito**, **Fredoka** and **Lilita One** fonts (SIL Open Font License, Google Fonts): loaded from Google Fonts by the pages (Lilita One is only used for the big Turbo Karts titles).
 - **YouTube** (Music and Video): played with YouTube's own embedded player under YouTube's terms of service; nothing is downloaded or stored.
 - **Poly Haven** (CC0, https://polyhaven.com): optional, only if you add files to `public/assets/polyhaven/`.
 

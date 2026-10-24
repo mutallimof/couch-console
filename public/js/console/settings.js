@@ -14,7 +14,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 </svg>`;
 
 // prefs: { getSensitivity(), setSensitivity(n), getPhoneSounds(), setPhoneSounds(on), showQR() } from main.js
-const MAIN_ACTIONS = ['theme', 'sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'party', 'qr'];
+const MAIN_ACTIONS = ['theme', 'sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'classic', 'party', 'qr'];
 const PARTY_ACTIONS = ['rename', 'new-party', 'approve', 'limit-up', 'music-pause', 'download', 'end-party', 'back'];
 const THEME_LABELS = { light: 'Light', dark: 'Dark', auto: 'Auto' };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -49,11 +49,13 @@ export function createSettings(prefs) {
           <button class="set-btn wide" data-action="cartoon">${on(graphics.cartoon)}</button></div>
         <div class="set-row" data-row="6"><span class="set-label">Soft shadows (karts)</span>
           <button class="set-btn wide" data-action="ao">${on(graphics.ao)}</button></div>
-        <div class="set-row" data-row="7"><span class="set-label">Party</span>
+        <div class="set-row" data-row="7"><span class="set-label">Classic handling (karts)</span>
+          <button class="set-btn wide" data-action="classic">${on(graphics.classic)}</button></div>
+        <div class="set-row" data-row="8"><span class="set-label">Party</span>
           <button class="set-btn wide" data-action="party">Open ›</button></div>
-        <div class="set-row" data-row="8"><span class="set-label">Add a phone</span>
+        <div class="set-row" data-row="9"><span class="set-label">Add a phone</span>
           <button class="set-btn wide" data-action="qr">Show QR code</button></div>
-        <p class="set-hint">Theme: Light, Dark or Auto (follows this laptop); the phones follow it too. Steady cursor: turn it On if the cursor wanders or shakes. Cartoon look and soft shadows make Turbo Karts prettier; turn them Off if it runs slowly. D-pad to choose · A to press · B to go back</p>`;
+        <p class="set-hint">Theme: Light, Dark or Auto (follows this laptop); the phones follow it too. Steady cursor: turn it On if the cursor wanders or shakes. Cartoon look and soft shadows make Turbo Karts prettier; turn them Off if it runs slowly. Classic handling brings back the older driving model (takes effect at the next race); press T in a race to tune the new one. D-pad to choose · A to press · B to go back</p>`;
   }
 
   function renderParty() {
@@ -119,7 +121,7 @@ export function createSettings(prefs) {
           message = 'Everything was deleted. A new, empty party has started.';
         }
       } else if (action === 'back') {
-        page = 'main'; row = 7; endStep = 0; message = '';
+        page = 'main'; row = 8; endStep = 0; message = '';
       }
     } catch (err) {
       message = 'That did not work. Is the laptop server still running?';
@@ -147,7 +149,7 @@ export function createSettings(prefs) {
     } else if (action === 'steady') {
       prefs.setSteady(!prefs.getSteady());
       api.sound.play('select');
-    } else if (action === 'cartoon' || action === 'ao') {
+    } else if (action === 'cartoon' || action === 'ao' || action === 'classic') {
       graphics.set(action, !graphics[action]);
       api.sound.play('select');
     } else if (action === 'party') {
@@ -164,7 +166,7 @@ export function createSettings(prefs) {
   function onButton({ playerId, button, state }) {
     if (state !== 'down') return;
     if (button === 'B') {
-      if (page === 'party') { page = 'main'; row = 7; endStep = 0; message = ''; return render(); }
+      if (page === 'party') { page = 'main'; row = 8; endStep = 0; message = ''; return render(); }
       return api.exit();
     }
     const rows = actions().length;

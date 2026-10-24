@@ -530,6 +530,7 @@ const KEYS = {
   ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT', Enter: 'A', ' ': 'A',
   Escape: 'B', Backspace: 'B', h: 'HOME', H: 'HOME', '+': 'PLUS', '=': 'PLUS', '-': 'MINUS', u: 'UP', U: 'UP',
   r: 'R', R: 'R', Shift: 'R', // DRIFT in Turbo Karts
+  p: 'PLUS', P: 'PLUS', // pause in Turbo Karts (T opens the tuning sliders)
 };
 const desk = {
   active: false,
@@ -560,11 +561,11 @@ addEventListener('mouseup', (e) => { if (e.button === 0) deskButton('A', 'up'); 
 addEventListener('contextmenu', (e) => { if (desk.active) e.preventDefault(); });
 addEventListener('keydown', (e) => {
   const button = KEYS[e.key];
-  if (!desk.active || !button) return;
+  if (!desk.active || !button || e.target.closest?.('.kart-tuning')) return; // (the tuning sliders use the arrow keys themselves)
   e.preventDefault();
   if (!e.repeat) deskButton(button, 'down');
 });
-addEventListener('keyup', (e) => { const button = KEYS[e.key]; if (button) deskButton(button, 'up'); });
+addEventListener('keyup', (e) => { const button = KEYS[e.key]; if (button && !e.target.closest?.('.kart-tuning')) deskButton(button, 'up'); });
 
 renderSlots();
 setPairing();

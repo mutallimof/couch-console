@@ -10,6 +10,7 @@
 import { contactResponse, kartContact } from './contact.js';
 import { roadFrame } from './frame.js';
 import { wrap, clamp, angle } from './track-model.js';
+import { ARCADE_DEFAULTS, arcadeDrive, arcadeWall, arcadeVertical } from './arcade.js';
 
 // The six items, by behavior: slick (dropped behind you), orb (rolls ahead, bounces off walls),
 // seeker (homes in on the kart ahead), turbo (a boost), star (invincible for a while), comet (hits the leader)
@@ -70,8 +71,11 @@ export class Race {
    * track: a track model (track-model.js). characters: the 8 racers' characters, the human players
    * first (humans = how many). laps: 1 or 3.
    */
-  constructor({ track, characters, karts = [], humans = 1, seed = 381, laps = 3, burnout = true, onEvent = () => {} }) {
+  constructor({ track, characters, karts = [], humans = 1, seed = 381, laps = 3, burnout = true, onEvent = () => {}, handling = 'classic', tuning = ARCADE_DEFAULTS }) {
     this.track = track;
+    // 'classic' = the OpenWii-style handling above; 'arcade' = the sphere kart (arcade.js, numbers in `tuning`, read live)
+    this.handling = handling === 'arcade' ? 'arcade' : 'classic';
+    this.tune = tuning;
     this.burnout = burnout; // holding GAS far too early at the start spins you out (OpenWii). Off in our game: Auto-gas holds GAS.
     this.laps = laps === 1 ? 1 : 3;
     this.finishedAt = null;
@@ -179,9 +183,25 @@ export class Race {
     const T = this.track;
     const lead = clamp(9 + Math.abs(r.speed) * 0.32, 9, 23), lane = Math.sin(this.raceTime * 0.19 + r.id * 2.1) * 3.5;
     const p = T.surfaceAt(r.s + lead, lane), desired = Math.atan2(p.x - r.x, -(p.z - r.z));
-    const steer = clamp(angle(desired - r.heading) * 2.8, -1, 1);
+    const facing = this.handling === 'arcade' && r.dir !== undefined ? r.dir : r.heading; // (arcade: where the sphere travels, not where the nose points)
+    let steer = clamp(angle(desired - facing) * 2.8, -1, 1);
     r.itemDelay -= FIXED_DT;
-    return { gas: true, steer, drift: Math.abs(steer) > 0.22 && r.speed > 22 && !r.gliding, item: !!r.item && r.itemDelay < 0 };
+    let drift = Math.abs(steer) > 0.22 && r.speed > 22 && !r.gliding;
+    if (this.handling === 'arcade') {
+      // Arcade: a computer driver drifts through a real corner, like a person: it only drifts when the drift's own
+      // arc (which steering can widen or tighten) fits the corner, steers to hold the line, and fires the boost at
+      // the end. (pure pursuit gives the turn rate the road needs: omega = 2 sin(alpha) / distance * speed)
+      const P = this.tune, sf = clamp(r.speed / 20, 0.1, 1);
+      const bend = angle(T.trackAt(r.s + 36).heading - T.trackAt(r.s + 4).heading);
+      const omega = 2 * Math.sin(angle(desired - facing)) / Math.max(4, Math.hypot(p.x - r.x, p.z - r.z)) * r.speed;
+      const ratio = Math.abs(omega) / (P.driftArc * sf); // 1 = exactly the drift's own arc
+      const fits = ratio > 0.6 && ratio < 1.35;
+      if (r.cpuDrift && (!fits || Math.abs(bend) < 0.1 || Math.sign(omega) !== r.cpuDrift || r.gliding || r.speed < 20)) r.cpuDrift = 0;
+      else if (!r.cpuDrift && fits && Math.abs(bend) > 0.38 && r.speed > 26 && !r.gliding) r.cpuDrift = Math.sign(omega);
+      if (r.cpuDrift && r.drift === r.cpuDrift) steer = clamp((Math.abs(omega) / (P.driftArc * sf) - 1) * r.drift / P.driftSteer, -1, 1);
+      drift = !!r.cpuDrift;
+    }
+    return { gas: true, steer, drift, item: !!r.item && r.itemDelay < 0 };
   }
 
   move(r, raw, dt, auto = false) {
@@ -206,15 +226,16 @@ export class Race {
     const spinning = r.spin > 0;
     const steer = spinning ? 0 : input.steer;
     r.steer += (steer - r.steer) * (1 - Math.exp(-dt * 20));
-    if (input.drift && !r.lastInput.drift && r.speed > 8 && !r.gliding && !spinning) {
+    const arcade = this.handling === 'arcade';
+    if (!arcade && input.drift && !r.lastInput.drift && r.speed > 8 && !r.gliding && !spinning) {
       r.hop = 0.36;
       this.emit('hop', r);
     }
-    if (input.drift && !r.drift && Math.abs(steer) > 0.14 && r.speed > 12 && !r.gliding && !spinning) {
+    if (!arcade && input.drift && !r.drift && Math.abs(steer) > 0.14 && r.speed > 12 && !r.gliding && !spinning) {
       r.drift = Math.sign(steer);
       r.charge = 0;
     }
-    if (r.drift && (!input.drift || r.speed < 8 || spinning || r.gliding)) {
+    if (!arcade && r.drift && (!input.drift || r.speed < 8 || spinning || r.gliding)) {
       const tier = turboTier(r.charge);
       if (tier && !spinning) {
         r.boost = Math.max(r.boost, [0, 0.65, 1.35, 2.15][tier]);
@@ -222,7 +243,7 @@ export class Race {
       }
       r.drift = 0; r.charge = 0; r.tier = 0;
     }
-    if (r.drift) {
+    if (!arcade && r.drift) {
       r.charge += dt * (0.7 + 0.7 * Math.abs(steer));
       const tier = turboTier(r.charge);
       if (tier > r.tier) { r.tier = tier; this.emit('drift', r, { tier }); }
@@ -234,6 +255,11 @@ export class Race {
       const lead = Math.max(...this.humans.map((h) => h.progress));
       max *= r.skill * clamp(1 + (lead - r.progress) / 1400, 0.93, 1.09);
     }
+    const top = max; // (the normal top speed: coins, kart and computer skill included)
+    const previousS = r.s, previousProgress = r.progress;
+    if (arcade) {
+      arcadeDrive(r, { dt, p: this.tune, top, input, steer: r.steer, spinning, offroad, emit: (type, extra) => this.emit(type, r, extra) });
+    } else {
     if (r.boost > 0) max = 55;
     if (r.star > 0) max = 53;
     if (offroad && r.boost <= 0 && r.star <= 0) max *= 0.43;
@@ -247,10 +273,10 @@ export class Race {
     // No yaw momentum or centrifugal term: zero wheel means exactly straight. Turn rate is bounded at every speed.
     const turn = (r.drift ? r.drift * 0.12 + r.steer * 0.92 : r.steer) * 1.48 * r.kit.turn;
     const turnAngle = turn * clamp(r.speed / 20, -0.5, 1) * dt * (r.gliding ? 0.52 : 1);
-    const previousS = r.s, previousProgress = r.progress;
     r.heading = angle(r.heading + turnAngle);
     r.x += (Math.sin(r.heading) * r.speed + (!r.gliding ? Math.cos(r.heading) * r.sideVelocity : 0)) * dt;
     r.z += (-Math.cos(r.heading) * r.speed + (!r.gliding ? Math.sin(r.heading) * r.sideVelocity : 0)) * dt;
+    }
     const near = T.project(r.x, r.z, r.s);
     r.s = near.s;
     r.lateral = near.lateral;
@@ -262,7 +288,8 @@ export class Race {
       r.lateral = edge;
       // Wall glancing is a slide, never a forced 180-degree bounce
       const tangent = T.trackAt(r.s).heading, error = angle(r.heading - tangent);
-      if (Math.sign(error) === side && Math.abs(error) > 0.01) {
+      if (arcade) arcadeWall(r, tangent, side);
+      else if (Math.sign(error) === side && Math.abs(error) > 0.01) {
         r.heading = angle(tangent + error * 0.6);
         r.speed *= 0.86;
       }
@@ -291,6 +318,7 @@ export class Race {
         r.speed = Math.max(r.speed, 26);
         r.boost = Math.max(r.boost, 0.5);
         r.gliding = true;
+        r.air = false; r.vy = 0;
         r.glide = g;
         r.flight = 0;
         r.flightY = T.surfaceAt(g.start, r.lateral).y + 1;
@@ -309,10 +337,12 @@ export class Race {
       if ((past && r.flightY <= ground.y + 1) || r.flight > 6) {
         r.gliding = false;
         r.y = ground.y;
+        r.air = false; r.vy = 0;
         r.boost = Math.max(r.boost, 0.3);
         this.emit('land', r);
       }
-    } else r.y = T.surfaceAt(r.s, r.lateral).y;
+    } else if (arcade) arcadeVertical(r, T.surfaceAt(r.s, r.lateral).y, dt, this.tune, (type, extra) => this.emit(type, r, extra));
+    else r.y = T.surfaceAt(r.s, r.lateral).y;
     for (const pad of T.boostPads) {
       if (Math.abs(wrap(r.s - pad.s + L / 2, L) - L / 2) < pad.length / 2 && Math.abs(r.lateral - pad.lateral) < pad.width / 2 && !r.gliding) {
         if (r.boost < 0.2) this.emit('boost', r);

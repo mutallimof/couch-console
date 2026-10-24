@@ -39,6 +39,19 @@ export async function createQuarks(THREE, scene) {
     return ps;
   }
   const BACK = [0, Math.PI, 0];
+  let quality = 1; // 1 = all particles; lower when the frame rate drops (setQuality)
+
+  // Speed lines: thin streaks that rush past the camera while boosting. The emitter rides on the camera
+  // (in the scene) and shoots backwards, so the streaks fly past the edges of the picture.
+  function speedLines(camera) {
+    const lines = system({
+      maxParticle: 160, startLife: new IntervalValue(0.28, 0.45), startSpeed: new IntervalValue(70, 110), startSize: new IntervalValue(0.05, 0.1), startColor: new ConstantColor(V4(2, 2.2, 2.6, 0.9)),
+      emissionOverTime: new ConstantValue(0), shape: new ConeEmitter({ radius: 4.2, thickness: 0.4, angle: 0.02, arc: Math.PI * 2 }), material: MAT.glow, renderMode: RenderMode.StretchedBillBoard,
+      rendererEmitterSettings: { speedFactor: 0.045, lengthFactor: 0 },
+      behaviors: [fade(0.9)],
+    }, camera, [0, 0, -22], [0, 0, 0]); // (the cone shoots along +z: toward the camera)
+    return lines;
+  }
 
   return {
     // The small systems of one kart (call detach(rig) when the race is cleared)
@@ -64,19 +77,30 @@ export async function createQuarks(THREE, scene) {
         emissionOverTime: new ConstantValue(0), shape: new ConeEmitter({ radius: 0.9, thickness: 1, angle: 0.8, arc: Math.PI * 2 }), material: MAT.puff, renderMode: RenderMode.BillBoard,
         behaviors: [fade(0.55), sizeCurve(0.5, 1.2, 1.8, 2.2), new ApplyForce(V3(0, 1, 0), new ConstantValue(1.2))],
       }, body, [0, 0.1, -1.2], [-1.2, Math.PI, 0]);
-      return { exhaust, flame, sparks, dust, tier: -1, dustUntil: 0 };
+      // A glowing trail of dots left in the world behind a boosting kart (its color follows the boost's tier)
+      const trail = system({
+        maxParticle: 120, startLife: new IntervalValue(0.5, 0.8), startSpeed: new IntervalValue(0.2, 0.8), startSize: new IntervalValue(0.5, 0.8), startColor: new ConstantColor(V4(1.2, 1.4, 2.4, 1)),
+        emissionOverTime: new ConstantValue(0), shape: new ConeEmitter({ radius: 0.25, thickness: 1, angle: 0.2, arc: Math.PI * 2 }), material: MAT.glow, renderMode: RenderMode.BillBoard,
+        behaviors: [new ColorOverLife(new Gradient([[V3(1, 1, 1), 0], [V3(0.5, 0.5, 0.8), 1]], [[0.8, 0], [0, 1]])), sizeCurve(1, 0.9, 0.5, 0.05)],
+      }, body, [x, y - 0.1, z - 0.4], BACK);
+      return { exhaust, flame, sparks, dust, trail, tier: -1, dustUntil: 0, boostTier: -1 };
     },
     // Set what a kart is doing right now (every frame). speed: m/s · boost: seconds left · drift: charge tier 0..3 or -1 · air: gliding or jumping · offroad: on the grass
-    state(rig, { speed, boost, drift, air, offroad, color }, now) {
-      rig.exhaust.emissionOverTime = new ConstantValue(!air && speed > 6 && boost <= 0 ? 16 : 0);
-      rig.flame.emissionOverTime = new ConstantValue(boost > 0 ? 60 : 0);
-      rig.sparks.emissionOverTime = new ConstantValue(drift >= 0 && !air && speed > 10 ? (drift ? 130 : 55) : 0);
+    state(rig, { speed, boost, boostTier, drift, air, offroad, color }, now) {
+      const q = quality;
+      rig.exhaust.emissionOverTime = new ConstantValue(!air && speed > 6 && boost <= 0 ? 16 * q : 0);
+      rig.flame.emissionOverTime = new ConstantValue(boost > 0 ? 60 * q : 0);
+      rig.trail.emissionOverTime = new ConstantValue(boost > 0 && speed > 20 ? 50 * q : 0);
+      rig.sparks.emissionOverTime = new ConstantValue(drift >= 0 && !air && speed > 10 ? (drift ? 130 : 55) * q : 0);
       if (drift >= 0 && drift !== rig.tier) { rig.tier = drift; rig.sparks.startColor = new ConstantColor(color(drift)); }
-      rig.dust.emissionOverTime = new ConstantValue(((offroad && speed > 8) || now < rig.dustUntil) ? 45 : 0);
+      rig.dust.emissionOverTime = new ConstantValue(((offroad && speed > 8) || now < rig.dustUntil) ? 45 * q : 0);
+      // the trail takes the color of the tier that fired the boost (blue, orange, purple), white-blue for pads and items
+      const tierNow = boost > 0 ? (boostTier ?? -1) : -1;
+      if (tierNow !== rig.boostTier) { rig.boostTier = tierNow; rig.trail.startColor = new ConstantColor(color(tierNow > 0 ? tierNow : 1, 1.6)); }
     },
     // A puff of dust for a moment (landing after a jump, bumping a wall)
     puffDust(rig, now, seconds = 0.25) { rig.dustUntil = now + seconds; },
-    detach(rig) { for (const ps of [rig.exhaust, rig.flame, rig.sparks, rig.dust]) { batch.deleteSystem(ps); ps.emitter.removeFromParent(); ps.dispose?.(); } },
+    detach(rig) { for (const ps of [rig.exhaust, rig.flame, rig.sparks, rig.dust, rig.trail]) { batch.deleteSystem(ps); ps.emitter.removeFromParent(); ps.dispose?.(); } },
     // Confetti fountain at a place (the finish line): six colors, thrown up and out
     confetti(x, y, z) {
       for (const c of [[3, 0.9, 0.7], [0.8, 2.4, 3], [3, 2.6, 0.5], [1, 2.8, 1.2], [2.4, 0.9, 3], [3, 1.5, 0.4]]) {
@@ -93,6 +117,14 @@ export async function createQuarks(THREE, scene) {
         batch.addSystem(ps);
       }
     },
+    // Speed lines for a human's camera (call detachCamera when the race is cleared)
+    attachCamera(camera) { return { ps: speedLines(camera), on: 0 }; },
+    detachCamera(rig) { batch.deleteSystem(rig.ps); rig.ps.emitter.removeFromParent(); rig.ps.dispose?.(); },
+    cameraState(rig, { boost, speed }) {
+      const on = boost > 0.05 && speed > 25 ? Math.round(boost * 70 * quality) : 0;
+      if (on !== rig.on) { rig.on = on; rig.ps.emissionOverTime = new ConstantValue(on); }
+    },
+    setQuality(level) { quality = level >= 3 ? 1 : level === 2 ? 0.7 : level === 1 ? 0.4 : 0.15; },
     update(dt) { batch.update(dt); },
     dispose() { scene.remove(batch); },
   };

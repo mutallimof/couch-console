@@ -74,8 +74,10 @@ app.get('/api/polyhaven', (req, res) => {
   res.json({ hdri: ls('hdri').filter((f) => f.endsWith('.hdr')).map((f) => f.replace(/\.hdr$/, '')), textures });
 });
 // Three.js (3D games) is served from node_modules, so it works without internet.
-app.get('/vendor/three.module.js', (req, res) =>
-  res.sendFile(fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url))));
+// (since r171 three.module.js imports ./three.core.js, which sits next to it)
+for (const f of ['three.module.js', 'three.core.js']) {
+  app.get(`/vendor/${f}`, (req, res) => res.sendFile(fileURLToPath(new URL(`./node_modules/three/build/${f}`, import.meta.url))));
+}
 // pdf.js (PDF slides in the browser) with its fonts and character maps
 app.use('/vendor/pdfjs-dist', express.static(file('./node_modules/pdfjs-dist')));
 // Three.js add-ons (model loader etc.), imported as "three/addons/..."
