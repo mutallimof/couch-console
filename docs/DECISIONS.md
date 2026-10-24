@@ -225,7 +225,9 @@ Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "ever
 ### Phase 55 step 5 (part): Neon Avenue and three.quarks particles
 - New track "Neon Avenue" (`karts-avenue.js`, def in `kart-path.js`): night street with lit towers (merged geometry, windows keep their size), made-up neon signs, a big start/finish arch with chaser lights, painted starting boxes, crosswalks, street lamps with glow, striped barriers and cones. Min corner radius checked (36 m) and the existing "every track can be raced / drivers stay on the road" tests cover it.
 - three.quarks (v0.10.18, works with three r160): exhaust puffs, boost flames, drift sparks (tier colors), dust (off-road, landings, walls) per kart, confetti where a human finishes. `?quarks=off` or a failed load falls back to the old point effects.
-- Still to do in this step: the postprocessing library (bloom, grading, SMAA).
+- postprocessing 6.36 (`karts-look.js`): our own chain (outlines, AO, bloom for HDR, cartoon + tone mapping) now draws into a buffer, and the library finishes it: mipmap-blur bloom (stronger at night: 0.95, 0.3 by day), a little saturation/contrast, then SMAA. Our final pass outputs linear and the library does the sRGB encoding. `?pp=off` switches it off (also: if it fails to load or build, the old chain is used). Software GL is slow with it (headless tests), a real GPU is not; the low-fps guard still switches all effects off.
+- Fixed on the way: mowed-grass stripes made brown "patches" on the night street; street-lamp glow discs removed (bloom does it).
+- Screenshots: `docs/screenshots/neon-avenue-*.png`, `kart-effects-before-after.png`.
 
 ### Home simplified (user feedback): one grid, one way to everything
 - Removed: the sidebar, the dock, "Recently played", the inline folder panel, the Join tile, the "Guest" chip, phones count, Wi-Fi icon, tooltip bubbles, Sleep, and the TV's Profile/Activity panels (they were reachable twice or duplicated the tiles; profiles and the Activity tab live on the phone, activity lines still pop up on the TV as notes; the QR is in the top bar and in Settings).

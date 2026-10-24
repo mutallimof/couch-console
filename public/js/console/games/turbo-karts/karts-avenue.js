@@ -97,9 +97,9 @@ export function buildAvenue(THREE, def, path, group) {
     const foot = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 3), steel); foot.position.set(s * half, 0.6, 0); arch.add(foot);
   }
   const board = new THREE.Mesh(new THREE.BoxGeometry(half * 2 + 3, 4.6, 1.4), steel); board.position.set(0, top - 1, 0); arch.add(board);
-  const bannerTex = canvas(1024, 224, (x, w, h) => {
+  const bannerTex = canvas(1536, 205, (x, w, h) => {
     x.fillStyle = '#12102A'; x.fillRect(0, 0, w, h);
-    x.font = '900 150px Fredoka, Nunito, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = '900 128px Fredoka, Nunito, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
     x.shadowColor = '#FF4D9D'; x.shadowBlur = 40; x.fillStyle = '#FF7AB8'; x.fillText('NEON AVENUE', w / 2, h / 2 + 6);
     x.shadowBlur = 0; x.fillStyle = '#fff'; x.fillText('NEON AVENUE', w / 2, h / 2 + 6);
   });
@@ -155,22 +155,19 @@ export function buildAvenue(THREE, def, path, group) {
     z.rotation.order = 'YXZ'; z.rotation.set(-Math.PI / 2, yawOf(p), 0); z.position.set(p.x, p.y + 0.1, p.z); root.add(z);
   }
 
-  // ---- street lamps (poles with a warm light and a glow on the road) ----
+  // ---- street lamps (poles with a warm light; the bloom does the glow) ----
   const lampSpots = [];
   for (let i = 0; i < SAMPLES; i += 26) for (const side of [-1, 1]) {
     const p = pts[i].clone().addScaledVector(nor[i], side * (WALL + 2.2)); lampSpots.push({ p, side, i });
   }
   const pole = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.3, 9, 8), new THREE.MeshStandardMaterial({ color: '#39406A', roughness: 0.6 }), lampSpots.length);
   const head = new THREE.InstancedMesh(new THREE.SphereGeometry(0.85, 12, 8), new THREE.MeshBasicMaterial({ color: bright('#FFE2A0', 3), toneMapped: false }), lampSpots.length);
-  const glow = new THREE.InstancedMesh(new THREE.CircleGeometry(5.5, 20), new THREE.MeshBasicMaterial({ color: C('#FFC27A'), transparent: true, opacity: 0.07, depthWrite: false, blending: THREE.AdditiveBlending }), lampSpots.length);
   lampSpots.forEach(({ p, side, i }, n) => {
     pole.setMatrixAt(n, new THREE.Matrix4().makeTranslation(p.x, p.y + 4.5, p.z));
     head.setMatrixAt(n, new THREE.Matrix4().makeTranslation(p.x - nor[i].x * side * 0.7, p.y + 9.2, p.z - nor[i].z * side * 0.7));
-    const g = new THREE.Matrix4().makeRotationX(-Math.PI / 2); g.setPosition(p.x - nor[i].x * side * 9, p.y + 0.14, p.z - nor[i].z * side * 9);
-    glow.setMatrixAt(n, g);
   });
   pole.castShadow = true;
-  root.add(pole, head, glow);
+  root.add(pole, head);
 
   // ---- striped barriers and traffic cones ----
   const stripe = canvas(64, 32, (x, w, h) => { for (let i = -2; i < 6; i++) { x.fillStyle = i % 2 ? '#F4F0FF' : '#FF3D6E'; x.beginPath(); x.moveTo(i * 16, h); x.lineTo(i * 16 + 16, 0); x.lineTo(i * 16 + 32, 0); x.lineTo(i * 16 + 16, h); x.fill(); } });

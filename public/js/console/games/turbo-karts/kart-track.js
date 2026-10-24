@@ -124,7 +124,7 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vGround;')
       .replace('#include <map_fragment>', `#include <map_fragment>
         float band = smoothstep(-0.15, 0.15, sin((vGround.x * 0.72 + vGround.y * 0.69) * 0.32));
-        diffuseColor.rgb *= ${def.theme === 'city' ? '1.0' : 'mix(0.86, 1.08, band)'};`);
+        diffuseColor.rgb *= ${def.theme === 'city' || def.theme === 'avenue' ? '1.0' : 'mix(0.86, 1.08, band)'};`);
   };
   const ground = new THREE.Mesh(new THREE.CircleGeometry(groundR, 64), groundMat);
   ground.rotation.x = -Math.PI / 2; ground.position.set(island?.x ?? 0, -0.05, island?.z ?? 0); ground.receiveShadow = true;
