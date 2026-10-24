@@ -47,7 +47,9 @@ export function createGyroPointers() {
       }
       return out;
     },
-    recenter(playerId) { all.get(playerId)?.pointer.recentre(); },
+    recenter(playerId, relearn = false) { const p = all.get(playerId)?.pointer; if (relearn) p?.relearn(); else p?.recentre(); },
+    // Forget what every phone's gyro axes looked like (a layout switch can turn the phone)
+    relearnAll() { for (const p of all.values()) p.pointer.relearn(); },
     remove(playerId) { all.delete(playerId); },
     // Debug: switch the "draw slightly ahead" prediction on/off for every player
     toggleLead() { for (const p of all.values()) p.pointer.displayLead = !p.pointer.displayLead; },

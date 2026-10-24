@@ -516,3 +516,90 @@ test('steady cursor ignores a nonsense gyro: it tracks exactly like a phone with
   const noGyro = yawError(drive({ ...WANDER, device: null, secs: 8 }).track, 3000);
   assert.ok(Math.abs(noisy - noGyro) < 0.01, `steady+noise ${noisy.toFixed(3)} vs no gyro ${noGyro.toFixed(3)}`);
 });
+
+// ── Kart round trip: portrait remote → landscape kart pad → portrait remote again ──
+// The pointer learns the phone's axes while it's held like a remote. Playing karts turns the
+// phone sideways and steers it. Back at the menu the cursor must be as good as before.
+const nlerp = (a, b, f) => {
+  const d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3], s = d < 0 ? -1 : 1;
+  const q = a.map((v, i) => v * (1 - f) + s * b[i] * f), n = Math.hypot(...q);
+  return q.map((v) => v / n);
+};
+function driveAttitude({ attitude, device = DEVICE.spec, lagMs = 60, secs, pointer, packetDelayMs = 25, onFrame = null }) {
+  const p = pointer;
+  const FRAME = 1000 / 60, h = 1e-4, track = [], queue = [];
+  let ms = 0;
+  for (let i = 0; i < secs * 60; i += 1, ms += FRAME) {
+    const t = ms / 1000;
+    onFrame?.(t, p);
+    const w = omegaBody(bodyAxesFromQuat(attitude(t)), bodyAxesFromQuat(attitude(t + h)), h);
+    const r = device(w);
+    const sample = { quat: attitude(Math.max(0, ms - lagMs) / 1000), motion: { rx: r[0], ry: r[1], rz: r[2] } };
+    queue.push({ at: ms + packetDelayMs, sample });
+    while (queue.length && queue[0].at <= ms) p.update(queue.shift().sample, FRAME / 1000, ms);
+    const d = p.sampleAt(ms);
+    track.push({ ms, x: d.x, y: d.y });
+  }
+  return track;
+}
+// the user's yaw/pitch at time t of a "wander" in the world, added in front of whatever grip is held
+const wander = (t) => mul(axisQ(2, WANDER.yaw(t)), axisQ(0, WANDER.pitch(t)));
+// grip: upright 0-6 s · turn to landscape 6-7 s · steer sideways 7-13 s · turn back 13-14 s · upright after
+const gripAt = (t) => (t < 6 ? UPRIGHT : t < 7 ? nlerp(UPRIGHT, LANDSCAPE, t - 6) : t < 13 ? LANDSCAPE : t < 14 ? nlerp(LANDSCAPE, UPRIGHT, t - 13) : UPRIGHT);
+const steering = (t) => (t >= 7 && t < 13 ? 35 * Math.sin(2 * Math.PI * 0.5 * t) : 0); // turning the phone like a wheel
+const tripAttitude = (t) => mul(wander(t), mul(gripAt(t), axisQ(2, steering(t))));
+
+for (const [name, device] of Object.entries({ spec: DEVICE.spec, radians: DEVICE.radians, mirrored: DEVICE.mirrored, swapped: DEVICE.swapped })) {
+test(`after a landscape kart session the cursor tracks as well as before (${name} gyro: axes still right)`, () => {
+  const p = new Pointer({ degPerScreen: DEG_PER_SCREEN });
+  const track = driveAttitude({ attitude: tripAttitude, secs: 24, pointer: p, device });
+  const rows = (from, to) => track.filter((r) => r.ms >= from * 1000 && r.ms < to * 1000);
+  // cursor x should follow -yaw (turn right = cursor right, in the harness' sign convention)
+  const err = (from, to) => {
+    const rs = rows(from, to), mx = rs.reduce((s, r) => s + r.x, 0) / rs.length;
+    const ys = rs.map((r) => WANDER.yaw(r.ms / 1000)), my = ys.reduce((s, v) => s + v, 0) / ys.length;
+    return rs.reduce((s, r, i) => s + Math.abs((r.x - mx) - -((ys[i] - my) / DEG_PER_SCREEN)), 0) / rs.length;
+  };
+  const before = err(2, 6), after = err(18, 24);
+  assert.ok(after < before * 1.6 + 0.02, `tracking error before ${before.toFixed(3)} → after the kart session ${after.toFixed(3)} screen widths`);
+});
+}
+
+// ── Relearning: when the phone's frame changes under the pointer ──
+// Suppose turning the phone's screen changes which axis label each rotation is reported on
+// (some phones/browsers do). A pointer that keeps its old map would aim wrongly; relearn() fixes it.
+test('relearn() forgets the map and trust, and the gyro earns trust again after a little motion', () => {
+  const p = new Pointer({ degPerScreen: DEG_PER_SCREEN });
+  const att = (t) => mul(wander(t), UPRIGHT);
+  driveAttitude({ attitude: att, secs: 8, pointer: p });
+  assert.ok(p.gyroTrusted, 'trusted after learning');
+  p.relearn();
+  assert.ok(!p.gyroTrusted && p.map.every((m) => m === null), 'forgotten right away');
+  driveAttitude({ attitude: (t) => att(t + 8), secs: 8, pointer: p });
+  assert.ok(p.gyroTrusted, 'trusted again after more motion');
+});
+test('after the phone starts reporting on different axes, relearn() recovers while a stale map does not', () => {
+  const run = (relearn) => {
+    const p = new Pointer({ degPerScreen: DEG_PER_SCREEN });
+    const att = (t) => mul(wander(t), UPRIGHT);
+    // 0-8 s: spec gyro. 8-20 s: the same motion, but reported swapped.
+    const track = [];
+    let device = DEVICE.spec;
+    const FRAME = 1000 / 60, h = 1e-4, queue = [];
+    let ms = 0;
+    for (let i = 0; i < 20 * 60; i += 1, ms += FRAME) {
+      const t = ms / 1000;
+      if (t >= 8 && device === DEVICE.spec) { device = DEVICE.swapped; if (relearn) p.relearn(); }
+      const w = omegaBody(bodyAxesFromQuat(att(t)), bodyAxesFromQuat(att(t + h)), h), r = device(w);
+      queue.push({ at: ms + 25, sample: { quat: att(Math.max(0, ms - 60) / 1000), motion: { rx: r[0], ry: r[1], rz: r[2] } } });
+      while (queue.length && queue[0].at <= ms) p.update(queue.shift().sample, FRAME / 1000, ms);
+      const d = p.sampleAt(ms);
+      track.push({ ms, x: d.x, y: d.y, yaw: WANDER.yaw(t) });
+    }
+    return yawError(track, 14000);
+  };
+  const stale = run(false), fixed = run(true);
+  assert.ok(fixed < 0.1, `with relearn the cursor tracks again (error ${fixed.toFixed(3)})`);
+  assert.ok(fixed <= stale, `relearn is no worse than keeping the stale map (${fixed.toFixed(3)} vs ${stale.toFixed(3)})`);
+  console.log(`      (stale map error ${stale.toFixed(3)}, relearned ${fixed.toFixed(3)})`);
+});

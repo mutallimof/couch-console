@@ -169,6 +169,7 @@ let current = null;
 // Phones show the normal remote ('pointer'), a steering wheel ('wheel') or a text box ('keyboard')
 let controllerMode = 'pointer', controllerPrompt = '';
 function setController(mode, prompt = '') {
+  if (mode !== controllerMode) gyro.relearnAll(); // turning the phone for the kart pad (and back) must not leave a stale gyro map
   controllerMode = mode;
   controllerPrompt = prompt;
   socket.emit(EV.FEEDBACK_MODE, { mode, prompt });
@@ -374,7 +375,7 @@ function onInputText(e) {
 }
 socket.on(EV.INPUT_TEXT, onInputText);
 
-socket.on(EV.INPUT_RECENTER, (e) => { count(e.playerId); gyro.recenter(e.playerId); });
+socket.on(EV.INPUT_RECENTER, (e) => { count(e.playerId); gyro.recenter(e.playerId, !!e.relearn); }); // relearn: the phone's screen turned
 
 function onInputButton(e) {
   count(e.playerId);

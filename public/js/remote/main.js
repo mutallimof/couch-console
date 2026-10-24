@@ -176,6 +176,11 @@ const kartPad = createKartPad({
   onRecenter: () => { wheel.recenter(); emit(EV.INPUT_RECENTER); },
 });
 
+// The phone's screen turned (portrait <-> landscape): ask the console to learn the gyro axes again
+const onTurned = () => { if (joined && started) emit(EV.INPUT_RECENTER, { relearn: true }); };
+screen.orientation?.addEventListener('change', onTurned);
+window.addEventListener('orientationchange', onTurned);
+
 function applyMode() {
   if (!joined) return;
   const isKart = mode === 'wheel', isKeys = mode === 'keyboard';

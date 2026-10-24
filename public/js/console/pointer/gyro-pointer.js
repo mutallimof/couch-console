@@ -198,6 +198,28 @@ export class Pointer {
     this.refElev = null;
   }
 
+  /**
+   * Forget the learned gyro axis map and start learning again. Used when the phone's frame may
+   * have changed under us (its screen turned, or a game switched the remote's layout): until
+   * the gyro earns trust again (about a second of real motion) the cursor follows the fused
+   * orientation, which is always right. (Couch Console addition, not in OpenWii.)
+   */
+  relearn() {
+    this.ring = [];
+    this.C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    this.absO = [0, 0, 0];
+    this.absR = [0, 0, 0];
+    this.map = [null, null, null];
+    this.mapShape = null;
+    this.emaM = { x: 0, y: 0, z: 0 };
+    this.emaO = { x: 0, y: 0, z: 0 };
+    this.prevAxes = null;
+    this.resBad = 0;
+    this.resAll = 0;
+    this.gyroTrusted = false;
+    this.recentre();
+  }
+
   setFromMouse(nx, ny) {
     this.pos.x = clamp(nx, 0, 1);
     this.pos.y = clamp(ny, 0, 1);
