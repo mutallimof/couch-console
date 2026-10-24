@@ -843,3 +843,34 @@ img.qr-img:not([src]) { visibility: hidden; }
 .photo-empty h1 { margin: 0; font-size: 56px; }
 .photo-empty p { margin: 0; font-size: 28px; }
 .photo-empty img { width: min(40vh, 360px); background: #fff; padding: 10px; border-radius: 16px; margin: 12px 0; }
+
+/* The party's music card (Phase 45): big in the Music screen, small in the corner elsewhere. YouTube needs 200x200 px or more, always visible. */
+#music-dock { position: fixed; z-index: 40; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: #111; color: #fff; box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4); transition: opacity 200ms; }
+#music-dock.paused .md-video { filter: grayscale(0.6) brightness(0.7); }
+#music-dock .md-video { flex: 1; min-height: 0; position: relative; background: #000; }
+#music-dock .md-slot, #music-dock iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+#music-dock .md-title { padding: 5px 10px; font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #1d2433; }
+#music-dock.full .md-title { font-size: 22px; padding: 10px 16px; }
+#music-dock .md-unlock { position: absolute; inset: 0; border: 0; background: rgba(10, 20, 40, 0.88); color: #fff; font: 900 20px 'Nunito', system-ui, sans-serif; cursor: pointer; z-index: 2; }
+#music-dock.full .md-unlock { font-size: 34px; }
+.fake-yt { position: absolute; inset: 0; display: grid; place-items: center; color: #8f8; font: 700 22px monospace; background: #012; }
+
+/* The Music screen on the TV (Phase 45) */
+.channel.music { position: absolute; inset: 0; display: grid; grid-template-columns: 58% 1fr; gap: 32px; padding: 48px; }
+.mu-stage { display: grid; place-items: center; }
+.mu-player { width: 100%; aspect-ratio: 16 / 10; max-height: 70vh; border-radius: 18px; }
+.mu-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow: hidden; }
+.mu-label { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.65; }
+.mu-now h2 { margin: 2px 0 6px; font-size: 38px; line-height: 1.15; }
+.mu-by { margin: 0 0 8px; font-size: 22px; font-weight: 700; }
+.mu-by span, .mu-who { display: inline-block; padding: 2px 12px; border-radius: 14px; color: #fff; font-weight: 900; font-size: 18px; white-space: nowrap; }
+.mu-queue { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.mu-queue li { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.1); border: 3px solid transparent; font-size: 22px; font-weight: 800; }
+.mu-queue li.focused { border-color: #fff; background: rgba(255, 255, 255, 0.2); }
+.mu-queue img { width: 64px; height: 36px; object-fit: cover; border-radius: 6px; background: #000; flex: none; }
+.mu-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mu-votes { font-size: 18px; }
+.mu-none { opacity: 0.6; }
+.mu-join { display: flex; align-items: center; gap: 14px; margin-top: auto; font-size: 20px; font-weight: 700; }
+.mu-join img { width: 96px; background: #fff; padding: 5px; border-radius: 10px; }
+.mu-help { margin: 0; font-size: 18px; font-weight: 700; opacity: 0.7; }
