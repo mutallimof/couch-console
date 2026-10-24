@@ -15,6 +15,7 @@
   <header class="top">
     <div id="badge" class="badge">–</div>
     <div class="conn"><span id="dot" class="dot"></span><span id="conn-text">Connecting…</span></div>
+    <button id="me-btn" class="me-btn" type="button" aria-label="Me" hidden><span id="me-emoji">🙂</span><span id="me-name"></span></button>
     <button id="recenter" class="recenter" type="button">Recenter</button>
   </header>
 
@@ -98,6 +99,37 @@
 
   <!-- Shown when motion is unavailable or permission was denied -->
   <p id="motion-msg" class="motion-msg" hidden><span id="motion-text"></span><br><b>Tap to close</b></p>
+
+  <!-- Party (Phase 43): welcome card, the tabs, the sheet with "me" -->
+  <form id="welcome" class="panel welcome" hidden>
+    <h1 class="w-title">Join the party</h1>
+    <label for="w-name" class="muted">What's your name?</label>
+    <input id="w-name" class="room-input w-name" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name">
+    <div id="w-emoji" class="emoji-row" role="group" aria-label="Pick an emoji"></div>
+    <button id="w-play" class="join-btn" type="submit" value="player">🎮 Play</button>
+    <button id="w-guest" class="join-btn ghost" type="submit" value="guest">👀 Just join (photos, music, slides)</button>
+    <p id="w-note" class="muted w-note"></p>
+  </form>
+
+  <section id="panes" class="panes" hidden>
+    <div id="pane-photos" class="pane" hidden></div>
+    <div id="pane-music" class="pane" hidden></div>
+    <div id="pane-present" class="pane" hidden></div>
+  </section>
+  <nav id="tabs" class="tabs" hidden aria-label="Sections"></nav>
+
+  <div id="sheet" class="sheet" hidden>
+    <div class="sheet-card">
+      <h2 class="sheet-title">Me</h2>
+      <input id="s-name" class="room-input w-name" maxlength="20" autocomplete="off" placeholder="Your name">
+      <div id="s-emoji" class="emoji-row"></div>
+      <button id="s-save" class="join-btn" type="button">Save</button>
+      <button id="s-role" class="join-btn ghost" type="button"></button>
+      <button id="s-invite" class="join-btn ghost" type="button">📲 Invite someone (show QR)</button>
+      <img id="s-qr" class="s-qr" alt="" hidden>
+      <button id="s-close" class="join-btn ghost" type="button">Close</button>
+    </div>
+  </div>
 
   <pre id="debug" class="debug" hidden></pre>
 

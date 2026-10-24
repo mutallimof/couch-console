@@ -13,6 +13,7 @@
 <body>
   <!-- Home menu -->
   <main class="menu">
+    <div id="crumb" class="crumb" hidden></div>
     <div id="tiles" class="tiles"></div>
     <footer class="bar">
       <span id="clock" class="clock"></span>
@@ -69,10 +70,14 @@
     </div>
 
     <div id="slots" class="slots"></div>
+    <p id="guest-list" class="guest-list" hidden></p>
     <button id="use-mouse" class="use-mouse" type="button">No phone? Use mouse &amp; keyboard</button>
     <p id="pairing-close" class="pairing-close" hidden>Press A or B to close</p>
     <p id="status" class="status"></p>
   </section>
+
+  <!-- "Ana joined" notes -->
+  <div id="toasts" class="toasts" aria-live="polite"></div>
 
   <!-- One cursor per player is drawn here, above everything -->
   <div id="cursors" class="cursors"></div>

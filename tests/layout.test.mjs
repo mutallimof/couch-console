@@ -1,6 +1,7 @@
 // Phone layouts through the real server (no browser needed): when a game asks for the kart pad,
 // every phone must get it, also one that joins or comes back in the middle of a race. npm test
 import test from 'node:test';
+import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -17,7 +18,7 @@ let server;
 
 test.before(async () => {
   server = spawn(process.execPath, ['server.js'], {
-    cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1) }, stdio: 'pipe',
+    cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve, reject) => {
     server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); });

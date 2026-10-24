@@ -8,12 +8,15 @@ const noop = (e) => e.preventDefault();
 for (const type of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(type, noop, { passive: false });
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
-// 2. Double tap: the second quick tap anywhere (not in a text box) is swallowed
-let lastEnd = 0;
+// 2. Double tap: a second quick tap on the same spot (not in a text box) is swallowed.
+// (Two quick taps on different buttons are fine. Buttons that must repeat fast listen to pointerdown.)
+let lastEnd = 0, lastX = -999, lastY = -999;
 document.addEventListener('touchend', (e) => {
-  const now = Date.now();
-  if (now - lastEnd < 400 && !e.target.closest?.('input, textarea')) e.preventDefault();
+  const now = Date.now(), t = e.changedTouches[0];
+  const near = t && Math.hypot(t.clientX - lastX, t.clientY - lastY) < 40;
+  if (now - lastEnd < 400 && near && !e.target.closest?.('input, textarea')) e.preventDefault();
   lastEnd = now;
+  if (t) { lastX = t.clientX; lastY = t.clientY; }
 }, { passive: false });
 document.addEventListener('dblclick', noop);
 
