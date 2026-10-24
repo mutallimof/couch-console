@@ -2,6 +2,8 @@
 import { EV, colorFor } from '../shared/protocol.js';
 import { players } from './players.js';
 import { party } from './party.js';
+import { socket } from './socket.js';
+import { musicPlayer } from './music-hub.js';
 import { createPointers } from './pointer.js';
 import { createGyroPointers } from './pointer/engine.js';
 import { createMenu } from './menu.js';
@@ -18,7 +20,6 @@ const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoo
 // Loaded before connecting, so no server message can arrive before we're listening.
 const gameApps = await loadApps();
 const folders = await fetch('/js/console/folders.json').then((r) => r.json()).catch(() => ({}));
-const socket = io(); // global from /socket.io/socket.io.js
 const pointers = createPointers($('cursors'));
 const gyro = createGyroPointers(); // phones' raw sensors -> cursor positions
 const ZOOM_MS = 320;       // opening a game: the one big motion in the menu
@@ -98,12 +99,17 @@ function renderGuests() {
 }
 
 // A new room is created on every (re)connect, e.g. after the server restarts.
-socket.on('connect', () => {
+function onConnect() {
   $('status').textContent = '';
   players.clear();
   if (desk.active) players.join(desk.id, colorFor(desk.id)); // still playing with the mouse
-  socket.emit(EV.CONSOLE_CREATE, (res) => { party.setRoom(res); showRoom(res.room); });
-});
+  socket.emit(EV.CONSOLE_CREATE, (res) => {
+    party.setRoom(res);
+    showRoom(res.room);
+    party.call('GET', '/music').then((s) => musicPlayer.onState(s)).catch(() => {}); // (a song may already be queued)
+  });
+}
+socket.on('connect', onConnect);
 
 socket.on('disconnect', () => {
   $('status').textContent = 'Lost connection to the server. Is `npm start` still running?';
@@ -125,6 +131,7 @@ socket.on(EV.PLAYER_JOINED, ({ playerId, color }) => {
 });
 socket.on(EV.PARTY_ROSTER, (r) => { party.onRoster(r); renderGuests(); });
 socket.on(EV.PARTY_PHOTO, (e) => party.emitPhoto(e));
+socket.on(EV.MUSIC_STATE, (s) => musicPlayer.onState(s));
 socket.on(EV.PLAYER_LEFT, ({ playerId }) => {
   players.leave(playerId);
   sound.play('leave');
@@ -207,6 +214,8 @@ function openApp(app) {
   const stage = $('stage');
   current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set(), text: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
   stage.style.setProperty('--tile', app.color);
+  // Games (not the hubs and channels) pause the party music, unless Settings -> Party says otherwise
+  musicPlayer.setGameActive(!['music', 'photos', 'present', 'settings'].includes(app.id) && app.folder !== 'channels');
   menu.press();
   stage.hidden = false;
   const anim = REDUCED_MOTION
@@ -244,6 +253,7 @@ function closeApp() {
   sound.play('back');
   if (current.mounted) current.app.unmount();
   if (controllerMode !== 'pointer') setController('pointer');
+  musicPlayer.setGameActive(false);
   pointers.setStyle('arrow');
   hidePicker();
   hidePause();
@@ -556,3 +566,6 @@ if (DEBUG) {
   addEventListener('keydown', (e) => { if (e.key === 'l' || e.key === 'L') gyro.toggleLead(); });
   addEventListener('keydown', (e) => { if (e.key === 'g' || e.key === 'G') prefs.setSteady(!prefs.getSteady()); }); // G = steady cursor on/off
 }
+
+// The connection may already be up (it starts while the games load): then 'connect' came too early to hear
+if (socket.connected) onConnect();

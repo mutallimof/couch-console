@@ -14,7 +14,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 
 // prefs: { getSensitivity(), setSensitivity(n), getPhoneSounds(), setPhoneSounds(on), showQR() } from main.js
 const MAIN_ACTIONS = ['sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'party', 'qr'];
-const PARTY_ACTIONS = ['rename', 'new-party', 'approve', 'limit-up', 'download', 'end-party', 'back'];
+const PARTY_ACTIONS = ['rename', 'new-party', 'approve', 'limit-up', 'music-pause', 'download', 'end-party', 'back'];
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export function createSettings(prefs) {
@@ -66,11 +66,13 @@ export function createSettings(prefs) {
           <button class="set-btn wide" data-action="approve">${s.approvePhotos ? 'On' : 'Off'}</button></div>
         <div class="set-row" data-row="3"><span class="set-label">Photo storage limit</span>
           <button class="set-btn wide" data-action="limit-up">${s.photoLimitGB ?? 3} GB</button></div>
-        <div class="set-row" data-row="4"><span class="set-label">All photos</span>
+        <div class="set-row" data-row="4"><span class="set-label">Pause music in games</span>
+          <button class="set-btn wide" data-action="music-pause">${s.pauseMusicInGames === false ? 'Off' : 'On'}</button></div>
+        <div class="set-row" data-row="5"><span class="set-label">All photos</span>
           <button class="set-btn wide" data-action="download">Download ZIP ⬇</button></div>
-        <div class="set-row ${endStep ? 'danger' : ''}" data-row="5"><span class="set-label">${endStep ? '⚠️' : ''} Danger zone</span>
+        <div class="set-row ${endStep ? 'danger' : ''}" data-row="6"><span class="set-label">${endStep ? '⚠️' : ''} Danger zone</span>
           <button class="set-btn wide" data-action="end-party">${end}</button></div>
-        <div class="set-row" data-row="6"><span class="set-label"> </span>
+        <div class="set-row" data-row="7"><span class="set-label"> </span>
           <button class="set-btn wide" data-action="back">‹ Back</button></div>
         <p class="set-hint">${message || `${people.length} here now (${people.filter((p) => p.role === 'player').length} playing). Data is saved on this laptop in the data folder. B = back`}</p>`;
   }
@@ -97,6 +99,9 @@ export function createSettings(prefs) {
       } else if (action === 'limit-up') {
         const i = PHOTO_LIMITS_GB.indexOf(party.event.settings.photoLimitGB);
         await party.call('PATCH', '/event/settings', { photoLimitGB: PHOTO_LIMITS_GB[(i + 1) % PHOTO_LIMITS_GB.length] });
+        await party.refreshEvent();
+      } else if (action === 'music-pause') {
+        await party.call('PATCH', '/event/settings', { pauseMusicInGames: party.event.settings.pauseMusicInGames === false });
         await party.refreshEvent();
       } else if (action === 'download') {
         window.open(`/api/party/photos.zip?room=${party.room}&h=${encodeURIComponent(party.headers()['x-couch-host'])}`, '_blank');

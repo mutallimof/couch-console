@@ -52,6 +52,9 @@ export const EV = {
   PARTY_ROSTER: 'party:roster',     // server -> console + phones: { people: [{ id, name, emoji, color, role, playerId, online }] }
   REMOTE_ROLE: 'remote:role',       // phone -> server, with ack: { to: 'player' | 'guest' } -> { ok, role, playerId?, color?, error? }
   PARTY_PHOTO: 'party:photo',       // server -> TV (always) and phones (visible photos): { kind: 'added' | 'removed' | 'hidden' | 'shown', photo }
+  MUSIC_STATE: 'music:state',       // server -> TV + phones: { now, queue, paused, skips, skipNeeded, added?, skipped?, error? }
+  MUSIC_ENDED: 'music:ended',       // TV -> server: { videoId } the song finished
+  MUSIC_ERROR: 'music:error',       // TV -> server: { videoId, code } YouTube could not play it
   REMOTE_PROFILE: 'remote:profile', // phone -> server, with ack: { name, emoji } -> { ok }
 };
 
