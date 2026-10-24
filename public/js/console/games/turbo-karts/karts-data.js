@@ -10,10 +10,6 @@ export const KARTS = [
   { id: 'roadster', name: 'Roadster', model: 'vehicle-vintage-racer', open: true, seat: [0.3, -0.25], shape: 'light', speed: 2, accel: 5, handling: 5, weight: 2 },
   { id: 'dragster', name: 'Dragster', model: 'vehicle-drag-racer', open: true, seat: [0.5, -0.85], shape: 'sport', speed: 5, accel: 2, handling: 2, weight: 3 },
   { id: 'racer', name: 'Racer', model: 'vehicle-racer', open: false, seat: [0.95, -0.1], shape: 'classic', speed: 3, accel: 3, handling: 3, weight: 3 },
-  { id: 'coupe', name: 'Coupe', model: 'vehicle-racer-low', open: false, seat: [0.85, -0.1], shape: 'classic', speed: 4, accel: 3, handling: 4, weight: 2 },
-  { id: 'monster', name: 'Monster', model: 'vehicle-monster-truck', open: false, seat: [1.75, -0.15], shape: 'heavy', speed: 3, accel: 2, handling: 2, weight: 5 },
-  { id: 'trekker', name: 'Trekker', model: 'vehicle-suv', open: false, seat: [1.05, -0.15], shape: 'heavy', speed: 3, accel: 3, handling: 2, weight: 4 },
-  { id: 'hauler', name: 'Hauler', model: 'vehicle-truck', open: false, seat: [0.85, 0.55], shape: 'heavy', speed: 2, accel: 3, handling: 3, weight: 5 },
 ];
 
 // Small flat icons for the HUD (original drawings)

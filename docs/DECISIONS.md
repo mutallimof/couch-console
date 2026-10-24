@@ -190,3 +190,9 @@ Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "ever
 - Same clientId joining again (QR scanned on the same phone, a second tab) never disconnects the player: the slot and name are kept, the NEWEST tab becomes live, the older tab gets `remote:replaced` (new protocol event, requested by the user), stops reconnecting and shows "Opened in another tab" with a "Use this tab" button.
 - TV hint "Already joined? Open the Photos/Music/Present tab on your phone." on those screens. Tabs are bigger.
 - Test: `tests/party-retab.e2e.test.mjs`.
+
+### Character select fixed (black faces, seated racer, fewer karts and characters)
+- Black faces: the Quaternius pack's "Skin" material is almost black (baseColor 0.013 linear) in every glTF; each driver now gets its own cloned materials and a skin tone from `skin` in `ow-kart/characters.js` (thumbnails, preview and race all go through `assetDriver`). Animals and the goblin keep their own.
+- The preview is ONE showroom: the racer is SEATED in the chosen kart (last frame of the pack's SitDown clip, held), on one podium, idle bounce, a hop + spin + cheer on Ready. Warmer, brighter lights.
+- Karts: 4 left (Speedster, Roadster, Dragster, Racer; they share the same toy-car style). Characters: 8 (Anne, Suki, Merlo, Bjorn, Glint, Grub, Biscuit, Daisy). The unused glTF/GLB files (Monster, Hauler, Trekker, Coupe, other characters) are still on disk: tell me if you want them deleted.
+- Before/after: `docs/screenshots/character-select-before-after.png`.
