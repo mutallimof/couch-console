@@ -1,6 +1,6 @@
 // Turbo Karts tracks: five themed circuits with hills, jump crests, a bridge and tunnels.
 // buildTrack() turns a track definition into 3D meshes plus helpers to find where a kart is.
-import { makeScenery, makeItemBox, makeCoin } from './karts-models.js';
+import { makeItemBox, makeCoin } from './karts-models.js';
 import { CAR, cloneOf, fit } from './karts-assets.js';
 import { decorate } from './karts-decor.js';
 import { roadMaterial } from './karts-materials.js';
@@ -8,7 +8,7 @@ import { ROAD_HALF as ROAD_HALF0, WALL as WALL0, SAMPLES } from './kart-path.js'
 import { buildAvenue } from './karts-avenue.js';
 import { buildTerrain } from './karts-terrain.js';
 import { buildSky } from './karts-sky.js';
-import { buildProps } from './karts-props.js';
+import { buildProps, toyBlocks } from './karts-props.js';
 
 // Track data and the center line live in kart-path.js (no graphics, testable)
 export { ROAD_HALF, WALL, TRACKS } from './kart-path.js';
@@ -216,14 +216,14 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
     if (onIsland && minD > (WALL + (def.theme === 'city' ? 12 : 6)) ** 2) spots.push([x, z, 0.7 + Math.random() * 0.8]);
   }
   // Real models (grandstands, trees, palms...) when loaded; simple shapes otherwise.
-  // The city keeps its glowing code-built towers and Cloud Gardens its clouds either way.
+  // Block City keeps its code-built toy towers and Cloud Gardens its clouds either way.
   let mixers = [];
   if (assets && !avenue) {
     const decor = decorate(THREE, { pts, tan, nor, SAMPLES, def, island, heightAt: terrain.heightAt }, assets, spots);
     group.add(decor.group);
     mixers = decor.mixers;
   }
-  if (def.theme === 'city') group.add(makeScenery('city', spots));
+  if (def.theme === 'city') group.add(toyBlocks(THREE, spots.filter((_, i) => i % 2 === 0)));
 
   return { ...path, group, boxes, coins, mixers, terrain, sky, roadMat, update(t, camPos) { avenue?.update?.(t); sky.update(t, camPos); props.update(t); } };
 }

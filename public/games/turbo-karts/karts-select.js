@@ -13,12 +13,12 @@ const STATS = [['speed', 'Speed'], ['accel', 'Acceleration'], ['handling', 'Hand
 const HINTS = { char: 'D-pad: choose a racer · A = pick', kart: '◀ ▶ choose a kart · A = ready · B = back', ready: 'Ready! · B = change' };
 
 // onCelebrate(playerId, 'pick' | 'ready'): a character was picked / a player is ready
-export function createSelect({ root, players, portraits, previous, sound, onDone, onExit, onCelebrate = () => {}, tracks = TRACKS, characters: CHARACTERS = GP_CHARACTERS }) {
+export function createSelect({ root, players, portraits, previous, sound, onDone, onExit, onCelebrate = () => {}, tracks = TRACKS, characters: CHARACTERS = GP_CHARACTERS, trackFixed = null }) {
   // One "seat" per human player: what they're choosing and what they picked
   const seats = players.map((p, n) => ({
     playerId: p.playerId, color: p.color,
     step: 'char',
-    char: previous?.picks?.[n]?.char ?? n * 3,
+    char: previous?.picks?.[n]?.char ?? (n * 3) % CHARACTERS.length,
     kart: previous?.picks?.[n]?.kart ?? 1,
   }));
   let track = previous?.track ?? 0;
@@ -101,7 +101,10 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
     } else if (s.step === 'ready' && button === 'B') {
       s.step = 'kart'; sound.play('back');
     }
-    if (seats.every((x) => x.step === 'ready')) { stage = 'track'; sound.play('select'); return buildTrack(); }
+    if (seats.every((x) => x.step === 'ready')) {
+      if (trackFixed != null && trackFixed >= 0) { track = trackFixed; sound.play('start'); return finish(); } // a cup brings its own tracks
+      stage = 'track'; sound.play('select'); return buildTrack();
+    }
     update();
   }
 

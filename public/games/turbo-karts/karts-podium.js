@@ -1,5 +1,5 @@
 // Turbo Karts podium: a small 3D stage for the results card. The top three stand on steps that rise one after the other;
-// 1st place cheers, the others hang their heads (the "cheer" and "defeat" clips of the cast). It draws into its own canvas.
+// 1st place cheers, the others hang their heads (the cheer and defeat clips of the pilots). It draws into its own canvas.
 import { makeStandingCharacter } from './karts-models.js';
 
 const STEP = [{ x: 0, h: 1.15 }, { x: -2.35, h: 0.78 }, { x: 2.35, h: 0.5 }]; // 1st, 2nd, 3rd
@@ -34,7 +34,7 @@ export function createPodium(THREE, assets, entries) {
     body.castShadow = true;
     g.add(body, top, num);
     g.position.x = s.x;
-    const who = makeStandingCharacter(e.character, assets);
+    const who = makeStandingCharacter(e.character, assets, e.color);
     who.object.position.set(0, s.h + 0.08, 0.05);
     g.add(who.object);
     scene.add(g);

@@ -3,26 +3,21 @@
 // the tile is focused and the menu is visible, and frees everything when you move away. If anything fails to load, the still
 // picture simply stays (the other tiles get their own animated art from CSS, see home.css).
 const MAX_FPS = 30;
-const CAR_SCALE = 3.2; // the same numbers as the real race (karts-models.js), so the little karts look like the real ones
-const DRIVER_HEIGHT = 1.6;
 let ready = null; // Promise of everything the scene needs, loaded once
 
 async function prepare() {
   const THREE = await import('three');
   const { RoundedBoxGeometry } = await import('three/addons/geometries/RoundedBoxGeometry.js');
-  const assets = await import('../games/turbo-karts/karts-assets.js');
+  const models = await import('../games/turbo-karts/karts-models.js');
   const { GP_CHARACTERS } = await import('../games/turbo-karts/ow-kart/characters.js');
   const { KARTS } = await import('../games/turbo-karts/karts-data.js');
-  const cast = ['knight', 'mage', 'barbarian'].map((id) => GP_CHARACTERS.find((c) => c.path.includes(id)) || GP_CHARACTERS[0]);
-  const karts = KARTS.slice(0, 3);
-  const [carGltfs, castGltfs] = await Promise.all([Promise.all(karts.map((k) => assets.load(assets.CAR(k.model)))), Promise.all(cast.map((c) => assets.load(c.path)))]);
-  if ([...carGltfs, ...castGltfs].some((g) => !g)) throw new Error('models missing');
-  // the loader's clone helper only exists after the first load
-  return { THREE, RoundedBoxGeometry, assets, cast, karts, carGltfs, castGltfs };
+  models.setThree(THREE);
+  const cast = ['dash', 'blaze', 'finn'].map((id) => GP_CHARACTERS.find((c) => c.id === id) || GP_CHARACTERS[0]);
+  return { THREE, RoundedBoxGeometry, models, cast, karts: KARTS.slice(0, 3) }; // (the pilots and karts are made in code: nothing to download)
 }
 
 // The toy island with three lapping karts. Returns a scene with update(dt) and dispose().
-function buildScene({ THREE, RoundedBoxGeometry, assets, cast, karts, carGltfs, castGltfs }) {
+function buildScene({ THREE, RoundedBoxGeometry, models, cast, karts }) {
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight('#ffffff', '#cdd9ff', 1.9));
   const key = new THREE.DirectionalLight('#fff1dc', 2.6);
@@ -49,38 +44,29 @@ function buildScene({ THREE, RoundedBoxGeometry, assets, cast, karts, carGltfs, 
   const beam = new THREE.Mesh(new RoundedBoxGeometry(1.9, 0.32, 0.1, 3, 0.04), mat('#3FA9FF')); beam.position.set(0, 1.55, 0);
   gate.add(beam); gate.position.set(0, 0, -R); scene.add(gate);
 
-  const mixers = [], racers = [];
+  const pilots = [], racers = [];
+  const colors = ['#2F80ED', '#EB5757', '#27AE60'];
   karts.forEach((k, n) => {
-    const holder = new THREE.Group(), body = new THREE.Group();
-    const car = assets.cloneOf(carGltfs[n]).object;
-    car.scale.setScalar(CAR_SCALE); car.rotation.y = Math.PI;
-    body.add(car);
-    const who = assets.cloneOf(castGltfs[n]);
-    who.object.updateMatrixWorld(true);
-    const height = new THREE.Box3().setFromObject(who.object, true).getSize(new THREE.Vector3()).y || 2;
-    who.object.scale.setScalar(DRIVER_HEIGHT / height);
-    who.object.position.set(0, k.seat[0], k.seat[1]);
-    const mixer = new THREE.AnimationMixer(who.object);
-    mixer.clipAction(who.animations.find((a) => a.name === 'sit')).play();
-    mixer.update(n * 0.7);
-    mixers.push(mixer);
-    body.add(who.object);
-    body.traverse((o) => { if (o.isMesh) { o.castShadow = false; } });
-    holder.add(body); holder.scale.setScalar(0.42);
+    const holder = new THREE.Group();
+    const r = models.makeRacer(cast[n], k, colors[n], null); // the same racers as in the real race
+    r.flame.visible = false; r.shield.visible = false; r.marker.visible = false; r.glider.visible = false; r.sparks.forEach((sp) => { sp.visible = false; }); r.shadow.visible = false;
+    r.anim.mixer.update(n * 0.7);
+    pilots.push(r);
+    r.root.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+    holder.add(r.root); holder.scale.setScalar(0.42);
     scene.add(holder);
-    racers.push({ holder, angle: n * 2.1, speed: 0.95 + n * 0.12, wheels: [] });
-    car.traverse((o) => { if (/^wheel-/.test(o.name)) racers.at(-1).wheels.push(o); });
+    racers.push({ holder, body: r.root, angle: n * 2.1, speed: 0.95 + n * 0.12, wheels: r.wheels });
   });
   return Object.assign(scene, {
     update(dt) {
-      mixers.forEach((m) => m.update(dt));
+      pilots.forEach((r, n) => { r.anim.mixer.update(dt); r.anim.lean(Math.sin(racers[n].angle * 3) * 0.5, 30); });
       for (const r of racers) {
         r.angle += dt * r.speed;
         const x = Math.sin(r.angle) * R, z = -Math.cos(r.angle) * R, dx = Math.cos(r.angle), dz = Math.sin(r.angle);
         r.holder.position.set(x, 0.17, z);
         r.holder.rotation.y = Math.atan2(dx, dz); // along the road
-        r.holder.children[0].rotation.z = -0.04 * Math.sin(r.angle * 3);
-        r.wheels.forEach((w) => { w.rotation.x -= dt * 10; });
+        r.body.rotation.z = -0.04 * Math.sin(r.angle * 3);
+        r.wheels.forEach((w) => { w.rotation.x += dt * 10; });
       }
     },
     dispose() { scene.traverse((o) => { if (!o.isSkinnedMesh) o.geometry?.dispose?.(); }); },

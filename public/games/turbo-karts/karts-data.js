@@ -1,15 +1,13 @@
 // Turbo Karts data: the karts and the item icons (the racers are in ow-kart/characters.js).
 // Stats go from 1 (low) to 5 (high).
 
-// Toy Car Kit vehicles. open = the driver sits in a cockpit; closed cars have the driver
-// pop out of the roof (toy style). seat = [height, forward] of the driver's feet (meters).
-// shape = the code-built kart used if the model can't be loaded.
+// The four toy karts (built in code, see karts-toykart.js). id picks the shape.
 // speed = top speed · accel = acceleration · handling = turning · weight = bumping power
 export const KARTS = [
-  { id: 'speedster', name: 'Speedster', model: 'vehicle-speedster', open: true, seat: [0.4, -0.3], shape: 'sport', speed: 4, accel: 4, handling: 3, weight: 2 },
-  { id: 'roadster', name: 'Roadster', model: 'vehicle-vintage-racer', open: true, seat: [0.3, -0.25], shape: 'light', speed: 2, accel: 5, handling: 5, weight: 2 },
-  { id: 'dragster', name: 'Dragster', model: 'vehicle-drag-racer', open: true, seat: [0.5, -0.85], shape: 'sport', speed: 5, accel: 2, handling: 2, weight: 3 },
-  { id: 'racer', name: 'Racer', model: 'vehicle-racer', open: false, seat: [0.95, -0.1], shape: 'classic', speed: 3, accel: 3, handling: 3, weight: 3 },
+  { id: 'speedster', name: 'Speedster', speed: 4, accel: 4, handling: 3, weight: 2 },
+  { id: 'roadster', name: 'Roadster', speed: 2, accel: 5, handling: 5, weight: 2 },
+  { id: 'dragster', name: 'Dragster', speed: 5, accel: 2, handling: 2, weight: 3 },
+  { id: 'racer', name: 'Racer', speed: 3, accel: 3, handling: 3, weight: 3 },
 ];
 
 // Small flat icons for the HUD (original drawings)

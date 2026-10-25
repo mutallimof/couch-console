@@ -84,13 +84,15 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
       return { controller: seen('controller'), kart: seen('kart-pad'), inside };
     });
 
-    // Menu -> Turbo Karts (Versus) -> each picks a character and a kart -> P1 picks the track
+    // Menu -> Turbo Karts (Versus) -> Single Race -> each picks a character and a kart -> P1 picks the track
     const [p1, p2] = phones;
     await focusOn(lap, (b) => press(p1, b).then(() => lap.waitForTimeout(300)), 'turbo-karts');
     await press(p1, 'A');
     await lap.waitForSelector('.picker', { timeout: 30000 });
     await press(p1, 'A');
-    await lap.waitForFunction(() => window.__tk?.state() === 'select', null, { timeout: 120000 });
+    await lap.waitForFunction(() => window.__tk?.state() === 'menu', null, { timeout: 120000 });
+    await press(p1, 'A'); // the first menu: Single Race
+    await lap.waitForFunction(() => window.__tk?.state() === 'select', null, { timeout: 20000 });
     for (const ph of phones) assert.deepEqual({ ...(await shows(ph)), inside: undefined }, { controller: true, kart: false, inside: undefined }, 'menus use the normal remote');
     for (const ph of phones) { await press(ph, 'A'); await press(ph, 'A'); }
     await lap.waitForSelector('.ks-tracks', { timeout: 20000 });

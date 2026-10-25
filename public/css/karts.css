@@ -129,3 +129,55 @@
 .ks-seat { position: relative; }
 .ks-back { position: absolute; right: var(--sp-3); bottom: var(--sp-3); z-index: 3; min-height: 2.2em; padding: 0 var(--sp-3); font-size: var(--fs-hint); }
 .kart-select > .ks-back { right: var(--sp-5); bottom: var(--sp-4); }
+
+/* ---------- Split screen (2-4 players): each view has its own HUD, scaled down; the minimap goes where there is room ---------- */
+.kart.views-2, .kart.views-3, .kart.views-4 { background: #0b0e18; }
+.kart-hud { zoom: var(--hud-zoom, 1); }
+.kart-hud + .kart-hud { border-top: 0; }
+.kart.views-3 .kart-minimap { right: 1.5rem; top: auto; bottom: 1.5rem; width: 38%; height: auto; aspect-ratio: 1; max-height: 44%; }
+
+/* ---------- Toy-box style for every Turbo Karts menu: bright sky, chunky cards with a thick colored edge and a soft "plastic" shadow ---------- */
+.kart.selecting { background: radial-gradient(ellipse 60% 40% at 18% 12%, #ffffffcc, transparent 70%), radial-gradient(ellipse 50% 35% at 82% 20%, #ffffffa8, transparent 70%), linear-gradient(180deg, #7FC8FF 0%, #BFE6FF 55%, #FFF1D2 100%); }
+.ks-title { color: #fff; font-size: clamp(2.4rem, 6.4vh, 3.6rem); letter-spacing: 0.01em; -webkit-text-stroke: 0.22rem #1E4F9C; paint-order: stroke fill; text-shadow: 0 0.28rem 0 #1E4F9C, 0 0.5rem 1rem rgba(20, 60, 120, 0.3); }
+.ks-seat { background: #FFFFFF; border: 0.3rem solid var(--c); box-shadow: 0 0.45rem 0 color-mix(in srgb, var(--c) 55%, #1E3A6B), 0 1rem 2rem rgba(20, 60, 120, 0.22); border-radius: 1.75rem; }
+.ks-seat.is-ready { box-shadow: 0 0.45rem 0 color-mix(in srgb, var(--c) 55%, #1E3A6B), 0 0 0 0.4rem #FFE066, 0 1rem 2rem rgba(20, 60, 120, 0.22); }
+.ks-tag { font-size: 1.1rem; box-shadow: 0 0.18rem 0 rgba(0, 0, 0, 0.2); }
+.ks-name { color: #1E3A6B; }
+.ks-stage { border-radius: 1.25rem; background: radial-gradient(ellipse at 50% 90%, color-mix(in srgb, var(--char) 45%, #fff), transparent 66%), linear-gradient(180deg, #DDF1FF, color-mix(in srgb, var(--char) 22%, #FFF6E0)); }
+.ks-chars figure { border-radius: 1rem; background: #EEF6FF; box-shadow: 0 0.2rem 0 #C9DCF2; }
+.ks-chars figure.focused { background: color-mix(in srgb, var(--c) 20%, #fff); box-shadow: 0 0.2rem 0 color-mix(in srgb, var(--c) 60%, #1E3A6B), 0 0 0 0.28rem var(--c); }
+.ks-kart { background: #EEF6FF; color: #4A5E80; border-radius: 999px; box-shadow: 0 0.18rem 0 #C9DCF2; }
+.ks-kart.focused { background: var(--c); color: #fff; box-shadow: 0 0.18rem 0 color-mix(in srgb, var(--c) 55%, #1E3A6B); }
+.ks-bar { background: #DCEAF8; } .ks-bar i { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 70%, #fff), var(--c)); }
+.ks-hint { color: #2A4A7F; text-shadow: 0 1px 0 #ffffffaa; }
+.ks-track { background: #fff; border: 0.28rem solid #fff; border-radius: 1.5rem; box-shadow: 0 0.4rem 0 #9FC4EA, 0 0.9rem 1.6rem rgba(20, 60, 120, 0.2); }
+.ks-track.focused { border-color: #FFB020; box-shadow: 0 0.4rem 0 #D98A00, 0 0 0 0.3rem #FFE066, 0 0.9rem 1.6rem rgba(20, 60, 120, 0.25); transform: translateY(-3px) scale(1.02); }
+.ks-track .ks-info b { color: #1E3A6B; }
+
+/* The first menu */
+.kart-menu { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-4); padding: var(--sp-5) var(--sp-7); }
+.km-sub { margin: 0 0 var(--sp-3); color: #2A4A7F; font: 700 clamp(1.4rem, 3.4vh, 2rem) var(--display); }
+.km-cards { display: flex; gap: var(--sp-5); justify-content: center; width: 100%; }
+.km-card { flex: 0 1 27rem; display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-5) var(--sp-4) var(--sp-4); text-align: center; border-radius: 2rem; background: #fff; border: 0.3rem solid var(--c); box-shadow: 0 0.5rem 0 color-mix(in srgb, var(--c) 55%, #1E3A6B), 0 1.1rem 2rem rgba(20, 60, 120, 0.22); transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out); }
+.km-card.focused { transform: translateY(-0.5rem) scale(1.05); box-shadow: 0 0.5rem 0 color-mix(in srgb, var(--c) 55%, #1E3A6B), 0 0 0 0.35rem #FFE066, 0 1.4rem 2.4rem rgba(20, 60, 120, 0.3); }
+.km-art { width: 100%; padding: var(--sp-3); border-radius: 1.25rem; background: linear-gradient(180deg, #E9F5FF, color-mix(in srgb, var(--c) 22%, #fff)); } .km-art svg { width: 100%; height: 9.5rem; display: block; }
+.km-card b { color: #1E3A6B; font: 600 clamp(1.75rem, 4vh, 2.5rem) var(--display); }
+.km-card span { color: #5A6E90; font: 700 clamp(1.05rem, 2.2vh, 1.4rem) / 1.3 var(--font); }
+
+/* Split-screen select seats: two across for 2, a 2x2 grid for 3 and 4 */
+.ks-seats.n3, .ks-seats.n4 { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(0, 1fr); gap: var(--sp-3) var(--sp-4); }
+.ks-seats.n3 .ks-seat, .ks-seats.n4 .ks-seat { max-width: none; display: grid; grid-template-columns: 1fr 1.15fr; grid-template-rows: auto 1fr auto; grid-template-areas: 'top top' 'stage choices' 'hint hint'; column-gap: var(--sp-3); row-gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); }
+.ks-seats.n3 .ks-top, .ks-seats.n4 .ks-top { grid-area: top; } .ks-seats.n3 .ks-stage, .ks-seats.n4 .ks-stage { grid-area: stage; min-height: 0; } .ks-seats.n3 .ks-choices, .ks-seats.n4 .ks-choices { grid-area: choices; gap: var(--sp-2); justify-content: center; } .ks-seats.n3 .ks-hint, .ks-seats.n4 .ks-hint { grid-area: hint; font-size: 1rem; }
+.ks-seats.n3 .ks-stats, .ks-seats.n4 .ks-stats { display: none; } .ks-seats.n3 .ks-name, .ks-seats.n4 .ks-name { font-size: 1.5rem; } .ks-seats.n3 .ks-tagline, .ks-seats.n4 .ks-tagline { display: none; }
+.ks-seats.n3 .ks-kart, .ks-seats.n4 .ks-kart { padding: 0.3rem 0.2rem; font-size: 1rem; }
+.ks-seats.n3 .ks-back, .ks-seats.n4 .ks-back { display: none; }
+.ks-seats.n2 .ks-seat { max-width: none; }
+
+/* HUD: the cup name under the clock */
+.kart-cup { left: 50%; top: 3.6rem; transform: translateX(-50%); font-size: 1.05rem; }
+.kart-cup:empty { display: none; }
+
+/* split screen: a small map in the corner of each view (2 and 4 players), the big one only for 3 */
+.kart-hud .kart-minimap.sm { position: absolute; right: 1.25rem; top: 1rem; left: auto; bottom: auto; transform: none; width: 7.5rem; height: 7.5rem; border-radius: 1.25rem; opacity: 1; }
+.kart.views-2 .kart-minimap:not(.sm), .kart.views-4 .kart-minimap:not(.sm) { display: none; }
+.kart.views-3 { background: linear-gradient(135deg, #2B4378, #162447); }

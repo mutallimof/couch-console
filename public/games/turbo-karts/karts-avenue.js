@@ -1,4 +1,4 @@
-// Neon Avenue: a night street with glowing shop signs (all names made up), towers with lit windows,
+// Sunset Avenue: a golden-hour street with flat toy shop signs (all names made up), pastel buildings,
 // a big start/finish arch with chaser lights, painted starting boxes, crosswalks, street lamps,
 // striped barriers and traffic cones. Built from simple shapes and canvas pictures, no downloads.
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -26,22 +26,22 @@ export function buildAvenue(THREE, def, path, group) {
   const canvas = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
   const rounded = (x, X, Y, W, H, r) => { x.beginPath(); x.roundRect(X, Y, W, H, r); };
   const signTexture = ([text, a, b]) => canvas(512, 192, (x, w, h) => {
-    x.fillStyle = '#12102A'; rounded(x, 6, 6, w - 12, h - 12, 34); x.fill();
-    x.lineWidth = 12; x.strokeStyle = a; x.shadowColor = a; x.shadowBlur = 22; rounded(x, 14, 14, w - 28, h - 28, 28); x.stroke();
-    x.font = '900 82px Fredoka, Nunito, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillStyle = a; rounded(x, 6, 6, w - 12, h - 12, 40); x.fill();                       // a flat, friendly shop sign
+    x.lineWidth = 10; x.strokeStyle = 'rgba(255,255,255,0.85)'; rounded(x, 18, 18, w - 36, h - 36, 30); x.stroke();
+    x.font = '900 80px Fredoka, Nunito, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
     const words = text.split(' ');
-    words.forEach((word, i) => { x.fillStyle = i ? b : '#ffffff'; x.shadowColor = i ? b : a; x.shadowBlur = 20; x.fillText(word, w / 2, h / 2 + (i - (words.length - 1) / 2) * 76 * (words.length > 1 ? 0.95 : 0), w - 60); });
+    words.forEach((word, i) => { x.fillStyle = i ? '#FFFFFF' : b; x.fillText(word, w / 2, h / 2 + (i - (words.length - 1) / 2) * 76 * (words.length > 1 ? 0.95 : 0), w - 70); });
   });
+  // a pastel front with a few big windows (calm: the old random lit squares looked like noise)
   const windowTexture = (tint) => canvas(128, 256, (x, w, h) => {
-    x.fillStyle = '#0E1130'; x.fillRect(0, 0, w, h);
-    for (let y = 8; y < h - 8; y += 20) for (let xx = 8; xx < w - 8; xx += 20) {
-      x.fillStyle = Math.random() < 0.6 ? tint[Math.floor(Math.random() * tint.length)] : '#1B1F4D';
-      x.fillRect(xx, y, 12, 12);
-    }
+    x.fillStyle = tint[0]; x.fillRect(0, 0, w, h);
+    x.fillStyle = 'rgba(255,255,255,0.6)';
+    for (let y = 22; y < h - 30; y += 76) for (let xx = 18; xx < w - 20; xx += 56) { x.beginPath(); x.roundRect(xx, y, 38, 50, 10); x.fill(); }
+    x.fillStyle = tint[1]; x.fillRect(0, h - 14, w, 14);
   });
 
   // ---- buildings along both sides ----
-  const TINTS = [['#FFE14D', '#FFB020', '#FFF3B0'], ['#38E8FF', '#8EEBFF', '#FFE14D'], ['#FF4D9D', '#FFB0D5', '#FFE14D'], ['#B26BFF', '#D9B8FF', '#7DF9C1'], ['#7DF9C1', '#FFE14D', '#38E8FF']];
+  const TINTS = [['#FFB38A', '#F08A5C'], ['#8ED7C9', '#5FBFAE'], ['#FF9EB5', '#F0708F'], ['#A9B8FF', '#7F92F0'], ['#FFE08A', '#F2C14E']];
   const variants = TINTS.map((t) => ({ tex: windowTexture(t), geos: [] }));
   const near = (x, z, d) => { for (let i = 0; i < SAMPLES; i += 3) if ((pts[i].x - x) ** 2 + (pts[i].z - z) ** 2 < d * d) return true; return false; };
   const lots = [];
@@ -66,16 +66,11 @@ export function buildAvenue(THREE, def, path, group) {
   for (const v of variants) {
     if (!v.geos.length) continue;
     v.tex.wrapS = v.tex.wrapT = THREE.RepeatWrapping;
-    const m = new THREE.Mesh(mergeGeometries(v.geos), new THREE.MeshStandardMaterial({ map: v.tex, emissive: '#ffffff', emissiveMap: v.tex, emissiveIntensity: 1.1, roughness: 0.9, color: '#9AA0D0' }));
+    const m = new THREE.Mesh(mergeGeometries(v.geos), new THREE.MeshStandardMaterial({ map: v.tex, roughness: 0.85, flatShading: true }));
     root.add(m);
   }
-  // roof lights: little red beacons
-  const beacons = new THREE.InstancedMesh(new THREE.SphereGeometry(0.7, 8, 6), new THREE.MeshBasicMaterial({ color: bright('#FF3B3B', 2.5) }), lots.length);
-  lots.forEach((l, i) => beacons.setMatrixAt(i, new THREE.Matrix4().makeTranslation(l.x, l.h + 0.8, l.z)));
-  root.add(beacons);
-
-  // ---- neon signs on the walls facing the street ----
-  const signMats = SIGNS.map((s) => new THREE.MeshBasicMaterial({ map: signTexture(s), color: bright('#ffffff', 1.35), toneMapped: false, side: THREE.DoubleSide }));
+  // ---- shop signs on the walls facing the street ----
+  const signMats = SIGNS.map((s) => new THREE.MeshBasicMaterial({ map: signTexture(s), side: THREE.DoubleSide }));
   lots.filter((_, i) => i % 2 === 0).forEach((l, n) => {
     const k = n % SIGNS.length, w = rnd(11, 15);
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.375), signMats[k]);
@@ -83,14 +78,13 @@ export function buildAvenue(THREE, def, path, group) {
     sign.position.set(l.x + toRoad.x * (l.d / 2 + 0.3), rnd(7, Math.min(24, l.h - 4)), l.z + toRoad.z * (l.d / 2 + 0.3));
     sign.lookAt(sign.position.clone().add(toRoad));
     root.add(sign);
-    animated.push({ mat: signMats[k], flicker: Math.random() * 10 });
   });
 
   // ---- start / finish: a big lit arch with chaser lights, the checkered line, painted starting boxes ----
   const start = at(0), yaw = yawOf(start);
   const arch = new THREE.Group();
   arch.position.set(start.x, start.y, start.z); arch.rotation.y = yaw;
-  const steel = new THREE.MeshStandardMaterial({ color: '#2E3F9E', roughness: 0.4, metalness: 0.3 });
+  const steel = new THREE.MeshStandardMaterial({ color: '#3B6FE0', roughness: 0.35, metalness: 0.1 });
   const half = ROAD_HALF + 3, top = 11;
   for (const s of [-1, 1]) {
     const post = new THREE.Mesh(new THREE.BoxGeometry(1.8, top, 1.8), steel); post.position.set(s * half, top / 2, 0); arch.add(post);
@@ -98,13 +92,13 @@ export function buildAvenue(THREE, def, path, group) {
   }
   const board = new THREE.Mesh(new THREE.BoxGeometry(half * 2 + 3, 4.6, 1.4), steel); board.position.set(0, top - 1, 0); arch.add(board);
   const bannerTex = canvas(1536, 205, (x, w, h) => {
-    x.fillStyle = '#12102A'; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#FF8A5C'; x.fillRect(0, 0, w, h);
     x.font = '900 128px Fredoka, Nunito, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    x.shadowColor = '#FF4D9D'; x.shadowBlur = 40; x.fillStyle = '#FF7AB8'; x.fillText('NEON AVENUE', w / 2, h / 2 + 6);
-    x.shadowBlur = 0; x.fillStyle = '#fff'; x.fillText('NEON AVENUE', w / 2, h / 2 + 6);
+    x.fillStyle = '#FF6B9A'; x.fillText('SUNSET AVENUE', w / 2 + 4, h / 2 + 10);
+    x.fillStyle = '#fff'; x.fillText('SUNSET AVENUE', w / 2, h / 2 + 6);
   });
   for (const side of [1, -1]) {
-    const banner = new THREE.Mesh(new THREE.PlaneGeometry(half * 2 + 1, 3.6), new THREE.MeshBasicMaterial({ map: bannerTex, toneMapped: false, color: bright('#ffffff', 1.4) }));
+    const banner = new THREE.Mesh(new THREE.PlaneGeometry(half * 2 + 1, 3.6), new THREE.MeshBasicMaterial({ map: bannerTex }));
     banner.position.set(0, top - 1, side * 0.75); if (side < 0) banner.rotation.y = Math.PI; arch.add(banner);
   }
   // chaser bulbs round the board's frame
@@ -160,8 +154,8 @@ export function buildAvenue(THREE, def, path, group) {
   for (let i = 0; i < SAMPLES; i += 26) for (const side of [-1, 1]) {
     const p = pts[i].clone().addScaledVector(nor[i], side * (WALL + 2.2)); lampSpots.push({ p, side, i });
   }
-  const pole = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.3, 9, 8), new THREE.MeshStandardMaterial({ color: '#39406A', roughness: 0.6 }), lampSpots.length);
-  const head = new THREE.InstancedMesh(new THREE.SphereGeometry(0.85, 12, 8), new THREE.MeshBasicMaterial({ color: bright('#FFE2A0', 3), toneMapped: false }), lampSpots.length);
+  const pole = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.3, 9, 8), new THREE.MeshStandardMaterial({ color: '#5B6FA8', roughness: 0.5 }), lampSpots.length);
+  const head = new THREE.InstancedMesh(new THREE.SphereGeometry(0.85, 12, 8), new THREE.MeshBasicMaterial({ color: '#FFF1B8' }), lampSpots.length);
   lampSpots.forEach(({ p, side, i }, n) => {
     pole.setMatrixAt(n, new THREE.Matrix4().makeTranslation(p.x, p.y + 4.5, p.z));
     head.setMatrixAt(n, new THREE.Matrix4().makeTranslation(p.x - nor[i].x * side * 0.7, p.y + 9.2, p.z - nor[i].z * side * 0.7));

@@ -30,3 +30,10 @@ Every deletion, with the proof that it was unused. Nothing here is needed by the
 
 ## Added
 `docs/GUIDE.md` (the old README, updated), `docs/TEST-TOMORROW.md`, new `README.md`, final `docs/screenshots/`.
+
+
+## Part 5 of the fix-and-finish run (Turbo Karts pilots and toy karts)
+Deleted (the racers and karts are modelled in code now; each name was searched in `public/`, `scripts/`, `tests/` and `server/`: no reference left, full suite green):
+- `public/assets/cast/{barbarian,mage,rogue,rogue-hooded,skeleton-mage,skeleton-rogue,skeleton-warrior}.glb` (only `knight.glb` stays: the home hero icon)
+- `public/assets/car-kit/Models/GLB format/vehicle-{speedster,vintage-racer,drag-racer,racer}.glb`
+- `scripts/build-cast.mjs` (it only built the cast files above)

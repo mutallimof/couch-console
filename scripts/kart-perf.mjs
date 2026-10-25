@@ -25,11 +25,12 @@ try {
   tv.on('pageerror', (e) => console.log('page error:', String(e).slice(0, 160)));
   await tv.goto(`${B}/console.html?noboot=1&fx=${fx}&kartdebug=1&perf=1&track=${track}`);
   await tv.waitForFunction(() => /^[A-Z]{4}$/.test(document.getElementById('room-code').textContent));
-  await tv.click('#use-mouse');
+  const multi = Number(players) > 1;
+  if (!multi) await tv.click('#use-mouse'); // (one player: the mouse stands in for a phone; more players use real phones)
   // more phones when asked: the extra players join through the console's own test hook (real sockets, no UI)
   const room = await tv.textContent('#room-code');
   const phones = [];
-  for (let i = 1; i < Number(players); i++) {
+  for (let i = multi ? 0 : 1; i < Number(players); i++) {
     const p = await (await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })).newPage();
     await p.addInitScript((n) => localStorage.setItem('couch.profile', JSON.stringify({ name: `P${n}`, emoji: '🦊', role: 'player' })), i + 1);
     await p.goto(`${B}/remote.html?room=${room}`);
@@ -37,6 +38,8 @@ try {
     phones.push(p);
   }
   await tv.waitForFunction(() => document.querySelector('.menu [data-focus="turbo-karts"]'));
+  const press = (b) => phones[0].evaluate((bt) => { const el = document.querySelector(`[data-button="${bt}"]`); el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); }, b);
+  if (multi) { await phones[0].locator('#start-btn').tap().catch(() => {}); await phones[0].evaluate(() => { document.getElementById('motion-msg').hidden = true; }); await press('A'); await tv.waitForTimeout(1500); if (await tv.waitForSelector('.picker:not([hidden])', { timeout: 8000 }).then(() => true, () => false)) await press('A'); } else {
   const hero = await tv.evaluate(() => { const r = document.querySelector('.menu [data-focus="turbo-karts"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
   await tv.mouse.move(hero.x - 4, hero.y - 4); await tv.mouse.move(hero.x, hero.y, { steps: 3 }); await tv.mouse.click(hero.x, hero.y);
   // (with one phone there is no mode picker: the game starts as "solo" by itself)
@@ -44,6 +47,7 @@ try {
     const modeIdx = Number(players) > 1 ? 0 : 2; // versus / solo (the order in turbo-karts.js: versus, coop, solo)
     const m = await tv.evaluate((i) => { const r = document.querySelectorAll('.picker [data-mode]')[i].getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, modeIdx);
     await tv.mouse.move(m.x, m.y); await tv.mouse.click(m.x, m.y);
+  }
   }
   await tv.waitForFunction(() => window.__kart?.race, null, { timeout: 180000 });
   await tv.evaluate(() => { window.__kart.auto = true; });

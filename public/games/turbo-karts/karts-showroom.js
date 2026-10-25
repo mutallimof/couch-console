@@ -33,7 +33,7 @@ export function createShowroom(assets) {
   scene.add(podium);
 
   let ride = null, key2 = '';
-  let t = 0, cheer = 0, spin = 0; // cheer > 0: the kart hops for joy
+  let t = 0, cheer = 0, spin = 0, calm = 0; // cheer > 0: the kart hops for joy
 
   const clear = (obj) => obj?.parent?.remove(obj);
 
@@ -51,8 +51,9 @@ export function createShowroom(assets) {
       clear(ride?.root);
       ride = makeRacer(character, kart, color, assets);
       ride.root.rotation.y = angle;
-      ride.root.scale.setScalar(1.2);
+      ride.root.scale.setScalar(0.82);
       ride.seatY = ride.driver.position.y;
+      ride.anim.play('idle');
       // only the kart and driver here: no shield bubble, boost flame or drift sparks
       for (const fx of [ride.shield, ride.flame, ride.marker, ride.glider, ...ride.sparks]) fx.visible = false;
       podium.add(ride.root);
@@ -61,12 +62,14 @@ export function createShowroom(assets) {
     celebrate(kind) {
       cheer = kind === 'ready' ? 1.3 : 0.6;
       spin = kind === 'ready' ? Math.PI * 2 : 0;
-      ride?.anim?.play(kind === 'ready' ? 'Yes' : 'Wave');
+      ride?.anim?.play(kind === 'ready' ? 'cheer' : 'wave');
+      calm = kind === 'ready' ? 2.6 : 1.8; // then back to looking around
     },
     update(dt) {
       t += dt;
       if (!ride) return;
       cheer = Math.max(0, cheer - dt);
+      if (calm > 0 && (calm -= dt) <= 0) ride.anim.play('idle');
       const hop = cheer > 0 ? Math.abs(Math.sin(cheer * 4.2)) * 0.45 : 0;
       const turn = dt * 0.5 + (spin > 0 ? Math.min(spin, dt * 5.5) : 0);
       spin = Math.max(0, spin - dt * 5.5);

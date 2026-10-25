@@ -40,7 +40,7 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Part 2 pointer + D-pad everywhere (console/ui-pointer.js, api.actions, data-ui/data-key, sweep test): done
 - Part 3 shared viewer (shared/viewer.js, viewer-hub, phone zoom keys, smart-crop, viewer.e2e test): done
 - Part 4 Juicy Slash Easy/Normal/Hard, hearts, grace; Alien Strike softer: done
-- Part 5 Turbo Karts perf + art + split screen: todo
+- Part 5 Turbo Karts (warm-up before the countdown, lighter split screen, bright toy tracks, helmeted pilots + toy karts, cups, 2-4 players): done
 - Part 6 News channel: todo
 - Part 7 runs anywhere + README: todo
 - Part 8 camera games: todo

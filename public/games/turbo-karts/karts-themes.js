@@ -19,17 +19,17 @@ export const WORLD = {
       colors: ['#FFFFFF', '#F1F7FD', '#E2EDF8'], low: '#E8F1FA', slope: '#7C8DA6', rockLine: 0.62, patches: '#CFE0F2' },
   },
   city: {
-    sky: { zenith: '#070B22', mid: '#241B58', horizon: '#4A2F7C', cloud: '#5B4A99', cloudShade: '#2E2566', cloudAmt: 0.22, sun: '#A9B8FF', night: true },
+    sky: { zenith: '#3F8FE8', mid: '#86C3F5', horizon: '#E6F3FF', cloud: '#FFFFFF', cloudShade: '#D3E5F7', cloudAmt: 0.4, sun: '#FFF4D0' },
     terrain: { apron: 2.5, blend: 8, profile: 'smooth', hillAmp: 0, hillFreq: 0.01, hillStart: 100, hillEnd: 300, bump: 0.0, flatY: -0.45, skyline: true,
-      colors: ['#1D2145', '#242850', '#191C3C'], low: '#161936', slope: '#2C2F58', patches: '#2B3066' },
+      colors: ['#C6DDB0', '#BCD6A4', '#D0E4BA'], low: '#B5D09C', slope: '#9CA9B8', patches: '#D8EAC4' },
   },
   avenue: {
-    sky: { zenith: '#080D2A', mid: '#2A1B5E', horizon: '#53307F', cloud: '#5B4A99', cloudShade: '#2E2566', cloudAmt: 0.2, sun: '#A9B8FF', night: true },
+    sky: { zenith: '#5A8FE6', mid: '#F2B0A0', horizon: '#FFE2B8', cloud: '#FFF3E4', cloudShade: '#F1CDBF', cloudAmt: 0.36, sun: '#FFE9B8' },
     terrain: { apron: 2.5, blend: 8, profile: 'smooth', hillAmp: 0, hillFreq: 0.01, hillStart: 100, hillEnd: 300, bump: 0.0, flatY: -0.45, skyline: true,
-      colors: ['#1A1D40', '#212550', '#171A38'], low: '#14172F', slope: '#2C2F58', patches: '#2B3066' },
+      colors: ['#E8D8BA', '#E0CFAE', '#EFE0C4'], low: '#D8C7A6', slope: '#B8A58A', patches: '#F2E6CC' },
   },
   stadium: {
-    sky: { zenith: '#070B22', mid: '#1C2254', horizon: '#3A3170', cloud: '#5B4A99', cloudShade: '#2E2566', cloudAmt: 0.18, sun: '#A9B8FF', night: true },
+    sky: { zenith: '#4A86E0', mid: '#9CC8F2', horizon: '#F6E3CC', cloud: '#FFFFFF', cloudShade: '#D9E4F2', cloudAmt: 0.34, sun: '#FFF1CE' },
     terrain: {},
   },
   pirate: {

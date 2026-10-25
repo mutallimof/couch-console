@@ -122,12 +122,17 @@ export async function createLook(THREE, renderer, scene, force = null) {
   let enabled = !!addons && force !== 'off';
   let low = 0, frames = 0, last = performance.now(), fps = 60;
   let bloomStrength = 0.4, exposure = 1.05, aoOn = true, cartoonOn = false, libBloom = 0.35;
+  // Split screen: every extra view costs a full effect chain, so the heavy parts shrink with the number of views.
+  //   1-2 views: 2x multisampling + ambient occlusion (if the setting is on) · 3-4 views: no multisampling (SMAA does the edges), no AO
+  let views = 1, quality = 0, basePixelRatio = renderer.getPixelRatio(); // quality: 0 full · 1 no AO · 2 smaller picture · 3 effects off
+  const aoActive = () => aoOn && views <= 2 && quality < 1;
+  const samplesFor = () => (views >= 3 && lib ? 0 : 2);
 
   function chain(i, w, h, camera) {
     let c = chains[i];
     if (!c) {
       // half-float (so bright things stay brighter than white until the end) and 4x multisampled
-      const target = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: 4 });
+      const target = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: samplesFor() });
       target.depthTexture = new THREE.DepthTexture(w, h); // (the outlines read it)
       target.depthTexture.type = THREE.UnsignedIntType;
       const composer = new addons.EffectComposer(renderer, target);
@@ -145,7 +150,7 @@ export async function createLook(THREE, renderer, scene, force = null) {
         ao.updateGtaoMaterial({ radius: 2.2, thickness: 1.1, distanceExponent: 1.5, samples: 8 });
         ao.updatePdMaterial({ radius: 4, samples: 8, depthPhi: 3, normalPhi: 3 });
         ao.blendIntensity = 0.6;
-        ao.enabled = aoOn;
+        ao.enabled = aoActive();
         composer.addPass(ao);
       }
       composer.addPass(bloom);
@@ -153,7 +158,7 @@ export async function createLook(THREE, renderer, scene, force = null) {
       final.uniforms.uExposure.value = exposure;
       final.uniforms.uToon.value = cartoonOn ? 1 : 0;
       composer.addPass(final);
-      c = chains[i] = { composer, pass, ao, edge, bloom, final, w: 0, h: 0, lib: null };
+      c = chains[i] = { composer, pass, ao, edge, bloom, final, w: 0, h: 0, pr: 0, lib: null };
       if (lib) {
         try {
           // our chain draws into its own buffer (not the screen); the library's chain shows that picture, adds bloom + grading, then SMAA
@@ -167,11 +172,12 @@ export async function createLook(THREE, renderer, scene, force = null) {
           lc.addPass(new lib.EffectPass(camera, show, glow, hue, bc));
           if (new URLSearchParams(location.search).get('pp') !== 'nosmaa') lc.addPass(new lib.EffectPass(camera, new lib.SMAAEffect({ searchImage: lib.searchImage, areaImage: lib.areaImage })));
           c.lib = { lc, show, glow };
-          bloom.strength = bloomStrength * 0.5;
+          bloom.enabled = false; // (the library's bloom does the glow: one bloom is enough, and much cheaper)
         } catch (err) { console.warn('postprocessing chain failed, using our own:', err.message); composer.renderToScreen = true; final.uniforms.uLinear.value = 0; lib = null; }
       }
     }
-    if (c.w !== w || c.h !== h) {
+    if (c.w !== w || c.h !== h || c.pr !== renderer.getPixelRatio()) {
+      c.pr = renderer.getPixelRatio();
       c.composer.setPixelRatio(renderer.getPixelRatio());
       c.composer.setSize(w, h);
       c.w = w; c.h = h;
@@ -188,13 +194,22 @@ export async function createLook(THREE, renderer, scene, force = null) {
   return {
     get enabled() { return enabled; },
     get fps() { return fps; },
+    get quality() { return quality; },
+    // How many split-screen views the race has (1-4): call before the first frame of a race. Rebuilds the effect chains.
+    configure({ views: n = 1, pixelRatio = renderer.getPixelRatio() } = {}) {
+      views = Math.max(1, Math.min(4, n)); quality = 0; low = 0; basePixelRatio = pixelRatio;
+      renderer.setPixelRatio(pixelRatio);
+      for (const c of chains) { c?.composer.dispose(); c?.lib?.lc.dispose(); }
+      chains.length = 0;
+      enabled = !!addons && force !== 'off';
+    },
     // Neon city wants more glow than a sunny park
     setTrack(def) {
       scene.environment?.dispose();
       scene.environment = environmentFor(def);
       bloomStrength = def.night ? 0.75 : 0.35;
-      libBloom = def.night ? 0.95 : 0.3;
-      for (const c of chains) if (c) { c.bloom.strength = c.lib ? bloomStrength * 0.5 : bloomStrength; if (c.lib) c.lib.glow.intensity = libBloom; }
+      libBloom = def.night ? 1.1 : 0.42;
+      for (const c of chains) if (c) { c.bloom.strength = bloomStrength; if (c.lib) c.lib.glow.intensity = libBloom; }
       exposure = def.lighting?.exposure ?? 1.05; // (a track can be exposed brighter or darker)
       renderer.toneMappingExposure = exposure;
       for (const c of chains) if (c) c.final.uniforms.uExposure.value = exposure;
@@ -224,8 +239,15 @@ export async function createLook(THREE, renderer, scene, force = null) {
       const now = performance.now();
       if (now - last >= 1000) { fps = Math.round((frames * 1000) / (now - last)); frames = 0; last = now; }
       if (!enabled || force === 'on') return;
+      // Too slow for a few seconds: first the soft shadows (AO) go, then the picture gets a little smaller, and only then the effects
       low = fps < LOW_FPS ? low + dt : 0;
-      if (low > LOW_FOR_S) { enabled = false; console.info('Turbo Karts: screen effects off (low frame rate)'); }
+      if (low > LOW_FOR_S) {
+        low = 0; quality += 1;
+        if (quality === 1) { for (const c of chains) if (c?.ao) c.ao.enabled = false; }
+        else if (quality === 2) renderer.setPixelRatio(Math.max(0.75, basePixelRatio * 0.75));
+        else { enabled = false; console.info('Turbo Karts: screen effects off (low frame rate)'); }
+        console.info(`Turbo Karts: quality step ${quality} (low frame rate)`);
+      }
     },
     setEnabled(on) { enabled = on && !!addons; low = 0; },
     // Ambient occlusion on/off (a bit heavier on slow laptops)
@@ -236,7 +258,7 @@ export async function createLook(THREE, renderer, scene, force = null) {
     },
     // Reflections from a real sky picture (an equirectangular HDRI) instead of the generated gradient
     setSkyTexture(tex) { scene.environment?.dispose(); scene.environment = pmrem.fromEquirectangular(tex).texture; },
-    setAO(on) { aoOn = on; for (const c of chains) if (c?.ao) c.ao.enabled = on; },
+    setAO(on) { aoOn = on; for (const c of chains) if (c?.ao) c.ao.enabled = aoActive(); },
     dispose() {
       for (const c of chains) { c?.composer.dispose(); c?.lib?.lc.dispose(); }
       chains.length = 0;

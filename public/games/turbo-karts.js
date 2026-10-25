@@ -4,7 +4,7 @@
 // Phones become the kart pad (remote/kart-pad.js, held sideways): ◀ LEFT / ▶ RIGHT (or tilt),
 //   GAS (A) · DRIFT (R) · ITEM (UP) · BRAKE (B). DRIFT and ITEM keep accelerating.
 // Flow: pick characters & karts → P1 picks a track → 3 laps with items and coins → results.
-// Modes: solo (you + 7 CPU) · versus (2 players, split screen) · co-op (team points vs the best 2 CPUs)
+// Modes: solo (you + 7 CPU) · versus (2-4 players, split screen) · co-op (team points vs the best 2 CPUs)
 // Race rules adapted from OpenWii's games/mario-kart (MIT, Copyright (c) 2026 Patrick Sun; see
 // THIRD_PARTY_NOTICES.md).
 import { colorFor } from '../shared/protocol.js';
@@ -24,6 +24,9 @@ import { KARTS, ITEM_ICONS } from './turbo-karts/karts-data.js';
 import { GP_CHARACTERS as CHARACTERS } from './turbo-karts/ow-kart/characters.js';
 import { setThree, makeRacer, makeItemMesh, makePortraits } from './turbo-karts/karts-models.js';
 import { createSelect } from './turbo-karts/karts-select.js';
+import { createKartMenu } from './turbo-karts/karts-menu.js';
+import { CUPS, CUP_POINTS, addRace } from './turbo-karts/karts-cups.js';
+import { viewRects, fovFor, hudZoom } from './turbo-karts/karts-layout.js';
 import { createShowroom, setShowroomThree } from './turbo-karts/karts-showroom.js';
 import { kartInput } from './turbo-karts/ow-kart/input.js';
 import { createRaceFx, makeExhaust, updateExhaust, TIER_COLORS } from './turbo-karts/karts-fx.js';
@@ -41,6 +44,7 @@ import { createSkids } from './turbo-karts/karts-skids.js';
 import { makeGem } from './turbo-karts/karts-items.js';
 
 const RACERS = 8;
+const MAX_HUMANS = 4; // up to four phones, split screen
 const POINTS = [15, 12, 10, 8, 6, 4, 2, 1]; // co-op points by finishing place
 const LAPS = 3;
 
@@ -56,9 +60,11 @@ let race = null;       // the ported rules (ow-kart/rules.js)
 let views = [];        // one per racer: { racer, mesh, kart, char, color, playerId, ... }
 let humans = [];       // the views of the human players
 let objectMeshes = new Map(); // item projectiles/slicks on the road: race object id -> mesh
+const itemPool = new Map();   // item kind -> unused meshes (made once, reused: no geometry or material is built mid-race)
 let boxMeshes = [], coinMeshes = [];
 let stopGraphics = null;
 let state, shown, overAt, paused = false, alive = 0, lastCount = 0;
+let menu = null, cup = null; // the first menu; the running cup: { def, index, table: Map, roster }
 let portraits, select, selection, look, fx, qfx, skids, podium = null; // qfx: the three.quarks particles (null if the library can't load)
 const showrooms = new Map(); // playerId -> 3D preview on the select screen (karts-showroom.js)
 const assets = new Map();    // loaded 3D models: path -> glTF (missing = use the code-built ones)
@@ -69,6 +75,27 @@ const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[
 // Our models face +z; the rules' heading has forward = (sin h, -cos h)
 const yawOf = (heading) => Math.PI - heading;
 
+// ---------- First menu: Single Race or a cup ----------
+
+function showMenu() {
+  state = 'menu'; overAt = null; cup = null;
+  api.setController('pointer');
+  clearRace();
+  select?.destroy(); select = null; menu?.destroy();
+  root.querySelectorAll('.kart-hud, .kart-results').forEach((e) => e.remove());
+  root.className = 'kart views-1 selecting';
+  minimap.hidden = true;
+  menu = createKartMenu({
+    root, sound: api.sound,
+    onPick: (id) => {
+      cup = id === 'race' ? null : { def: CUPS.find((c) => c.id === id), index: 0, table: new Map(), roster: null };
+      menu.destroy(); menu = null;
+      showSelect();
+    },
+    onExit: () => api.exit(),
+  });
+}
+
 // ---------- Select screen ----------
 
 function showSelect() {
@@ -78,23 +105,29 @@ function showSelect() {
   clearRace();
   root.querySelectorAll('.kart-hud, .kart-results').forEach((e) => e.remove());
   minimap.hidden = true;
-  const ids = api.players.map((p) => p.playerId).slice(0, api.mode === 'solo' ? 1 : 2);
-  root.classList.add('selecting');
+  const ids = api.players.map((p) => p.playerId).slice(0, api.mode === 'solo' ? 1 : MAX_HUMANS);
+  root.className = 'kart views-1 selecting';
   select = createSelect({
     root, portraits, previous: selection, sound: api.sound, tracks: ALL_TRACKS, characters: CHARACTERS,
     players: ids.map((id) => ({ playerId: id, color: colorFor(id) })),
+    trackFixed: cup ? ALL_TRACKS.findIndex((t) => t.id === cup.def.tracks[0]) : null, // (a cup has its own tracks)
     onDone: (sel) => { selection = sel; select = null; root.classList.remove('selecting'); startRace(); },
-    onExit: () => api.exit(),
+    onExit: () => showMenu(),
     onCelebrate: (playerId, kind) => showrooms.get(playerId)?.celebrate(kind),
   });
 }
 
 // ---------- Race setup ----------
 
+const ITEM_KINDS = ['slick', 'orb', 'seeker', 'comet'];
+const takeItem = (kind) => itemPool.get(kind)?.pop() || makeItemMesh(kind);
+function giveItem(kind, m) { scene.remove(m); if (!itemPool.has(kind)) itemPool.set(kind, []); itemPool.get(kind).push(m); }
+
+
 function clearRace() {
   podium?.dispose(); podium = null;
   for (const v of views) { scene.remove(v.mesh.root, v.mesh.shadow); if (v.mesh.q) qfx?.detach(v.mesh.q); }
-  for (const m of objectMeshes.values()) scene.remove(m);
+  for (const m of objectMeshes.values()) giveItem(m.userData.kind, m);
   objectMeshes.clear();
   for (const m of [...boxMeshes, ...coinMeshes]) scene.remove(m);
   boxMeshes = []; coinMeshes = [];
@@ -131,6 +164,7 @@ function applyLighting(def) {
 }
 
 async function startRace() {
+  const token = alive;
   clearRace();
   const def = ALL_TRACKS[selection.track];
   if (track?.def !== def) {
@@ -148,14 +182,13 @@ async function startRace() {
       const model = stadiumTrack.model, before = new Set(scene.children);
       const [{ buildWorld }, { addAtmosphere }] = await Promise.all([import('./turbo-karts/ow-kart/stadium/world.js'), import('./turbo-karts/ow-kart/stadium/atmosphere.js')]);
       const world = buildWorld(scene);
-      addAtmosphere(scene);
+      if (def.night) addAtmosphere(scene); // (the night dome and searchlights; the day tracks use the stylized sky)
       const group = new THREE.Group();
       for (const c of [...scene.children]) if (!before.has(c)) group.add(c);
       scene.add(group);
       track = { def, group, model, world, mixers: [], pts: model.samples };
       scene.fog = new THREE.FogExp2(...def.lighting.fog);
-      const { createStadiumLights } = await import('./turbo-karts/ow-kart/stadium/lighting.js');
-      track.floodlights = createStadiumLights(THREE, scene);
+      if (def.night) track.floodlights = (await import('./turbo-karts/ow-kart/stadium/lighting.js')).createStadiumLights(THREE, scene); // (five spot lights: only for a night race)
       track.sky = buildSky(THREE, def, track.group, { sunDir: SUN_DIR });
     } else {
       const model = createTrackModel(def);
@@ -174,10 +207,12 @@ async function startRace() {
   const T = track.model;
   // Humans use their picks; the computer drivers take other characters and random karts
   const taken = new Set(selection.picks.map((p) => p.char));
-  const cpuChars = shuffle(CHARACTERS.map((_, i) => i).filter((i) => !taken.has(i)));
+  // (in a cup the same computer drivers race all four races, so the table makes sense)
+  const cpu = cup?.roster || shuffle(CHARACTERS.map((_, i) => i).filter((i) => !taken.has(i))).slice(0, RACERS - selection.picks.length).map((ci) => ({ ci, ki: Math.floor(Math.random() * KARTS.length) }));
+  if (cup) cup.roster = cpu;
   const list = [
     ...selection.picks.map((p) => ({ playerId: p.playerId, char: CHARACTERS[p.char], kart: KARTS[p.kart], color: colorFor(p.playerId) })),
-    ...cpuChars.slice(0, RACERS - selection.picks.length).map((ci) => ({ playerId: null, char: CHARACTERS[ci], kart: KARTS[Math.floor(Math.random() * KARTS.length)] })),
+    ...cpu.map(({ ci, ki }) => ({ playerId: null, char: CHARACTERS[ci], kart: KARTS[ki] })),
   ];
   race = new Race({ track: T, characters: list.map((k) => k.char), karts: list.map((k) => k.kart), humans: selection.picks.length, laps: LAPS, burnout: false, seed: (Math.random() * 1e9) | 0, onEvent: onRaceEvent });
   views = race.racers.map((racer, i) => {
@@ -187,11 +222,12 @@ async function startRace() {
     mesh.flame.visible = false; mesh.sparks.forEach((sp) => { sp.visible = false; });
     mesh.exhaust = makeExhaust(THREE);
     mesh.body.add(mesh.exhaust);
-    mesh.q = qfx?.attach(mesh.body) || null;
+    mesh.q = qfx?.attach(mesh.body, { lite: !k.playerId }) || null;
     scene.add(mesh.root, mesh.shadow);
     return { racer, mesh, kart: k.kart, char: k.char, playerId: k.playerId, color: k.color || color, fxKart: {}, bounce: null };
   });
   humans = views.filter((v) => v.playerId);
+  views.forEach((v) => v.mesh.setDetail?.(humans.length >= 3)); // (3-4 views: no outlines on the pilots, the views are small)
   humans.forEach((h) => {
     h.camera = new THREE.PerspectiveCamera(57, 1, 0.1, 1800);
     h.cam = null;
@@ -202,12 +238,59 @@ async function startRace() {
   race.boxes.forEach((b) => { const m = boxModel(); placeOnRoad(m, T, b.s, b.lateral, 1.4); m.userData.y0 = m.position.y; scene.add(m); boxMeshes.push(m); });
   race.coins.forEach((c) => { const m = coinModel(); placeOnRoad(m, T, c.s, c.lateral, 1.1); scene.add(m); coinMeshes.push(m); });
   input.clear();
-  state = 'countdown'; shown = 0; overAt = null; lastCount = 4;
-  race.start();
   api.setController('wheel');
-  minimap.hidden = false;
   buildHud();
+  minimap.hidden = humans.length === 2 || humans.length === 4; // (those layouts have a small map in every view)
   resize();
+  applyViewQuality(humans.length);
+  resize();
+  state = 'loading'; overAt = null;
+  await warmUp(token); // (every shader, particle and item is used once before the countdown, so nothing hitches mid-race)
+  if (token !== alive) return;
+  state = 'countdown'; shown = 0; lastCount = 4;
+  race.start();
+}
+
+// How heavy a split screen is allowed to be: fewer pixels and a smaller shadow map as the views multiply
+function applyViewQuality(n) {
+  const dpr = window.devicePixelRatio || 1, ratio = n <= 1 ? Math.min(dpr, 1.5) : n === 2 ? Math.min(dpr, 1.25) : 1;
+  look.configure({ views: n, pixelRatio: ratio });
+  const size = n <= 1 ? 2048 : n === 2 ? 1536 : 1024, half = n <= 2 ? 32 : 26;
+  if (sun.shadow.mapSize.x !== size) { sun.shadow.mapSize.set(size, size); sun.shadow.map?.dispose(); sun.shadow.map = null; }
+  Object.assign(sun.shadow.camera, { left: -half, right: half, top: half, bottom: -half }); sun.shadow.camera.updateProjectionMatrix();
+  renderer.shadowMap.needsUpdate = true;
+}
+
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+// Use everything once, out of the way, while "Getting the track ready" is showing: the effect chains, the particle systems, the item
+// meshes, the confetti. Compiling shaders and allocating buffers in the middle of a race is what makes a race stutter.
+async function warmUp(token) {
+  const el = document.createElement('div');
+  el.className = 'kart-loading';
+  el.innerHTML = '<div><div>Getting the track ready…</div><div class="kart-progress"><i style="--p:0.6"></i></div></div>';
+  root.append(el);
+  await nextFrame();
+  const h = humans[0];
+  const spots = [];
+  for (const kind of ITEM_KINDS) { const m = takeItem(kind); m.position.set(h.racer.x, h.racer.y + 1.5, h.racer.z); scene.add(m); spots.push([kind, m]); }
+  for (const v of views) {
+    if (!v.mesh.q) continue;
+    qfx.state(v.mesh.q, { speed: 30, boost: 1, drift: 2, air: false, offroad: true, color: tierColor, dustColor: dustTint, dustScale: 1, sparkScale: 1 }, 0);
+  }
+  qfx?.confetti(h.racer.x, h.racer.y - 400, h.racer.z);
+  fx.burst(h.racer.x, h.racer.y - 400, h.racer.z);
+  for (let i = 0; i < 4; i++) {
+    qfx?.update(0.03);
+    syncMeshes(performance.now(), 0.016);
+    humans.forEach((hu) => moveCamera(hu, 0.05));
+    render();
+    await nextFrame();
+    if (token !== alive) return;
+  }
+  for (const [kind, m] of spots) giveItem(kind, m);
+  for (const v of views) if (v.mesh.q) qfx.state(v.mesh.q, { speed: 0, boost: 0, drift: -1, air: false, offroad: false, color: tierColor, dustColor: dustTint, dustScale: 1, sparkScale: 1 }, 0);
+  qfx?.update(0.5);
+  el.remove();
 }
 
 function placeOnRoad(mesh, T, s, lateral, lift) {
@@ -283,7 +366,7 @@ function controls(h) {
 // ---------- Update ----------
 
 function update(dt) {
-  if (state === 'select' || state === 'loading' || !race) return;
+  if (state === 'select' || state === 'menu' || state === 'loading' || !race) return;
   race.update(dt, humans.map((h) => controls(h))); // (ITEM is used on the press: the rules look for the edge)
   shown += dt;
   if (state === 'countdown') {
@@ -344,7 +427,12 @@ function syncMeshes(t, dt) {
     // Drift sparks from the rear wheels (blue → orange → purple) and the boost flame (karts-fx.js)
     if (!paused) {
       Object.assign(v.fxKart, { x: r.x, y: r.y, z: r.z, heading: yawOf(r.heading), drifting: !!r.drift, air: r.gliding, v: r.speed });
-      if (m.q) qfx.state(m.q, { speed: r.speed, boost: r.boost, drift: r.drift ? r.tier : -1, air: r.gliding, offroad: !r.gliding && Math.abs(r.lateral) > T.roadHalf + 0.2, color: tierColor, dustColor: dustTint, dustScale: TUNE.effects.dust, sparkScale: TUNE.effects.sparks }, t / 1000);
+      if (m.q) {
+        const qs = v.qs || (v.qs = { color: tierColor }); // (one object per kart, refilled every frame: no garbage)
+        qs.speed = r.speed; qs.boost = r.boost; qs.drift = r.drift ? r.tier : -1; qs.air = r.gliding; qs.offroad = !r.gliding && Math.abs(r.lateral) > T.roadHalf + 0.2;
+        qs.dustColor = dustTint; qs.dustScale = TUNE.effects.dust; qs.sparkScale = TUNE.effects.sparks;
+        qfx.state(m.q, qs, t / 1000);
+      }
       else fx.drift(v.fxKart, r.drift ? r.tier : 0, dt);
     }
     updateExhaust(m.exhaust, r.boost, t / 1000);
@@ -367,7 +455,7 @@ function syncMeshes(t, dt) {
   for (const o of race.objects) {
     live.add(o.id);
     let m = objectMeshes.get(o.id);
-    if (!m) { m = makeItemMesh(['slick', 'orb', 'seeker', 'comet'].includes(o.type) ? o.type : 'orb'); scene.add(m); objectMeshes.set(o.id, m); }
+    if (!m) { const kind = ITEM_KINDS.includes(o.type) ? o.type : 'orb'; m = takeItem(kind); m.userData.kind = kind; scene.add(m); objectMeshes.set(o.id, m); }
     const p = T.surfaceAt(o.s, o.lateral);
     const striking = o.type === 'comet' && o.attack != null; // the meteor falls from the sky onto its target
     m.position.set(p.x, p.y + (o.type === 'slick' ? 0.08 : striking ? 1.2 + 38 * (1 - Math.min(1, o.attack / 0.85)) ** 2 : 1), p.z);
@@ -375,7 +463,7 @@ function syncMeshes(t, dt) {
     else if (o.type === 'orb') m.rotation.y += dt * 4;
     m.userData.spin?.(t / 1000);
   }
-  for (const [id, m] of objectMeshes) if (!live.has(id)) { scene.remove(m); objectMeshes.delete(id); }
+  for (const [id, m] of objectMeshes) if (!live.has(id)) { giveItem(m.userData.kind, m); objectMeshes.delete(id); }
 }
 
 // A spring that settles with a little overshoot: o[key] chases target, o[key + 'V'] is its speed
@@ -388,7 +476,8 @@ function spring(o, key, target, k, c, dt) {
 // OpenWii's camera smoothing (eye and aim follow quickly, the "up" direction a little slower), plus camera juice:
 // the field of view widens with speed and boosts, the camera slides sideways in a drift and drops back on a boost,
 // and it shakes a little on hits, landings and wall bumps. Every number is in TUNE.camera (F4 panel).
-const V3 = (o) => new THREE.Vector3(o.x, o.y, o.z);
+const tmpEye = [], tmpAim = [], tmpUp = [], tmpRight = [];
+const V3 = (o, slot) => { const v = slot[0] || (slot[0] = new THREE.Vector3()); return v.set(o.x, o.y, o.z); }; // (reused: the camera runs every frame)
 const shakeAt = (h, amount) => { if (h?.cs) h.cs.trauma = Math.min(1, Math.max(h.cs.trauma, amount)); };
 function moveCamera(h, dt) {
   const r = h.racer, C = TUNE.camera;
@@ -397,8 +486,9 @@ function moveCamera(h, dt) {
   cs.drift += ((r.drift && !r.gliding ? Math.sign(r.drift) : 0) - cs.drift) * (1 - Math.exp(-dt * 3.2));
   cs.pull += (boostK - cs.pull) * (1 - Math.exp(-dt * (boostK > cs.pull ? 7 : 2.2)));
   const d = chasePose(track.model, r, { back: C.back + C.boostPull * cs.pull + speedK * 0.6, height: C.height });
-  const eye = V3(d.eye), aim = V3(d.aim), up = V3(d.up);
-  const right = new THREE.Vector3(Math.cos(r.heading), 0, Math.sin(r.heading));
+  const eye = V3(d.eye, tmpEye), aim = V3(d.aim, tmpAim), up = V3(d.up, tmpUp);
+  const right = tmpRight[0] || (tmpRight[0] = new THREE.Vector3());
+  right.set(Math.cos(r.heading), 0, Math.sin(r.heading));
   eye.addScaledVector(right, -cs.drift * C.driftOffset);        // slide away from the turn: you see the way into it
   aim.addScaledVector(right, -cs.drift * C.driftOffset * 0.3);
   if (!h.cam) h.cam = { eye: eye.clone(), aim: aim.clone(), up: up.clone() };
@@ -420,7 +510,7 @@ function moveCamera(h, dt) {
     h.camera.position.y += (Math.sin(cs.t * 53 + 0.4) + Math.sin(cs.t * 29)) * 0.14 * sh;
     h.camera.rotateZ(Math.sin(cs.t * 47) * 0.05 * sh);
   }
-  const fov = C.fov + speedK * C.fovSpeed + cs.pull * C.fovBoost + (r.gliding ? 3 : 0);
+  const fov = fovFor(C.fov, h.camera.aspect) + speedK * C.fovSpeed + cs.pull * C.fovBoost + (r.gliding ? 3 : 0);
   h.camera.fov += (fov - h.camera.fov) * (1 - Math.exp(-dt * 6));
   h.camera.updateProjectionMatrix();
   h.hud?.style.setProperty('--speed', speedK.toFixed(2));
@@ -439,16 +529,17 @@ function render() {
   renderer.domElement.style.visibility = '';
   closePreviews();
   renderer.setClearColor(0x000000, 1);
+  const rects = viewRects(humans.length, W, H);
   humans.forEach((h, i) => {
-    const r = h.racer, vh = H / humans.length, y = H - vh * (i + 1);
+    const r = h.racer, v = rects[i];
     const off = track.def.lighting?.keyOffset || SUN_DIR.map((d) => d * 80);
     sun.position.set(r.x + off[0], r.y + off[1], r.z + off[2]);
     track.floodlights?.update(r.s);
     sun.target.position.set(r.x, r.y, r.z);
     sun.target.updateMatrixWorld();
-    h.camera.aspect = W / vh;
-    fx.setViewport(vh * renderer.getPixelRatio());
-    look.render(i, h.camera, 0, y, W, vh);
+    h.camera.aspect = v.w / v.h;
+    fx.setViewport(v.h * renderer.getPixelRatio());
+    look.render(i, h.camera, v.x, H - v.y - v.h, v.w, v.h);
   });
 }
 
@@ -494,28 +585,42 @@ function renderShowrooms() {
   }
 }
 
-function drawMinimap() {
-  if (minimap.hidden || !track) return;
-  const size = minimap.width, pad = 12;
+// The minimap: the road is drawn once into a picture; every frame only the dots move. One map for the whole screen, or (2 or 4 views)
+// a small one in the corner of each view; with 3 players the fourth quarter of the screen is the map.
+let mapBg = null; // { size, canvas } the road, drawn once per track and size
+function mapBackground(size) {
+  if (mapBg && mapBg.size === size && mapBg.track === track) return mapBg;
   if (!mapBox) {
     const xs = track.pts.map((p) => p.x), zs = track.pts.map((p) => p.z);
     mapBox = { minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
   }
-  const b = mapBox, sc = (size - pad * 2) / Math.max(b.maxX - b.minX, b.maxZ - b.minZ);
+  const b = mapBox, pad = size * 0.065, sc = (size - pad * 2) / Math.max(b.maxX - b.minX, b.maxZ - b.minZ);
   const ox = (size - (b.maxX - b.minX) * sc) / 2, oz = (size - (b.maxZ - b.minZ) * sc) / 2;
   const map = (x, z) => [ox + (x - b.minX) * sc, oz + (z - b.minZ) * sc];
-  mctx.clearRect(0, 0, size, size);
-  mctx.lineJoin = 'round'; mctx.lineCap = 'round';
-  const trace = () => { mctx.beginPath(); track.pts.forEach((p, i) => { const [x, y] = map(p.x, p.z); i ? mctx.lineTo(x, y) : mctx.moveTo(x, y); }); mctx.closePath(); mctx.stroke(); };
-  mctx.strokeStyle = 'rgba(8, 12, 28, 0.7)'; mctx.lineWidth = 11; trace();   // the road: a dark edge...
-  mctx.strokeStyle = '#E9EEFA'; mctx.lineWidth = 6.5; trace();              // ...a light middle
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  const trace = () => { g.beginPath(); track.pts.forEach((p, i) => { const [x, y] = map(p.x, p.z); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.stroke(); };
+  g.strokeStyle = 'rgba(8, 12, 28, 0.7)'; g.lineWidth = size * 0.06; trace();   // the road: a dark edge...
+  g.strokeStyle = '#E9EEFA'; g.lineWidth = size * 0.036; trace();               // ...a light middle
   const [sx, sy] = map(track.pts[0].x, track.pts[0].z); // the start line
-  mctx.fillStyle = '#fff'; mctx.fillRect(sx - 7, sy - 2, 14, 4);
-  for (const v of [...views].reverse()) {
-    const [x, y] = map(v.racer.x, v.racer.z);
-    mctx.fillStyle = v.color;
-    mctx.beginPath(); mctx.arc(x, y, v.playerId ? 7 : 4.2, 0, Math.PI * 2); mctx.fill();
-    if (v.playerId) { mctx.strokeStyle = '#fff'; mctx.lineWidth = 2.5; mctx.stroke(); }
+  g.fillStyle = '#fff'; g.fillRect(sx - size * 0.04, sy - size * 0.011, size * 0.08, size * 0.022);
+  return (mapBg = { size, track, canvas: c, map });
+}
+function drawMinimap() {
+  if (!track || !race) return;
+  const maps = humans.length >= 2 && humans.length !== 3 ? humans.map((h) => h.mini).filter(Boolean) : [minimap];
+  for (const cv of maps) {
+    if (cv.hidden) continue;
+    const size = cv.width, bg = mapBackground(size), g = cv.getContext('2d');
+    g.clearRect(0, 0, size, size);
+    g.drawImage(bg.canvas, 0, 0);
+    for (const v of [...views].reverse()) {
+      const [x, y] = bg.map(v.racer.x, v.racer.z);
+      g.fillStyle = v.color;
+      g.beginPath(); g.arc(x, y, size * (v.playerId ? 0.04 : 0.024), 0, Math.PI * 2); g.fill();
+      if (v.playerId) { g.strokeStyle = '#fff'; g.lineWidth = size * 0.014; g.stroke(); }
+    }
   }
 }
 
@@ -523,18 +628,21 @@ function drawMinimap() {
 
 function buildHud() {
   root.querySelectorAll('.kart-hud, .kart-results').forEach((e) => e.remove());
+  root.className = `kart views-${humans.length}`;
+  const rects = viewRects(humans.length, 1000, 1000); // (as shares of the screen)
   humans.forEach((h, i) => {
-    const el = document.createElement('div');
+    const el = document.createElement('div'), v = rects[i];
     el.className = 'kart-hud';
-    el.style.top = `${(i * 100) / humans.length}%`;
-    el.style.height = `${100 / humans.length}%`;
+    Object.assign(el.style, { left: `${v.x / 10}%`, top: `${v.y / 10}%`, width: `${v.w / 10}%`, height: `${v.h / 10}%` });
     el.style.setProperty('--player', h.color);
-    el.innerHTML = `<div class="kart-lap kh-pill"></div><div class="kart-time kh-pill"></div>
+    el.style.setProperty('--hud-zoom', String(hudZoom(humans.length)));
+    el.innerHTML = `<div class="kart-lap kh-pill"></div><div class="kart-time kh-pill"></div><div class="kart-cup kh-pill"></div>
       <div class="kart-itembox"><div class="kart-item"></div></div><div class="kart-coins kh-pill"></div><div class="kart-speed kh-pill"></div>
       <div class="kart-place-wrap"><img class="kart-face" src="${portraits[h.char.id]}" alt=""><div class="kart-place"></div></div>
-      <div class="kart-drift"></div><div class="kart-msg"></div>`;
+      <div class="kart-drift"></div><div class="kart-msg"></div>${humans.length === 2 || humans.length === 4 ? '<canvas class="kart-minimap sm" width="112" height="112"></canvas>' : ''}`;
     root.append(el);
     h.hud = el;
+    h.mini = el.querySelector('.kart-minimap');
   });
 }
 
@@ -549,6 +657,7 @@ function updateHud() {
     set('.kart-place', ordinal(race.position(r)).replace(/(\D+)$/, '<small>$1</small>'));
     set('.kart-lap', `<small>LAP</small><b>${clamp(r.lap, 1, LAPS)}/${LAPS}</b>`);
     set('.kart-time', formatTime(race.state === 'countdown' ? 0 : r.finishTime ?? race.raceTime));
+    set('.kart-cup', cup ? `${cup.def.name} · race ${cup.index + 1}/${cup.def.tracks.length}` : '');
     set('.kart-speed', `${Math.round(Math.abs(r.speed) * 3.4)}<small>km/h</small>`);
     set('.kart-coins', `<span class="coin"></span>${r.coins}`);
     const icon = r.roulette > 0 ? ITEM_ICONS[names[Math.floor(performance.now() / 90) % names.length]] : r.item ? ITEM_ICONS[r.item] : '';
@@ -570,30 +679,42 @@ function showResults() {
   overAt = performance.now();
   humans.forEach((h) => h.engine?.set(0, 0));
   const order = race.standings.map((r) => views[r.id]);
+  const lastRace = cup && cup.index >= cup.def.tracks.length - 1;
+  const totals = cup ? addRace(cup.table, order) : null; // (the cup table with this race added)
   let banner, color = '#5B6577';
-  if (api.mode === 'coop') {
+  if (cup && lastRace) {
+    const w = totals[0];
+    banner = `🏆 ${w.playerId ? `P${w.playerId}` : w.name} wins the ${cup.def.name}!`;
+    color = cup.def.color;
+    if (w.playerId) api.reportWin?.(w.playerId);
+  } else if (api.mode === 'coop') {
     const pts = (v) => POINTS[order.indexOf(v)];
     const team = humans.reduce((s, h) => s + pts(h), 0);
-    const rivals = order.filter((v) => !v.playerId).slice(0, 2).reduce((s, v) => s + pts(v), 0);
+    const rivals = order.filter((v) => !v.playerId).slice(0, humans.length).reduce((s, v) => s + pts(v), 0); // (as many rival drivers as there are humans)
     banner = team > rivals ? `Team wins! ${team} – ${rivals}` : team === rivals ? `Tie! ${team} – ${rivals}` : `Rivals win ${rivals} – ${team}`;
     if (team > rivals) color = '#27AE60';
   } else {
     const w = order[0];
     banner = `${w.playerId ? `P${w.playerId}` : w.char.name} wins!`;
-    if (w.playerId) { color = w.color; api.reportWin?.(w.playerId); }
+    if (w.playerId) { color = w.color; if (!cup) api.reportWin?.(w.playerId); }
   }
-  const rows = order.map((v, i) => `<tr><td>${ordinal(i + 1)}</td><td><img src="${portraits[v.char.id]}" alt="">${v.playerId ? `<b style="color:${v.color}">P${v.playerId}</b> ${personFace(v.playerId)}` : ''}${v.char.name}</td>
-    <td>${v.kart.name}</td><td>${formatTime(v.racer.finishTime)}</td>${api.mode === 'coop' ? `<td>${POINTS[i]} pts</td>` : ''}</tr>`).join('');
+  const cupPts = (v) => totals?.find((t) => t.charId === v.char.id && t.playerId === v.playerId)?.points ?? 0;
+  const rows = (lastRace ? totals.map((t) => order.find((v) => v.char.id === t.charId && v.playerId === t.playerId)) : order).map((v, i) => `<tr><td>${ordinal(i + 1)}</td><td><img src="${portraits[v.char.id]}" alt="">${v.playerId ? `<b style="color:${v.color}">P${v.playerId}</b> ${personFace(v.playerId)}` : ''}${v.char.name}</td>
+    <td>${v.kart.name}</td><td>${lastRace ? '' : formatTime(v.racer.finishTime)}</td>${cup ? `<td>${lastRace ? '' : `+${CUP_POINTS[order.indexOf(v)]} · `}<b>${cupPts(v)} pts</b></td>` : api.mode === 'coop' ? `<td>${POINTS[i]} pts</td>` : ''}</tr>`).join('');
   const el = document.createElement('div');
   el.className = 'kart-results';
-  const top3 = order.slice(0, 3);
-  const names = top3.map((v) => ({ name: v.playerId ? `P${v.playerId} ${party.personOfPlayer(v.playerId)?.name || ''}`.trim() : v.char.name, sub: formatTime(v.racer.finishTime), color: v.playerId ? v.color : v.char.color }));
+  const top = lastRace ? totals.slice(0, 3).map((t) => order.find((v) => v.char.id === t.charId && v.playerId === t.playerId)) : order.slice(0, 3);
+  const names = top.map((v) => ({ name: v.playerId ? `P${v.playerId} ${party.personOfPlayer(v.playerId)?.name || ''}`.trim() : v.char.name, sub: lastRace ? `${cupPts(v)} pts` : formatTime(v.racer.finishTime), color: v.playerId ? v.color : v.char.color }));
   const stage = [1, 0, 2].filter((i) => names[i]).map((i) => `<div class="kp-name" style="--c:${names[i].color}"><b>${names[i].name}</b><small>${names[i].sub}</small></div>`).join('');
+  const buttons = cup && !lastRace
+    ? '<button type="button" class="ui-btn primary" data-key="A">Next race ›</button><button type="button" class="ui-btn ghost" data-key="B">Quit the cup</button>'
+    : cup ? '<button type="button" class="ui-btn primary" data-key="A">Back to the menu</button>'
+    : '<button type="button" class="ui-btn primary" data-key="A">Race again</button><button type="button" class="ui-btn ghost" data-key="B">Change racers / track</button><button type="button" class="ui-btn ghost" data-key="HOME">Menu</button>';
   el.innerHTML = `<div class="kart-card"><h1 style="background:${color}">${banner}</h1><div class="kart-podium"><div class="kp-stage"></div><div class="kp-names">${stage}</div></div><table>${rows}</table>
-    <div class="ui-cta"><button type="button" class="ui-btn primary" data-key="A">Race again</button><button type="button" class="ui-btn ghost" data-key="B">Change racers / track</button><button type="button" class="ui-btn ghost" data-key="HOME">Menu</button></div></div>`;
+    <div class="ui-cta">${buttons}</div></div>`;
   root.append(el);
   podium?.dispose();
-  podium = createPodium(THREE, assets, top3.map((v) => ({ character: v.char, color: v.playerId ? v.color : v.char.color })));
+  podium = createPodium(THREE, assets, top.map((v) => ({ character: v.char, color: v.playerId ? v.color : v.char.color })));
   el.querySelector('.kp-stage').append(podium.canvas);
   podium.names = [...el.querySelectorAll('.kp-name')];
   setTimeout(() => { if (el.isConnected) confetti(el); }, 1400); // confetti falls over the card (GSAP)
@@ -653,6 +774,7 @@ function inputFor(playerId) {
 
 function onButton(e) {
   const { playerId, button, state: s } = e;
+  if (state === 'menu') return menu?.onButton(e);
   if (state === 'select') return select?.onButton(e);
   const c = inputFor(playerId), down = s === 'down';
   if (button === 'A') c.gas = down;
@@ -662,8 +784,14 @@ function onButton(e) {
   if (button === 'LEFT') c.left = down;
   if (button === 'RIGHT') c.right = down;
   if (!down || !overAt || performance.now() - overAt < 1500) return;
-  if (button === 'A') { root.querySelector('.kart-results')?.remove(); startRace(); api.sound.play('select'); }
-  else if (button === 'B' && playerId === humans[0]?.playerId) { root.querySelector('.kart-results')?.remove(); showSelect(); }
+  if (button === 'A') {
+    root.querySelector('.kart-results')?.remove(); api.sound.play('select');
+    if (!cup) return startRace();
+    if (cup.index >= cup.def.tracks.length - 1) return showMenu(); // the cup is over
+    cup.index += 1; selection.track = ALL_TRACKS.findIndex((t) => t.id === cup.def.tracks[cup.index]); // next race of the cup
+    startRace();
+  } else if (button === 'B' && playerId === humans[0]?.playerId) { root.querySelector('.kart-results')?.remove(); if (cup) showMenu(); else showSelect(); }
+  else if (button === 'HOME') api.exit();
 }
 
 function resize() {
@@ -726,7 +854,7 @@ async function init(token) {
   resize();
   api.onButton(onButton);
   api.onWheel(({ playerId, steer }) => { inputFor(playerId).steer = steer; });
-  showSelect();
+  showMenu();
   // Test hooks for screenshots and checks: ?track=<id> skips the select screen; ?kartdebug=1 adds window.__kart
   const qs = new URLSearchParams(location.search);
   if (qs.get('kartdebug')) {
@@ -741,9 +869,9 @@ async function init(token) {
   }
   const want = ALL_TRACKS.findIndex((t) => t.id === qs.get('track'));
   if (want >= 0) {
-    const ids = api.players.map((p) => p.playerId).slice(0, api.mode === 'solo' ? 1 : 2);
-    selection = { track: want, picks: ids.map((id, n) => ({ playerId: id, char: n * 3, kart: 1 })) };
-    select?.destroy(); select = null; root.classList.remove('selecting');
+    const ids = api.players.map((p) => p.playerId).slice(0, api.mode === 'solo' ? 1 : MAX_HUMANS);
+    selection = { track: want, picks: ids.map((id, n) => ({ playerId: id, char: (n * 3) % CHARACTERS.length, kart: 1 })) };
+    menu?.destroy(); menu = null; select?.destroy(); select = null; root.classList.remove('selecting');
     startRace();
   }
   lastT = null;
@@ -758,12 +886,12 @@ export default {
   color: '#E8590C',
   icon: ICON,
   minPlayers: 1,
-  maxPlayers: 2,
+  maxPlayers: MAX_HUMANS,
   modes: ['versus', 'coop', 'solo'],
   mount(container, gameApi) {
     api = gameApi;
     root = document.createElement('div');
-    root.className = 'kart';
+    root.className = 'kart views-1';
     root.innerHTML = '<div class="kart-loading">Loading…</div><canvas class="kart-minimap" width="180" height="180" hidden></canvas>';
     container.append(root);
     minimap = root.querySelector('.kart-minimap');
@@ -783,7 +911,7 @@ export default {
       clearRace();
       scene.traverse((o) => { o.geometry?.dispose(); [].concat(o.material || []).forEach((m) => { m.map?.dispose(); m.dispose(); }); });
     }
-    select?.destroy();
+    select?.destroy(); menu?.destroy(); menu = null; cup = null;
     closePreviews();
     showrooms.forEach((room) => room.dispose());
     showrooms.clear();

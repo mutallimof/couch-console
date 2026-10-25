@@ -177,19 +177,57 @@ function islets(THREE, group, terrain, r, G, mat) {
   }
 }
 
-// A ring of lit towers on the horizon (the night tracks)
+// A ring of chunky toy-block towers on the horizon (the city tracks): pastel colors, a few big windows, flat tops with a little
+// cap or dome, so the skyline reads as calm shapes instead of noise. One merged mesh per color.
 function skyline(THREE, group, terrain, r, def) {
+  const PASTEL = def.theme === 'avenue'
+    ? ['#FFB38A', '#FFD08A', '#FF9EB5', '#9ED8C9', '#B3C0FF', '#FFE4A0']
+    : ['#FF9EB5', '#8FD0F0', '#FFD66B', '#A9E0A0', '#C3A9F5', '#FFB38A'];
+  const facade = (hex) => {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 128;
+    const x = c.getContext('2d'); x.fillStyle = hex; x.fillRect(0, 0, 64, 128);
+    x.fillStyle = 'rgba(255,255,255,0.55)';
+    for (let yy = 14; yy < 118; yy += 36) for (let xx = 10; xx < 54; xx += 24) { x.beginPath(); x.roundRect(xx, yy, 16, 22, 5); x.fill(); } // 2 big windows per row
+    x.fillStyle = 'rgba(0,0,0,0.08)'; x.fillRect(0, 124, 64, 4);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+  };
+  const { minX, maxX, minZ, maxZ } = terrain.bounds, cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2, R0 = Math.max(maxX - minX, maxZ - minZ) / 2 + 150;
+  const roofMat = new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.7, flatShading: true });
+  PASTEL.forEach((hex, n) => {
+    const tex = facade(hex), body = [], caps = [];
+    for (let i = n; i < 48; i += PASTEL.length) {
+      const a = (i / 48) * 6.28 + r() * 0.06, d = R0 + r() * 150, w = 24 + r() * 28, h = 34 + r() * 90;
+      const g = new THREE.BoxGeometry(w, h, w);
+      const uv = g.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * Math.max(1, Math.round(w / 22)), uv.getY(k) * Math.max(1, Math.round(h / 28)));
+      g.translate(cx + Math.cos(a) * d, h / 2 - 2, cz + Math.sin(a) * d);
+      body.push(g);
+      const cap = r() < 0.5 ? new THREE.CylinderGeometry(w * 0.2, w * 0.36, w * 0.4, 12) : new THREE.ConeGeometry(w * 0.5, w * 0.5, 4);
+      cap.translate(cx + Math.cos(a) * d, h - 2 + w * 0.2, cz + Math.sin(a) * d);
+      caps.push(cap);
+    }
+    group.add(new THREE.Mesh(mergeGeometries(body), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, flatShading: true })));
+    const roofs = new THREE.Mesh(mergeGeometries(caps), roofMat.clone()); roofs.material.color.set(hex).offsetHSL(0, 0.05, -0.12);
+    group.add(roofs);
+  });
+}
+
+// Block City's streets: chunky pastel towers placed on the free spots next to the road (one InstancedMesh, colors per tower)
+export function toyBlocks(THREE, spots) {
   const c = document.createElement('canvas'); c.width = 64; c.height = 128;
-  const x = c.getContext('2d'); x.fillStyle = '#0C0F2A'; x.fillRect(0, 0, 64, 128);
-  const lights = def.theme === 'avenue' ? ['#FFE14D', '#38E8FF', '#FF4D9D'] : ['#FFD36B', '#7DF9C1', '#8EA2FF', '#FF7AB6'];
-  for (let yy = 6; yy < 122; yy += 10) for (let xx = 6; xx < 58; xx += 10) { x.fillStyle = r() < 0.32 ? lights[Math.floor(r() * lights.length)] : '#14183C'; x.fillRect(xx, yy, 6, 6); }
+  const x = c.getContext('2d'); x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, 64, 128);
+  x.fillStyle = 'rgba(70,90,140,0.28)';
+  for (let yy = 14; yy < 118; yy += 36) for (let xx = 10; xx < 54; xx += 24) { x.beginPath(); x.roundRect(xx, yy, 16, 22, 5); x.fill(); }
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  const { minX, maxX, minZ, maxZ } = terrain.bounds, cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2, R0 = Math.max(maxX - minX, maxZ - minZ) / 2 + 120;
-  for (let i = 0; i < 90; i++) {
-    const a = (i / 90) * 6.28 + r() * 0.05, d = R0 + r() * 160, w = 22 + r() * 36, h = 60 + r() * 190;
-    const t = tex.clone(); t.needsUpdate = true; t.repeat.set(Math.max(1, Math.round(w / 12)), Math.max(1, Math.round(h / 16)));
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(0.7, 0.7, 0.85) }));
-    m.position.set(cx + Math.cos(a) * d, h / 2 - 2, cz + Math.sin(a) * d);
-    group.add(m);
-  }
+  const geo = new THREE.BoxGeometry(1, 1, 1), uv = geo.attributes.uv;
+  for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * 2, uv.getY(k) * 3);
+  const mesh = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, flatShading: true }), spots.length);
+  const PASTEL = ['#FF9EB5', '#8FD0F0', '#FFD66B', '#A9E0A0', '#C3A9F5', '#FFB38A'], m4 = new THREE.Matrix4(), col = new THREE.Color();
+  spots.forEach(([px, pz, s], i) => {
+    const w = 9 + s * 5, h = 12 + s * 22;
+    m4.compose(new THREE.Vector3(px, h / 2 - 0.5, pz), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, (px * 7 + pz) % 3, 0)), new THREE.Vector3(w, h, w));
+    mesh.setMatrixAt(i, m4);
+    mesh.setColorAt(i, col.set(PASTEL[(Math.abs(Math.floor(px * 3 + pz)) + i) % PASTEL.length]));
+  });
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  return mesh;
 }

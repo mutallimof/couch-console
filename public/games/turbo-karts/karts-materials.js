@@ -42,7 +42,7 @@ export function pavementMaps(THREE) {
       const i = y * size + x, j = i * 4, v = height[i];
       const large = (Math.sin(x * 0.08) + Math.cos(y * 0.09) + Math.sin((x + y) * 0.022)) * 0.8;
       const grain = 91 + pigment[i] * 45 + edgeShade[i] * 10 + v * 19 + large;
-      di.data.set([grain * 1.55, grain * 1.58, grain * 1.62, 255], j); // (brightened: our road color tints it)
+      di.data.set([grain * 1.6, grain * 1.6, grain * 1.6, 255], j); // (brightened: our road color tints it)
       const dx = height[y * size + ((x + 1) % size)] - height[y * size + ((x + size - 1) % size)];
       const dy = height[((y + 1) % size) * size + x] - height[((y + size - 1) % size) * size + x];
       const len = Math.hypot(dx * 0.9, dy * 0.9, 1);
