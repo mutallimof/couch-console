@@ -5,12 +5,19 @@
 // THIRD_PARTY_NOTICES.md): its 3D scene, painted fruit, juice splats, blade ribbons and sounds
 // are kept as they were; the input, HUD and lifecycle are rewired to this console's game API.
 // Rules: juicy-slash-rules.js.
-import { SlashBoard, FIELD_H } from './juicy-slash-rules.js';
+import { SlashBoard, FIELD_H, DIFFICULTY } from './juicy-slash-rules.js';
 import { AudioEngine } from './ow-audio.js';
 
-const BEST_KEY = 'couch.juicyBest';
-const loadBest = () => { try { return Number(localStorage.getItem(BEST_KEY)) || 0; } catch { return 0; } };
-const saveBest = (v) => { try { localStorage.setItem(BEST_KEY, String(v)); } catch { /* ignore */ } };
+const DIFF_KEY = 'couch.juicyDifficulty';
+const LEVELS = ['easy', 'normal', 'hard'];
+const LEVEL_NAMES = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
+const LEVEL_HINTS = { easy: 'lots of hearts, a gentle start', normal: 'the comfortable one', hard: '3 hearts, a bomb ends the run' };
+let level = 'normal';
+try { const v = localStorage.getItem(DIFF_KEY); if (LEVELS.includes(v)) level = v; } catch { /* ignore */ }
+// Best scores are kept per difficulty ("normal" keeps the old key, so nobody loses their record)
+const bestKey = () => (level === 'normal' ? 'couch.juicyBest' : `couch.juicyBest.${level}`);
+const loadBest = () => { try { return Number(localStorage.getItem(bestKey())) || 0; } catch { return 0; } };
+const saveBest = (v) => { try { localStorage.setItem(bestKey(), String(v)); } catch { /* ignore */ } };
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true">
@@ -130,6 +137,12 @@ const speckle = (ctx, W, H, n, color, rMin, rMax) => {
 };
 
 const RIND_PAINTERS = {
+  heart: (ctx, W, H) => {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#ff6b8f'); g.addColorStop(1, '#d4124a');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(W * 0.3, H * 0.3, W * 0.08, H * 0.12, -0.6, 0, Math.PI * 2); ctx.fill();
+  },
   watermelon: (ctx, W, H) => {
     ctx.fillStyle = '#7ab648';
     ctx.fillRect(0, 0, W, H);
@@ -256,6 +269,7 @@ const RIND_PAINTERS = {
 
 /** The cut face. Radius 128, centred at (128,128) on a 256² canvas. */
 const FLESH_PAINTERS = {
+  heart: (ctx) => { disc(ctx, '#ffd0dc'); disc(ctx, '#ff7aa2', 112); disc(ctx, '#ff9db9', 60); },
   watermelon: (ctx) => {
     disc(ctx, '#8ec44e');                       // rind edge
     disc(ctx, '#e9f2d0', 122);                  // white rim
@@ -407,6 +421,7 @@ function citrus(ctx, rindC, fleshC, pithC) {
 
 // Per-type non-uniform scale so a lemon reads as a lemon, not a yellow ball.
 const FRUIT_SHAPE = {
+  heart: [1, 1, 1],
   watermelon: [1.18, 0.94, 1],
   pineapple: [0.82, 1.18, 0.82],
   strawberry: [0.95, 1.12, 0.95],
@@ -424,7 +439,7 @@ for (const name of Object.keys(RIND_PAINTERS)) {
   fleshTex.set(name, makeTexture(256, 256, FLESH_PAINTERS[name]));
 }
 
-const game = new SlashBoard({ aspect: 16 / 9, onEvent: handleEvent, infiniteLives: false });
+const game = new SlashBoard({ aspect: 16 / 9, onEvent: handleEvent, infiniteLives: false, difficulty: level });
 
 // ── Meshes ─────────────────────────────────────────────────────────────────
 const sphereGeo = new THREE.SphereGeometry(1, 28, 20);
@@ -494,7 +509,23 @@ function garnish(name) {
   return g.children.length ? g : null;
 }
 
+// The heart pickup: a glossy extruded heart, bobbing a little
+let heartGeo = null;
+function heartMesh(f) {
+  if (!heartGeo) {
+    const sh = new THREE.Shape();
+    sh.moveTo(0, -0.9); sh.bezierCurveTo(-1.5, 0.1, -1.1, 1.1, 0, 0.45); sh.bezierCurveTo(1.1, 1.1, 1.5, 0.1, 0, -0.9);
+    heartGeo = new THREE.ExtrudeGeometry(sh, { depth: 0.5, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.14, bevelSegments: 4, curveSegments: 20 });
+    heartGeo.center();
+  }
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(heartGeo, new THREE.MeshStandardMaterial({ color: 0xff3d6e, roughness: 0.25, metalness: 0.05, emissive: 0x5a0a22, emissiveIntensity: 0.5 })));
+  g.scale.setScalar(f.r * 1.15);
+  return g;
+}
+
 function fruitMesh(f) {
+  if (f.heart) return heartMesh(f);
   if (f.bomb) {
     const g = new THREE.Group();
     const body = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({
@@ -917,22 +948,26 @@ function handleEvent(e) {
     // Only the phone that landed the cut feels it — see server/index.js: a
     // feedback message with a slot targets that one controller.
     api.rumble(e.slot + 1, 20 + Math.min(e.combo, 5) * 10); // only the phone that cut it
+  } else if (e.type === 'heart') {
+    audio.play('fn-combo', { combo: 3 });
+    splash(e.x, e.y, '♥ +1', 'crit');
+    api.rumble(e.slot + 1, 40);
   } else if (e.type === 'bomb') {
     audio.play('explode');
     bombFlash();
-    if (!e.fatal) splash(e.x, e.y, '−10', 'penalty');
+    if (!e.fatal && game.infiniteLives) splash(e.x, e.y, '−10', 'penalty');
+    else if (!e.fatal) splash(e.x, e.y, e.lost ? '♥ −1' : 'safe!', 'penalty');
     for (const p of api.players) api.rumble(p.playerId, 300);
   } else if (e.type === 'miss') {
     audio.play('fn-miss');
-    missFlash(e.x ?? 0);
+    if (e.lost || game.infiniteLives || game.cfg.missesPerHeart === 1) missFlash(e.x ?? 0);
+    else splash(e.x ?? 0, -FIELD_H * 0.32, e.hurt ? 'oops' : 'safe', 'penalty'); // (a quiet drop: nothing lost yet)
     for (const p of api.players) api.rumble(p.playerId, 60);
   } else if (e.type === 'gameover') {
     audio.play('fn-gameover');
     const best = Math.max(loadBest(), e.score);
     saveBest(best);
-    showOverlay(`<h1 class="gameover">GAME OVER</h1>
-      <div class="jz-final">score <b>${e.score}</b> · best <b>${best}</b></div>
-      <div class="cta"><strong>A</strong> = play again · <strong>B</strong> = menu</div>`);
+    showChooser(`<h1 class="gameover">GAME OVER</h1><div class="jz-final">score <b>${e.score}</b> · best <b>${best}</b></div>`, 'Play again');
   }
   syncHud();
 }
@@ -945,16 +980,37 @@ function flash(text) {
   $('toast').classList.add('on');
 }
 
+// The start / game-over panel: pick Easy, Normal or Hard (point and tap, or ◀ ▶ and A)
+let chooser = false;
+function showChooser(head, cta) {
+  chooser = true;
+  const row = LEVELS.map((l) => `<button type="button" class="ui-btn jz-level ${l === level ? 'on' : ''}" data-ui data-level="${l}"><b>${LEVEL_NAMES[l]}</b><small>${LEVEL_HINTS[l]}</small></button>`).join('');
+  showOverlay(`${head}<div class="jz-levels">${row}</div><div class="cta"><strong>A</strong> = ${cta.toLowerCase()} · <strong>◀ ▶</strong> difficulty · <strong>B</strong> = menu</div>
+    <button type="button" class="ui-btn primary jz-go" data-act="go">${cta}</button>`);
+}
+function pickLevel(l) {
+  if (!LEVELS.includes(l)) return;
+  level = l; try { localStorage.setItem(DIFF_KEY, l); } catch { /* ignore */ }
+  $('panel').querySelectorAll('.jz-level').forEach((b) => b.classList.toggle('on', b.dataset.level === l));
+  $('best').textContent = `BEST: ${loadBest()}`;
+}
+
 const showOverlay = (html) => { $('panel').innerHTML = html; $('overlay').classList.remove('hide'); };
 const hideOverlay = () => $('overlay').classList.add('hide');
 
 function syncHud() {
   $('score-v').textContent = game.state.score;
   $('best').textContent = `BEST: ${Math.max(loadBest(), game.state.score)}`;
-  const xs = $('lives').querySelectorAll('.x');
-  for (let i = 0; i < xs.length; i += 1) {
-    xs[i].classList.toggle('lost', !game.infiniteLives && i >= game.state.lives);
-  }
+  // Hearts: one per life, and the empty ones stay so you can see how many you could hold
+  const box = $('lives').firstElementChild, max = game.cfg.maxLives, now = performance.now();
+  if (box.children.length !== max) box.innerHTML = '<span class="x">♥</span>'.repeat(max);
+  [...box.children].forEach((x, i) => {
+    x.classList.toggle('lost', !game.infiniteLives && i >= game.state.lives);
+    x.classList.toggle('spare', i >= game.cfg.lives); // (hearts above the starting number are the ones you can win)
+  });
+  box.classList.toggle('grace', now < game.state.graceUntil);
+  box.querySelectorAll('.hurt').forEach((x) => x.classList.remove('hurt'));
+  if (game.state.missCount > 0) box.children[game.state.lives - 1]?.classList.add('hurt'); // (a dropped fruit or two: the last heart looks tired)
   $('practice').style.display = game.infiniteLives ? '' : 'none';
 
   // Multiplayer scoreboard: everyone's individual score, on the shared
@@ -977,6 +1033,8 @@ function syncHud() {
 
   function startGame() {
     hideOverlay();
+    chooser = false;
+    game.setDifficulty(level);
     game.start(performance.now());
     syncHud();
   }
@@ -1015,7 +1073,8 @@ function syncScene(now = performance.now()) {
   api.onButton(({ button, state }) => {
     if (state !== 'down') return;
     audio.unlock();
-    if (button === 'A' && game.state.phase !== 'playing') startGame();
+    if (chooser && (button === 'LEFT' || button === 'RIGHT')) pickLevel(LEVELS[(LEVELS.indexOf(level) + (button === 'RIGHT' ? 1 : 2)) % 3]);
+    else if (button === 'A' && game.state.phase !== 'playing') startGame();
     else if (button === 'B') api.exit();
   });
 
@@ -1040,11 +1099,17 @@ function syncScene(now = performance.now()) {
     renderer.render(scene, camera);
   }
 
+  // pointer: hovering a level picks it, a tap / A on a button uses it (shared pointer layer, see console/ui-pointer.js)
+  $('panel').addEventListener('ui-hover', (ev) => { const b = ev.target.closest?.('[data-level]'); if (b && b.dataset.level !== level) pickLevel(b.dataset.level); });
+  $('panel').addEventListener('click', (ev) => {
+    const b = ev.target.closest?.('[data-level]');
+    if (b) { pickLevel(b.dataset.level); startGame(); } else if (ev.target.closest('[data-act="go"]')) startGame();
+  });
   resize();
   syncHud();
   audio.unlock();
-  startGame();
-  game.state.nextSpawn = performance.now() + 1500; // a moment to get ready
+  game.state.phase = 'idle';
+  showChooser('<h1>Juicy Slash</h1><div class="jz-final">swing to slice · save the hearts</div>', 'Start');
   frame = requestAnimationFrame(loop);
 
   session.stop = () => {
@@ -1061,7 +1126,7 @@ function syncScene(now = performance.now()) {
 const MARKUP = `<canvas class="jz-canvas"></canvas>
   <div class="jz-hud">
     <div class="jz-score-wrap"><div class="jz-score-row"><span class="jz-score-ico">🍉</span><span class="jz-score-v">0</span></div><div class="jz-best">BEST: 0</div></div>
-    <div class="jz-lives"><div><span class="x">✗</span><span class="x">✗</span><span class="x">✗</span></div><div class="jz-practice">PRACTICE · ∞ LIVES</div></div>
+    <div class="jz-lives"><div class="jz-hearts"></div><div class="jz-practice">PRACTICE · ∞ LIVES</div></div>
     <div class="jz-players"></div>
     <div class="jz-fx"></div>
     <div class="jz-miss-x">✗</div>

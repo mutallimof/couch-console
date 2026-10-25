@@ -25,12 +25,12 @@ export const BOLT_RANGE = 130;       // metres a bolt lives
 export const FIRE_COOLDOWN_MS = 140;
 export const ALIEN_BOLT_SPEED = 26;  // toward the player, plus ship speed closing
 export const ALIEN_FIRE_RANGE = 95;  // aliens open fire inside this distance
-export const ALIEN_FIRE_MS = 1700;   // per-alien trigger discipline
-export const SPAWN_MS_START = 1400;
+export const ALIEN_FIRE_MS = 2200;   // per-alien trigger discipline
+export const SPAWN_MS_START = 1800;
 export const SPAWN_MS_MIN = 550;
 export const SPAWN_AHEAD = 140;      // metres ahead of the ship
-export const LIVES = 3;
-export const INVULN_MS = 1500;
+export const LIVES = 5;               // (was 3: softer for casual players)
+export const INVULN_MS = 2200;
 export const KILL_POINTS = 100;
 
 const DEG = Math.PI / 180;

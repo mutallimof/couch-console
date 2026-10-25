@@ -14,7 +14,7 @@ import { SlashBoard, FIELD_H } from '../public/games/juicy-slash-rules.js';
 
 /** A game with spawning suppressed, so tests control the board exactly. */
 function game() {
-  const g = new SlashBoard({ aspect: 16 / 9 });
+  const g = new SlashBoard({ difficulty: 'hard', aspect: 16 / 9 });
   g.start(0);
   g.state.nextSpawn = Infinity;
   return g;
@@ -120,7 +120,7 @@ test('losing the last life ends the game', () => {
 // ── Practice mode and criticals ──────────────────────────────────────────────
 
 function practiceGame(rng = () => 0.99) {
-  const g = new SlashBoard({ aspect: 16 / 9, infiniteLives: true, rng });
+  const g = new SlashBoard({ difficulty: 'hard', aspect: 16 / 9, infiniteLives: true, rng });
   g.start(0);
   g.state.nextSpawn = Infinity;
   return g;
@@ -159,7 +159,7 @@ test('practice: bomb penalty never takes the score negative', () => {
 
 test('a critical slice pays +10 and is flagged in the event', () => {
   const events = [];
-  const g = new SlashBoard({ aspect: 16 / 9, rng: () => 0, onEvent: (e) => events.push(e) });
+  const g = new SlashBoard({ difficulty: 'hard', aspect: 16 / 9, rng: () => 0, onEvent: (e) => events.push(e) });
   g.start(0);
   g.state.nextSpawn = Infinity;
   const clock = { t: 0 };
@@ -173,7 +173,7 @@ test('a critical slice pays +10 and is flagged in the event', () => {
 
 test('spawning emits a launch event (the throw sound hook)', () => {
   const events = [];
-  const g = new SlashBoard({ aspect: 16 / 9, onEvent: (e) => events.push(e) });
+  const g = new SlashBoard({ difficulty: 'hard', aspect: 16 / 9, onEvent: (e) => events.push(e) });
   g.start(0);
   g.spawn(false, 1000);
   g.spawn(true, 1000);
@@ -214,7 +214,7 @@ test('two players slicing at once keep separate scores and combos', () => {
 
 test('each slice event carries the slot that cut it', () => {
   const events = [];
-  const g = new SlashBoard({ aspect: 16 / 9, onEvent: (e) => events.push(e) });
+  const g = new SlashBoard({ difficulty: 'hard', aspect: 16 / 9, onEvent: (e) => events.push(e) });
   g.start(0);
   g.state.nextSpawn = Infinity;
   const clock = { t: 0 };
@@ -278,4 +278,103 @@ test('the shared life pool costs everyone, regardless of who is playing', () => 
   f.vy = -1;
   g.update(16, 0.016);
   assert.equal(g.state.lives, 2, 'one shared life lost');
+});
+
+// ── Difficulty (Part 4): Normal is comfortable, Hard is the original ───────────
+
+function level(name) {
+  const g = new SlashBoard({ aspect: 16 / 9, difficulty: name });
+  g.start(0);
+  g.state.nextSpawn = Infinity;
+  return g;
+}
+function drop(g, now) { const f = put(g, 0, -FIELD_H / 2 - 2); f.vy = -1; g.update(now, 0.016); }
+
+test('hearts to start with: easy 7, normal 5, hard 3 (and normal is the default)', () => {
+  assert.equal(level('easy').state.lives, 8);
+  assert.equal(level('normal').state.lives, 6);
+  assert.equal(level('hard').state.lives, 3);
+  assert.equal(new SlashBoard().difficultyName, 'normal');
+});
+
+test('after losing a heart there is a grace period: the next drops cost nothing', () => {
+  const g = level('normal');
+  for (let n = 0; n < g.cfg.missesPerHeart; n += 1) drop(g, 100 + n);
+  assert.equal(g.state.lives, 5, 'a few drops cost one heart');
+  for (let n = 0; n < 6; n += 1) drop(g, 200 + n);
+  assert.equal(g.state.lives, 5, 'grace: no more lost right away');
+  for (let n = 0; n < g.cfg.missesPerHeart; n += 1) drop(g, 100 + g.cfg.grace + 50 + n);
+  assert.equal(g.state.lives, 4, 'drops after the grace period count again');
+});
+
+test('normal: a bomb costs one heart, not the whole run; hard: a bomb ends it', () => {
+  const g = level('normal'), clock = { t: 5000 };
+  put(g, 0, 0, true);
+  sweep(g, -3, 3, 0, 5, 16, clock);
+  assert.equal(g.state.phase, 'playing');
+  assert.equal(g.state.lives, 5);
+  const h = level('hard'), c2 = { t: 5000 };
+  put(h, 0, 0, true);
+  sweep(h, -3, 3, 0, 5, 16, c2);
+  assert.equal(h.state.phase, 'over');
+});
+
+test('slicing a heart gives one back (up to the most you can hold); a dropped heart costs nothing', () => {
+  const g = level('normal'), clock = { t: 5000 };
+  g.state.lives = 3;
+  const f = put(g, 0, 0); f.heart = true;
+  sweep(g, -3, 3, 0, 5, 16, clock);
+  assert.equal(g.state.lives, 4);
+  const h = level('normal');
+  const f2 = put(h, 0, -FIELD_H / 2 - 2); f2.heart = true; f2.vy = -1;
+  h.update(100, 0.016);
+  assert.equal(h.state.lives, 6, 'no heart lost');
+  const m = level('normal'); m.state.lives = m.cfg.maxLives;
+  const f3 = put(m, 0, 0); f3.heart = true;
+  sweep(m, -3, 3, 0, 5, 16, { t: 5000 });
+  assert.equal(m.state.lives, m.cfg.maxLives, 'capped');
+});
+
+test('hearts appear on their own, and sooner when you are nearly out', () => {
+  const g = level('normal');
+  const spawned = [];
+  g.onEvent = (e) => { if (e.type === 'launch' && e.heart) spawned.push(e); };
+  g.state.lives = 3;
+  for (let t = 1000; t < 60000; t += 100) { g.state.nextSpawn = t; g.update(t, 0.1); g.fruits.length = 0; }
+  assert.ok(spawned.length >= 2, `several hearts in a minute (${spawned.length})`);
+});
+
+test('normal ramps more slowly than hard, and has no bombs in the first seconds', () => {
+  const n = level('normal'), h = level('hard');
+  assert.ok(n.spawnInterval(30000) > h.spawnInterval(30000) + 150, 'slower after 30 s');
+  assert.equal(n.bombChance(3000), 0, 'calm start');
+  assert.ok(n.bombChance(120000) <= n.cfg.bombMax);
+});
+
+test('a casual player (misses 3 in 10) lasts a good while on normal, a beginner (misses half) still gets 20 s', () => {
+  const seeded = (seed) => () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+  const survive = (missRate, seed) => {
+    const real = Math.random; Math.random = seeded(seed);
+    try {
+      const g = new SlashBoard({ aspect: 16 / 9, difficulty: 'normal', rng: Math.random });
+      g.start(0);
+      let t = 0;
+      for (; t < 180000 && g.state.phase === 'playing'; t += 16) {
+        g.update(t, 0.016);
+        // the simulated player cuts a fruit on its way up (hearts always, bombs never)
+        for (let i = g.fruits.length - 1; i >= 0; i -= 1) {
+          const f = g.fruits[i];
+          if (f.sim === undefined && f.vy > 0 && f.y > 0) f.sim = f.bomb ? 'skip' : f.heart ? 'cut' : Math.random() < missRate ? 'skip' : 'cut';
+          if (f.sim === 'cut') {
+            g.fruits.splice(i, 1);
+            if (f.heart) g.state.lives = Math.min(g.cfg.maxLives, g.state.lives + 1);
+          }
+        }
+      }
+      return t / 1000;
+    } finally { Math.random = real; }
+  };
+  const casual = [1, 2, 3].map((s) => survive(0.3, s)), beginner = [1, 2, 3].map((s) => survive(0.5, s));
+  assert.ok(Math.min(...casual) >= 35, `casual players last a good while (${casual})`);
+  assert.ok(Math.min(...beginner) >= 20, `beginners last 20 s or more (${beginner})`);
 });

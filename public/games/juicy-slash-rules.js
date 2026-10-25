@@ -79,6 +79,23 @@ export const CRITICAL_CHANCE = 0.05;   // like the original: rare, +10, gold bur
 export const BOMB_PENALTY = 10;        // practice mode: bombs cost points, not the run
 
 /**
+ * Difficulty. Normal is for casual players: 6 hearts (3 dropped fruit cost one), hearts to pick up every ~12 s, a slow ramp, a short grace
+ * period after a lost heart, and a bomb costs a heart instead of the whole run. Hard is the original game.
+ *   lives/maxLives   starting hearts / the most you can hold      grace      ms of safety after losing a heart
+ *   missesPerHeart   dropped fruit it takes to lose one heart (hard: 1)
+ *   spawn0/spawnMin  ms between throws at the start / at the quickest   ramp   ms shaved off per second played
+ *   burstMax         the most fruit in one throw                   warmup     ms with no bombs and small throws
+ *   bombBase/bombMax chance that a thrown fruit is a bomb          bombFatal  a bomb ends the run (hard only)
+ *   heartEvery       ms between heart pickups (shorter when low on hearts)
+ */
+export const DIFFICULTY = {
+  easy: { lives: 8, maxLives: 10, missesPerHeart: 4, grace: 2200, spawn0: 1250, spawnMin: 600, ramp: 3.5, burstMax: 2, warmup: 15000, bombBase: 0.02, bombMax: 0.08, bombFatal: false, heartEvery: 14000 },
+  normal: { lives: 6, maxLives: 8, missesPerHeart: 3, grace: 2000, spawn0: 1150, spawnMin: 500, ramp: 5, burstMax: 3, warmup: 12000, bombBase: 0.03, bombMax: 0.12, bombFatal: false, heartEvery: 12000 },
+  hard: { lives: 3, maxLives: 5, missesPerHeart: 1, grace: 700, spawn0: 780, spawnMin: 260, ramp: 14, burstMax: 4, warmup: 0, bombBase: 0.06, bombMax: 0.25, bombFatal: true, heartEvery: 32000 },
+};
+export const HEART_KIND = { name: 'heart', rind: 0xe0245e, flesh: 0xff7aa2, splat: 0xff4d79, r: 0.62 };
+
+/**
  * The classic line-up. `splat` is the juice that stains the dojo wall — it is
  * the flesh colour, not the rind: a watermelon splats red, a kiwi green.
  */
@@ -97,7 +114,7 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 export class SlashBoard {
-  constructor({ aspect = 16 / 9, onEvent = () => {}, infiniteLives = false, rng = Math.random } = {}) {
+  constructor({ aspect = 16 / 9, onEvent = () => {}, infiniteLives = false, rng = Math.random, difficulty = 'normal' } = {}) {
     this.h = FIELD_H;
     this.w = FIELD_H * aspect;
     this.onEvent = onEvent;
@@ -107,7 +124,10 @@ export class SlashBoard {
     this.state = {
       phase: 'idle',        // idle | playing | over
       score: 0,              // combined total across every player, for the HUD/back-compat
-      lives: 3,               // one shared pool: everyone's on the same board
+      lives: 3,               // one shared pool: everyone's on the same board (set from the difficulty)
+      missCount: 0,           // dropped fruit since the last lost heart
+      graceUntil: 0,          // after losing a heart nothing else can be lost until then
+      nextHeart: 0,
       combo: 0,               // mirrors whichever player most recently scored
       comboUntil: 0,
       nextSpawn: 0,
@@ -124,6 +144,13 @@ export class SlashBoard {
     // `setCursor` and persist for the session (a reconnect keeps its slot's
     // running score), so this Map is never cleared, only reset in `start`.
     this.players = new Map();
+    this.setDifficulty(difficulty);
+  }
+
+  setDifficulty(name) {
+    this.difficultyName = DIFFICULTY[name] ? name : 'normal';
+    this.cfg = DIFFICULTY[this.difficultyName];
+    this.state.lives = this.cfg.lives;
   }
 
   setAspect(aspect) {
@@ -166,8 +193,8 @@ export class SlashBoard {
 
   start(now) {
     Object.assign(this.state, {
-      phase: 'playing', score: 0, lives: 3, combo: 0, comboUntil: 0,
-      startedAt: now, nextSpawn: now + 900,
+      phase: 'playing', score: 0, lives: this.cfg.lives, combo: 0, comboUntil: 0,
+      startedAt: now, nextSpawn: now + 900, graceUntil: 0, missCount: 0, nextHeart: now + this.cfg.heartEvery * 0.7,
     });
     this.fruits.length = 0;
     this.halves.length = 0;
@@ -189,8 +216,8 @@ export class SlashBoard {
     this.onEvent({ type: 'gameover', score: this.state.score });
   }
 
-  spawn(isBomb, now) {
-    const kind = FRUIT_TYPES[(Math.random() * FRUIT_TYPES.length) | 0];
+  spawn(isBomb, now, heart = false) {
+    const kind = heart ? HEART_KIND : FRUIT_TYPES[(Math.random() * FRUIT_TYPES.length) | 0];
     const x = rand(-this.w * 0.38, this.w * 0.38);
     const rise = rand(this.h * 0.55, this.h * 0.88);
     this.fruits.push({
@@ -203,10 +230,11 @@ export class SlashBoard {
       spin: rand(-2.4, 2.4),
       spinAxis: { x: rand(-1, 1), y: rand(-1, 1), z: rand(-1, 1) },
       bomb: !!isBomb,
+      heart,
       kind,
       id: SlashBoard.nextId++,
     });
-    this.onEvent({ type: 'launch', bomb: !!isBomb });
+    this.onEvent({ type: 'launch', bomb: !!isBomb, heart });
   }
 
   slice(f, angle, now) {
@@ -255,11 +283,23 @@ export class SlashBoard {
   }
 
   spawnInterval(now) {
-    return Math.max(260, 780 - ((now - this.state.startedAt) / 1000) * 14);
+    const c = this.cfg;
+    return Math.max(c.spawnMin, c.spawn0 - ((now - this.state.startedAt) / 1000) * c.ramp);
   }
 
   bombChance(now) {
-    return clamp(0.06 + ((now - this.state.startedAt) / 1000) * 0.003, 0, 0.25);
+    const c = this.cfg, t = now - this.state.startedAt;
+    if (t < c.warmup) return 0; // a few calm seconds first
+    return clamp(c.bombBase + (t / 1000) * 0.0025, 0, c.bombMax);
+  }
+
+  /** A heart (or a bomb) cost a life: start the grace period, end the run at zero. Returns true if a life was lost. */
+  loseLife(now) {
+    if (this.infiniteLives || now < this.state.graceUntil) return false;
+    this.state.lives -= 1;
+    this.state.graceUntil = now + this.cfg.grace;
+    if (this.state.lives <= 0) this.end(now);
+    return true;
   }
 
   update(now, dt) {
@@ -268,8 +308,16 @@ export class SlashBoard {
 
     if (now >= this.state.nextSpawn) {
       const roll = Math.random();
-      const burst = roll < 0.15 ? 4 : roll < 0.35 ? 3 : roll < 0.62 ? 2 : 1;
+      const warm = now - this.state.startedAt < this.cfg.warmup;
+      const wanted = roll < 0.15 ? 4 : roll < 0.35 ? 3 : roll < 0.62 ? 2 : 1;
+      const burst = Math.min(wanted, warm ? Math.min(2, this.cfg.burstMax) : this.cfg.burstMax);
       for (let i = 0; i < burst; i += 1) this.spawn(Math.random() < this.bombChance(now), now);
+      // Hearts: one every so often, sooner when you are down to your last few
+      if (now >= this.state.nextHeart && this.state.lives < this.cfg.maxLives && !this.infiniteLives) {
+        this.spawn(false, now, true);
+        const low = this.state.lives <= 2 ? 0.5 : 1;
+        this.state.nextHeart = now + this.cfg.heartEvery * low * (0.8 + Math.random() * 0.4);
+      }
       this.state.nextSpawn = now + this.spawnInterval(now);
     }
 
@@ -320,10 +368,18 @@ export class SlashBoard {
             cutBy.combo = 0;
             this.state.combo = 0;
             this.onEvent({ type: 'bomb', fatal: false, x: f.x, y: f.y, slot: cutBy.slot });
-          } else {
+          } else if (this.cfg.bombFatal) {
             this.onEvent({ type: 'bomb', fatal: true, x: f.x, y: f.y, slot: cutBy.slot });
             this.end(now);
+          } else {
+            // Easy / Normal: the blast costs a heart (not the whole run), and nothing if you are still in the grace period
+            const lost = this.loseLife(now);
+            this.onEvent({ type: 'bomb', fatal: false, lost, lives: this.state.lives, x: f.x, y: f.y, slot: cutBy.slot });
           }
+        } else if (f.heart) {
+          this.slice(f, Math.atan2(cutSeg.y2 - cutSeg.y1, cutSeg.x2 - cutSeg.x1), now);
+          if (this.state.lives < this.cfg.maxLives) this.state.lives += 1;
+          this.onEvent({ type: 'heart', lives: this.state.lives, x: f.x, y: f.y, slot: cutBy.slot });
         } else {
           this.slice(f, Math.atan2(cutSeg.y2 - cutSeg.y1, cutSeg.x2 - cutSeg.x1), now);
           cutBy.combo = now < cutBy.comboUntil ? cutBy.combo + 1 : 1;
@@ -347,10 +403,14 @@ export class SlashBoard {
 
       if (f.y + f.r < floor) {
         this.fruits.splice(i, 1);
-        if (!f.bomb && this.state.phase === 'playing') {
-          if (!this.infiniteLives) this.state.lives -= 1;
-          this.onEvent({ type: 'miss', lives: this.state.lives, x: f.x });
-          if (this.state.lives <= 0) this.end(now);
+        if (!f.bomb && !f.heart && this.state.phase === 'playing') { // (a missed heart costs nothing)
+          // a few drops cost a heart (Hard: every drop); nothing at all during the grace period
+          let lost = false;
+          if (now >= this.state.graceUntil && !this.infiniteLives) {
+            this.state.missCount += 1;
+            if (this.state.missCount >= this.cfg.missesPerHeart) { this.state.missCount = 0; lost = this.loseLife(now); }
+          }
+          this.onEvent({ type: 'miss', lost, hurt: this.state.missCount > 0, lives: this.state.lives, x: f.x });
         }
       }
     }

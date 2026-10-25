@@ -486,7 +486,7 @@ function handleEvent(e) {
       <div class="as-how">
         <div><span>Point left or right</span>fly your ship sideways</div>
         <div><span>Hold A</span>fire your laser</div>
-        <div><span>💚💚💚</span>3 lives: saucer shots and crashes cost one</div>
+        <div><span>💚💚💚💚💚</span>${LIVES} lives: saucer shots and crashes cost one</div>
       </div>
       <div class="cta"><strong>Press A</strong> to take off · <strong>B</strong> menu</div>`;
     $('overlay').classList.remove('hide');
@@ -655,7 +655,7 @@ const MARKUP = `<canvas class="as-canvas"></canvas>
   <div class="as-hud">
     <div class="as-vignette"></div>
     <div class="as-card"><div class="as-score">0</div><div class="as-meta">0 kills · 0m</div></div>
-    <div class="as-lives">💚💚💚</div>
+    <div class="as-lives">${"💚".repeat(LIVES)}</div>
     <div class="as-popup"></div>
     <div class="as-keys">Point left / right to fly · A = fire · B = menu</div>
   </div>
