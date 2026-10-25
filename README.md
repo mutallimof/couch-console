@@ -15,7 +15,7 @@ Your laptop (or a TV connected to it) shows the home menu and the games; everybo
 
 - **Turbo Karts**: a bright toy-box kart race with 8 tracks, 8 helmeted pilots, 4 chunky karts, drift boosts, items, **cups** (Sun Cup and Star Cup, 4 races each) and a **split screen for up to 4 players**. The phone turns into a kart pad (buttons or a tilt wheel, with haptics).
 - **Party Games**: *Quick Draw*, *Hot Potato* and *Steady Hands*, where every phone is a controller (holster, swing, tilt).
-- **Camera**: Photo Booth (the webcam as a mirror with frames and face stickers; photos go to the party album).
+- **Camera**: Photo Booth (the webcam as a mirror with frames and face stickers; photos go to the party album), **Mirror Match** (copy the poses on screen) and **Party Workout** (squats, jumping jacks and more, up to 4 people). Video stays on your laptop.
 - **Arcade**: Table Tennis, Air Hockey, Bowling, Target Range, Paddle Duel, Balloon Pop, Juicy Slash (Easy / Normal / Hard), Alien Strike, Gem Dungeon and Draw.
 - **Channels**: **News** (live headlines with photos, a ticker, a QR code to read the story on your phone, and Today in History), Photos (a shared album), Music (a fair YouTube queue), Present (slides from your phone), Weather, Video and Timer.
 - Light, Dark or Auto theme (the phones follow the TV). 1 to 4 players plus unlimited guests. Every screen works with the phone's D-pad **and** with the pointer (move the phone, tap or press A), and with a keyboard and mouse if you have no phone.

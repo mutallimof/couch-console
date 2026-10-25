@@ -18,7 +18,7 @@ const add = (root, ...objs) => root.add(...objs);
 const TOP = {
   'turbo-karts': '#7ED957', 'table-tennis': '#FFD3D3', 'juicy-slash': '#FFE8B8', 'target-range': '#C7E8A0', 'air-hockey': '#BDE3FF', 'alien-strike': '#D9C8FF',
   dungeon: '#CFC6EE', 'balloon-pop': '#FFD6EA', draw: '#E4D9FF', 'paddle-duel': '#BFEFCB', bowling: '#FFD9A8', photos: '#BFEBDD', music: '#FFD9B8', present: '#C9D6FF',
-  weather: '#CDEBFF', video: '#FFC9C9', timer: '#FFE0B0', news: '#FFD0D0', 'folder-party': '#FFD9B8', 'folder-arcade': '#D9C8FF', 'folder-camera': '#FFC9DC', 'photo-booth': '#FFC9DC', 'quick-draw': '#FFD9B8', 'hot-potato': '#FFC9C9', 'steady-hands': '#C9F0D2', 'folder-channels': '#BDE6EE',
+  weather: '#CDEBFF', video: '#FFC9C9', timer: '#FFE0B0', news: '#FFD0D0', 'mirror-match': '#FFC9DC', 'party-workout': '#C9F0D2', 'folder-party': '#FFD9B8', 'folder-arcade': '#D9C8FF', 'folder-camera': '#FFC9DC', 'photo-booth': '#FFC9DC', 'quick-draw': '#FFD9B8', 'hot-potato': '#FFC9C9', 'steady-hands': '#C9F0D2', 'folder-channels': '#BDE6EE',
 };
 export function makeBase(T, id) {
   const g = new THREE.Group();
@@ -182,6 +182,18 @@ export const SCENES = {
     r.children.slice(-4).forEach((o) => { o.position.y += 1.0; });
     for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; add(r, box(0.08, i % 3 ? 0.14 : 0.26, 0.05, '#25304A', Math.sin(a) * 1.05, 2.5 + Math.cos(a) * 1.05, 0.46, 0.02)).children.at(-1).rotation.z = -a; }
     add(r, box(0.1, 0.9, 0.06, '#FF5C5C', 0.3, 2.55, 0.5).rotateZ(-0.5), box(0.12, 0.65, 0.06, '#25304A', 0, 2.5, 0.52), ball(0.12, '#25304A', 0, 2.38, 0.52));
+  },
+  'mirror-match'(T, r) { // a pose card between two little pilots copying each other
+    add(r, box(1.7, 2.3, 0.2, '#fff', 0, 0.5, -0.5, 0.1), box(1.3, 0.14, 0.06, '#FFB020', 0, 1.0, -0.38), ball(0.22, '#FFE3C2', 0, 2.25, -0.38), box(0.14, 0.8, 0.06, '#FFB020', 0, 1.55, -0.38), box(1.0, 0.12, 0.06, '#FFB020', 0, 1.9, -0.38));
+    for (const [x, c, a] of [[-1.35, '#3FA9FF', 1], [1.35, '#FF5C8A', 1]]) {
+      add(r, ball(0.42, '#fff', x, 1.7, 0.4), cyl(0.3, 0.36, 0.9, c, x, 0.45, 0.4), box(0.9, 0.16, 0.2, c, x, 1.15, 0.4, 0.05));
+      r.children.slice(-3).forEach((o) => { o.scale.multiplyScalar(a); });
+    }
+    add(r, box(0.16, 0.7, 0.16, '#3FA9FF', -2.0, 1.55, 0.4).rotateZ(-0.5), box(0.16, 0.7, 0.16, '#FF5C8A', 2.0, 1.55, 0.4).rotateZ(0.5), ball(0.12, '#FFC93C', 0, 0.1, 1.2));
+  },
+  'party-workout'(T, r) { // a dumbbell and a stopwatch
+    add(r, cyl(0.12, 0.12, 2.6, '#8E99B3', 0, 1.0, 0.2).rotateZ(Math.PI / 2), cyl(0.55, 0.55, 0.5, '#2F9E44', -1.35, 1.0, 0.2).rotateZ(Math.PI / 2), cyl(0.55, 0.55, 0.5, '#2F9E44', 1.35, 1.0, 0.2).rotateZ(Math.PI / 2), cyl(0.42, 0.42, 0.3, '#51CF66', -1.75, 1.0, 0.2).rotateZ(Math.PI / 2), cyl(0.42, 0.42, 0.3, '#51CF66', 1.75, 1.0, 0.2).rotateZ(Math.PI / 2));
+    add(r, cyl(0.8, 0.8, 0.4, '#FF8A3D', 0, 2.5, -0.4, 40).rotateX(Math.PI / 2), cyl(0.62, 0.62, 0.06, '#fff', 0, 2.5, -0.17, 40).rotateX(Math.PI / 2), box(0.08, 0.5, 0.05, '#FF5C5C', 0.1, 2.6, -0.12).rotateZ(-0.6), cyl(0.1, 0.1, 0.25, '#8E99B3', 0, 3.4, -0.4), ball(0.2, '#FFC93C', 1.9, 0.1, 1.2), ball(0.16, '#3FA9FF', -1.9, 0.1, 1.3));
   },
   news(T, r) { // a little TV set with a headline banner and a news ticker
     add(r, box(3.4, 2.4, 0.9, '#C92A2A', 0, 0.5, -0.1, 0.18), box(2.9, 1.9, 0.1, '#BFE6FF', 0, 0.75, 0.38, 0.06), box(1.35, 1.0, 0.06, '#3FA9FF', -0.65, 1.15, 0.45, 0.04), ball(0.18, '#FFC93C', -1.0, 1.4, 0.5), box(1.1, 0.12, 0.05, '#25304A', 0.8, 1.55, 0.46), box(1.1, 0.12, 0.05, '#8E99B3', 0.8, 1.25, 0.46), box(1.1, 0.12, 0.05, '#8E99B3', 0.8, 0.98, 0.46));

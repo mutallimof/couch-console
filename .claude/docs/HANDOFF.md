@@ -43,7 +43,7 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Part 5 Turbo Karts (warm-up before the countdown, lighter split screen, bright toy tracks, helmeted pilots + toy karts, cups, 2-4 players): done
 - Part 6 News channel (server/news.js feeds + cache, apps/news.js, Settings -> News, Today in History tab): done
 - Part 7 runs anywhere (.env, npm run tunnel, engines, run-tests.mjs, README, fresh-clone check): done
-- Part 8 camera games: todo
+- Part 8 camera games (Mirror Match + Party Workout, MediaPipe pose, up to 4 people, ?posetest=1): done
 - Part 9 final QA + secret check: todo
 
 ## Phases (from `.claude/docs/REBUILD-PLAN.md`)

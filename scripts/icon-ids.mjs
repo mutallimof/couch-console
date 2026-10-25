@@ -1,6 +1,6 @@
 // The icons scripts/render-icons.mjs makes (the scenes are in public/tools/icon-scenes.js)
 export const SCENES_IDS = [
   'turbo-karts', 'table-tennis', 'juicy-slash', 'target-range', 'air-hockey', 'alien-strike', 'dungeon', 'balloon-pop', 'draw', 'paddle-duel', 'bowling',
-  'photos', 'photo-booth', 'quick-draw', 'hot-potato', 'steady-hands', 'music', 'present', 'weather', 'video', 'timer', 'news',
+  'photos', 'photo-booth', 'quick-draw', 'hot-potato', 'steady-hands', 'music', 'present', 'weather', 'video', 'timer', 'news', 'mirror-match', 'party-workout',
   'folder-party', 'folder-arcade', 'folder-camera', 'folder-channels',
 ];

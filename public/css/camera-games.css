@@ -1,0 +1,53 @@
+/* Mirror Match and Party Workout (games/mirror-match.js, party-workout.js): the camera as a mirror with the game drawn on top. */
+.cg { position: absolute; inset: 0; display: grid; place-items: center; background: #0C0E16; color: #fff; overflow: hidden; }
+.cg-stage { position: relative; aspect-ratio: var(--ar, 16 / 9); width: min(100%, calc(100vh * var(--ar-num, 1.7778))); max-height: 100%; border-radius: var(--r-lg); overflow: hidden; background: #161A28; box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.55); }
+.cg-video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.cg-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cg-cam, .cg-priv, .cg-round { position: absolute; top: var(--sp-3); display: inline-flex; align-items: center; gap: var(--sp-2); padding: 0.3rem 0.9rem; border-radius: var(--r-pill); background: rgba(12, 14, 22, 0.66); font: 600 1.125rem var(--display); }
+.cg-cam { left: var(--sp-3); }
+.cg-cam i { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: #FF3B5C; box-shadow: 0 0 0.8rem #FF3B5C; animation: rec 1.6s ease-in-out infinite; }
+.cg-priv { right: var(--sp-3); font-weight: 600; color: rgba(255, 255, 255, 0.8); }
+.cg-top { position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: center; pointer-events: none; }
+.cg-round { position: static; margin-top: var(--sp-3); font-size: 1.25rem; }
+.cg-round:empty { display: none; }
+.cg-msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; max-width: 40rem; padding: var(--sp-4) var(--sp-5); border-radius: var(--r-lg); background: rgba(12, 14, 22, 0.85); font: 600 var(--fs-title) / 1.3 var(--display); text-align: center; text-wrap: balance; z-index: 6; }
+.cg-flash { position: absolute; left: 50%; bottom: 7rem; transform: translateX(-50%); margin: 0; padding: var(--sp-2) var(--sp-5); border-radius: var(--r-pill); background: rgba(255, 224, 102, 0.95); color: #3A2A00; font: 700 1.25rem var(--display); z-index: 6; }
+.cg-count { position: absolute; inset: 0; display: grid; place-items: center; font: 600 min(30vh, 20rem) / 1 var(--display); color: #fff; text-shadow: 0 0.06em 0.3em rgba(0, 0, 0, 0.55); pointer-events: none; }
+.cg-count:empty { display: none; }
+.cg-count.pop { animation: booth-pop 0.9s var(--ease-out) both; }
+.cg-tags { position: absolute; inset: 0; pointer-events: none; }
+.cg-tag { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: baseline; gap: 0.5rem; padding: 0.25rem 0.8rem 0.3rem; border-radius: var(--r-pill); background: var(--c); color: #fff; font: 600 1.25rem var(--display); box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.4); white-space: nowrap; transition: left 120ms linear, top 120ms linear; }
+.cg-tag small { font: 700 1.5rem var(--display); }
+.cg-tag small:empty { display: none; }
+.cg-tag.bump { animation: cg-bump 260ms var(--ease-out); }
+@keyframes cg-bump { 40% { transform: translate(-50%, -50%) scale(1.25); } }
+.cg-scorebar { position: absolute; left: 0; right: 0; bottom: var(--sp-3); display: flex; justify-content: center; gap: var(--sp-3); pointer-events: none; }
+.cg-chip { display: flex; align-items: baseline; gap: 0.6rem; padding: 0.35rem 1rem 0.4rem; border-radius: var(--r-pill); background: rgba(12, 14, 22, 0.78); box-shadow: inset 0 0 0 0.2rem var(--c); font: 600 1.25rem var(--display); }
+.cg-chip span { font-size: 2rem; line-height: 1; }
+.cg-chip em { color: #FFE066; font-style: normal; font-size: 1.125rem; }
+.cg-over { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(12, 14, 22, 0.55); z-index: 4; }
+.cg-over[hidden] { display: none; }
+.cg-card { max-width: min(40rem, 90%); padding: var(--sp-5) var(--sp-6); border-radius: var(--r-lg); background: var(--c-surface); color: var(--c-text); text-align: center; box-shadow: var(--sh-3); }
+.cg-card h1 { margin: 0 0 var(--sp-2); font: 600 var(--fs-display) / 1.1 var(--display); }
+.cg-card p { margin: var(--sp-2) 0; color: var(--c-muted); font: 600 var(--fs-title) / 1.35 var(--font); }
+.cg-card .cg-seen { color: var(--c-text); font-size: 1.25rem; }
+.cg-board { margin: var(--sp-3) 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); text-align: left; }
+.cg-board li { display: grid; grid-template-columns: 3rem 1fr auto; align-items: center; column-gap: var(--sp-3); padding: 0.4rem var(--sp-4); border-radius: var(--r-md); background: var(--c-surface-2); box-shadow: inset 0.35rem 0 0 var(--c); font: 600 1.5rem var(--display); }
+.cg-board .cg-medal { font-size: 1.75rem; text-align: center; }
+.cg-board em { font-style: normal; color: var(--c-muted); }
+.cg-board small { grid-column: 2 / -1; color: var(--c-muted); font: 700 1rem var(--font); }
+.pw-icon { font-size: 5rem; line-height: 1; }
+.pw-intro small { color: var(--c-muted); font: 700 1.25rem var(--font); }
+
+/* Mirror Match: the pose to copy */
+.mm-target { position: absolute; right: var(--sp-4); top: 4.2rem; width: min(26%, 17rem); padding: var(--sp-3); border-radius: var(--r-lg); background: rgba(255, 255, 255, 0.96); color: #1E3A6B; text-align: center; box-shadow: var(--sh-3); z-index: 3; }
+.mm-target[hidden] { display: none; }
+.mm-figure { width: 100%; height: auto; display: block; }
+.mm-name { display: block; font: 600 1.75rem var(--display); }
+.mm-hint { display: block; color: #5A6E90; font: 700 1.05rem var(--font); }
+
+/* Party Workout: the timer */
+.pw-timer { position: absolute; right: var(--sp-4); top: 4.2rem; z-index: 3; min-width: 6rem; padding: 0.1em 0.6em; border-radius: var(--r-lg); background: rgba(12, 14, 22, 0.78); font: 600 4rem / 1.1 var(--display); text-align: center; font-variant-numeric: tabular-nums; }
+.pw-timer[hidden] { display: none; }
+.pw-timer.low { color: #FF8787; animation: cg-bump 1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .cg-tag, .cg-tag.bump, .pw-timer.low { animation: none; transition: none; } }
