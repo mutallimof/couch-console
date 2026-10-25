@@ -34,11 +34,12 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
         <header class="ks-top"><span class="ks-tag">P${s.playerId}</span><div class="ks-who"><b class="ks-name"></b><small class="ks-tagline"></small></div><span class="ks-kart-name"></span></header>
         <div class="ks-stage"></div>
         <div class="ks-choices">
-          <div class="ks-chars">${CHARACTERS.map((ch, i) => `<figure title="${ch.name}"><img src="${portraits[ch.id]}" alt="${ch.name}"></figure>`).join('')}</div>
-          <div class="ks-karts">${KARTS.map((kk) => `<div class="ks-kart">${kk.name}</div>`).join('')}</div>
+          <div class="ks-chars">${CHARACTERS.map((ch, i) => `<figure data-ui data-i="${i}" title="${ch.name}"><img src="${portraits[ch.id]}" alt="${ch.name}"></figure>`).join('')}</div>
+          <div class="ks-karts">${KARTS.map((kk, i) => `<div class="ks-kart" data-ui data-i="${i}">${kk.name}</div>`).join('')}</div>
           <div class="ks-stats">${STATS.map(([, label]) => `<span>${label}</span><div class="ks-bar"><i></i></div>`).join('')}</div>
         </div>
         <p class="ks-hint"></p>
+        <button type="button" class="ui-btn ghost ks-back" data-key="B">‹ Back</button>
       </section>`).join('')}</div>`;
     void taken;
     update();
@@ -65,8 +66,9 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
 
   function buildTrack() {
     el.innerHTML = `<h1 class="ks-title">Choose a track</h1><div class="ks-tracks">${tracks.map((t, i) => `
-      <div class="ks-track ${i === track ? 'focused' : ''}"><canvas width="520" height="300"></canvas><div class="ks-info"><b>${t.name}</b><span>${t.blurb}</span></div></div>`).join('')}</div>
-      <p class="ks-hint">P${seats[0].playerId}: ◀ ▶ ▲ ▼ choose · A = race! · B = back</p>`;
+      <div class="ks-track ui-focus ${i === track ? 'focused' : ''}" data-ui data-i="${i}"><canvas width="520" height="300"></canvas><div class="ks-info"><b>${t.name}</b><span>${t.blurb}</span></div></div>`).join('')}</div>
+      <p class="ks-hint">P${seats[0].playerId}: ◀ ▶ ▲ ▼ choose · A = race! · B = back</p>
+      <button type="button" class="ui-btn ghost ks-back" data-key="B">‹ Back</button>`;
     el.querySelectorAll('.ks-track canvas').forEach((c, i) => drawTrackCard(c, tracks[i]));
   }
 
@@ -108,6 +110,23 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
     onDone({ picks: seats.map((s) => ({ playerId: s.playerId, char: s.char, kart: s.kart })), track });
   }
 
+  // Pointer: hovering a racer / kart / track selects it (a tap or A then confirms it, exactly like the D-pad would)
+  el.addEventListener('ui-hover', (ev) => {
+    const { playerId } = ev.detail;
+    const t = ev.target.closest?.('[data-i]');
+    if (!t) return;
+    const i = Number(t.dataset.i);
+    if (stage === 'track') {
+      if (playerId !== seats[0].playerId || !t.classList.contains('ks-track') || i === track) return;
+      track = i; sound.play('hover');
+      el.querySelectorAll('.ks-track').forEach((x, n) => x.classList.toggle('focused', n === track));
+      return;
+    }
+    const s = seats.find((x) => x.playerId === playerId);
+    if (!s || !t.closest(`.ks-seat[data-player="${playerId}"]`)) return;
+    if (s.step === 'char' && t.tagName === 'FIGURE' && s.char !== i) { s.char = i; sound.play('hover'); update(); }
+    else if (s.step === 'kart' && t.classList.contains('ks-kart') && s.kart !== i) { s.kart = i; sound.play('hover'); update(); }
+  });
   buildPick();
   return {
     onButton,

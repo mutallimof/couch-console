@@ -6,6 +6,7 @@ import { socket } from './socket.js';
 import { musicPlayer } from './music-hub.js';
 import { createSlides } from './slides.js';
 import { createPointers } from './pointer.js';
+import { createUiPointer, actionBar } from './ui-pointer.js';
 import { createGyroPointers } from './pointer/engine.js';
 import { createMenu } from './menu.js';
 import { createHomeLive } from './home-live.js';
@@ -343,6 +344,8 @@ function makeApi(cur, mode) {
     sound,
     // Tell the activity feed a player won ("Cem won Turbo Karts")
     reportWin: (playerId) => socket.emit(EV.ACTIVITY_GAME, { playerId, game: cur.app.title, what: 'won' }),
+    // On-screen buttons for this app's phone keys (so the pointer can use them): api.actions([{ key: 'PLUS', label: 'Skip', hint: '+' }])
+    actions: (list) => actionBar($('stage-content'), list),
     exit: closeApp,
   };
 }
@@ -488,6 +491,8 @@ function onInputButton(e) {
     if (down && isDriver) { if (!current && menu.back()) sound.play('back'); else closeApp(); }
     return;
   }
+  // A pointing at a button / on-screen key: the shared pointer layer uses it (it never reaches the screen)
+  if (button === 'A' && !e.virtual && uiPointer.press(playerId, state)) return;
   if (busy) return;
   if (picker) {
     if (down && isDriver) pickerButton(button);
@@ -523,29 +528,30 @@ pointers.setAssist((x, y) => {
   return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: Math.hypot(r.width, r.height) / 2 };
 });
 
-// The driver's cursor focuses whatever it hovers (menu tiles, picker modes).
-// Only when the cursor actually moves, so it doesn't fight with the D-pad.
-let lastHover = null;
-(function hoverLoop() {
-  const id = driverId();
-  const pos = Number.isFinite(id) && pointers.position(id);
-  const moved = pos && (!lastHover || Math.hypot(pos.x - lastHover.x, pos.y - lastHover.y) > 1);
-  if (moved && !busy && $('pairing').hidden) {
-    lastHover = pos;
-    const el = pointers.elementAt(id);
-    if (picker) {
-      const mode = el?.closest?.('[data-mode]');
-      if (mode && Number(mode.dataset.mode) !== picker.index) {
-        picker.index = Number(mode.dataset.mode);
-        sound.play('hover');
-        renderPicker();
-      }
-    } else if (!current) {
-      menu.hover(el);
-    }
+// One shared pointer layer for every screen (ui-pointer.js): cursors highlight what they hover, taps / A click it.
+// Menus and the mode picker listen to the same `ui-hover` event, so they work exactly like the apps and games do.
+const uiPointer = createUiPointer({
+  pointers,
+  deliver: (e) => onInputButton(e),
+  canAct: (id) => {
+    if (busy || !$('pairing').hidden) return false;
+    return !current || picker ? id === driverId() : gameGets(id);
+  },
+  onSound: (name) => sound.play(name),
+});
+document.addEventListener('ui-hover', (ev) => {
+  const el = ev.target;
+  const mode = el.closest?.('[data-mode]');
+  if (picker && mode) {
+    ev.preventDefault();
+    if (Number(mode.dataset.mode) !== picker.index) { picker.index = Number(mode.dataset.mode); sound.play('hover'); renderPicker(); }
+  } else if (!current && el.closest?.('#grid, .menu')) {
+    ev.preventDefault(); // (the menu plays its own column sound)
+    menu.hover(el);
   }
-  requestAnimationFrame(hoverLoop);
-})();
+});
+// A tap / A on a menu tile or a picker mode: they select by focus, so A goes on to the usual code below
+(function uiLoop() { uiPointer.frame(); requestAnimationFrame(uiLoop); })();
 
 // ---------- Mouse & keyboard (no phone) ----------
 // "Use mouse & keyboard" on the pairing screen adds a stand-in P1 that sends exactly what a

@@ -85,6 +85,7 @@ export default {
     container.append(root);
     decks = []; grid = null; note = ''; confirmDel = null;
     api.onButton(onButton);
+    api.actions([{ key: 'B', label: '‹ Back' }, { key: 'A', label: 'Start' }, { key: 'MINUS', label: 'Delete' }]); // (on-screen keys, so the pointer can do everything the D-pad can)
     off = party.onDeck(() => load());
     // drag and drop from the laptop
     root.addEventListener('dragover', (e) => { e.preventDefault(); root.classList.add('drop'); });

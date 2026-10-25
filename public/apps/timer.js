@@ -135,6 +135,7 @@ export default {
     root.className = 'channel timer';
     container.append(root);
     api.onButton(onButton);
+    api.actions([{ key: 'B', label: '‹ Back' }, { key: 'LEFT', label: '‹ Mode' }, { key: 'RIGHT', label: 'Mode ›' }, { key: 'A', label: 'Start / Pause' }, { key: 'MINUS', label: 'Reset' }, { key: 'UP', label: '+1 min' }, { key: 'DOWN', label: '−1 min' }, { key: 'PLUS', label: 'Lap' }]); // (on-screen keys, so the pointer can do everything the D-pad can)
     build();
     tick();
   },

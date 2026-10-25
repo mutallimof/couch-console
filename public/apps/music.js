@@ -22,7 +22,7 @@ function render() {
         <p class="mu-by"><span style="background:${now.byColor}">${esc(now.byEmoji)} ${esc(now.byName)}</span> added this${skips ? ` · skip ${skips}/${skipNeeded}` : ''}</p>`
       : '<p class="mu-label">Nothing playing</p><h2>Add the first song from your phone</h2>'}</div>
     <p class="mu-label">Up next</p>
-    <ol class="mu-queue">${queue.length ? queue.slice(0, 6).map((q, i) => `<li class="${i === sel ? 'focused' : ''}">
+    <ol class="mu-queue">${queue.length ? queue.slice(0, 6).map((q, i) => `<li class="${i === sel ? 'focused' : ''}" data-ui data-i="${i}">
         <img src="${esc(q.thumb || '')}" alt=""><span class="mu-t">${esc(q.title)}</span>
         <span class="mu-who" style="background:${q.byColor}">${esc(q.byEmoji)} ${esc(q.byName)}</span>${q.votes.length ? `<span class="mu-votes">👍 ${q.votes.length}</span>` : ''}</li>`).join('')
       : '<li class="mu-none">The queue is empty</li>'}</ol>
@@ -65,8 +65,10 @@ export default {
     root.innerHTML = '<div class="mu-stage"><div class="mu-player"></div></div><div class="mu-side"></div>';
     container.append(root);
     sel = 0; note = '';
+    root.addEventListener('ui-hover', (ev) => { const li = ev.target.closest?.('[data-i]'); if (li && Number(li.dataset.i) !== sel) { sel = Number(li.dataset.i); render(); } });
     off = musicPlayer.onChange(render);
     api.onButton(onButton);
+    api.actions([{ key: 'B', label: '‹ Back' }, { key: 'A', label: 'Play / Pause' }, { key: 'PLUS', label: 'Skip' }, { key: 'MINUS', label: 'Remove' }, { key: 'LEFT', label: 'Move up' }, { key: 'RIGHT', label: 'Move down' }]); // (on-screen keys, so the pointer can do everything the D-pad can)
     render();
     requestAnimationFrame(() => musicPlayer.setFull(root.querySelector('.mu-player'))); // the player card moves onto this screen
   },

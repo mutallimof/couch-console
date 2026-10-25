@@ -198,6 +198,7 @@ export default {
     party.photosOpen = true;
     unlisten = party.onPhoto(onPhoto);
     api.onButton(onButton);
+    api.actions([{ key: 'B', label: '‹ Back' }, { key: 'LEFT', label: '◀' }, { key: 'RIGHT', label: '▶' }, { key: 'PLUS', label: 'Grid / Wall' }, { key: 'MINUS', label: 'Hide' }]); // (on-screen keys, so the pointer can do everything the D-pad can)
     load().then(() => root?.querySelector('.channel-empty')?.remove());
     frame = requestAnimationFrame(hoverLoop);
   },

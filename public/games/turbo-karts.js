@@ -589,7 +589,7 @@ function showResults() {
   const names = top3.map((v) => ({ name: v.playerId ? `P${v.playerId} ${party.personOfPlayer(v.playerId)?.name || ''}`.trim() : v.char.name, sub: formatTime(v.racer.finishTime), color: v.playerId ? v.color : v.char.color }));
   const stage = [1, 0, 2].filter((i) => names[i]).map((i) => `<div class="kp-name" style="--c:${names[i].color}"><b>${names[i].name}</b><small>${names[i].sub}</small></div>`).join('');
   el.innerHTML = `<div class="kart-card"><h1 style="background:${color}">${banner}</h1><div class="kart-podium"><div class="kp-stage"></div><div class="kp-names">${stage}</div></div><table>${rows}</table>
-    <p>A = race again · B = change racers/track · HOME = menu</p></div>`;
+    <div class="ui-cta"><button type="button" class="ui-btn primary" data-key="A">Race again</button><button type="button" class="ui-btn ghost" data-key="B">Change racers / track</button><button type="button" class="ui-btn ghost" data-key="HOME">Menu</button></div></div>`;
   root.append(el);
   podium?.dispose();
   podium = createPodium(THREE, assets, top3.map((v) => ({ character: v.char, color: v.playerId ? v.color : v.char.color })));

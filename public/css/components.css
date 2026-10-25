@@ -79,3 +79,14 @@ html[data-theme="dark"] .ui-tile { --plate-base: var(--c-surface-3); --plate-res
   .ui-focus.focused, .ui-focus.is-focus { transform: none; }
   .ui-dialog, .ui-toast { animation-name: ui-fade; }
 }
+
+/* ---------- Pointer layer (console/ui-pointer.js): hover and press feedback for everything the cursor can use ---------- */
+.ui-hover:not(.focused) { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-focus) 55%, transparent); }
+.ui-pressed { transform: scale(0.96); }
+/* On-screen keys for apps whose controls are phone keys (api.actions) */
+.ui-actions { position: absolute; left: 50%; bottom: var(--sp-4); transform: translateX(-50%); z-index: 5; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); padding: var(--sp-2); border-radius: var(--r-lg); background: var(--c-surface); box-shadow: var(--sh-2); backdrop-filter: blur(8px); opacity: 0; visibility: hidden; transition: opacity var(--dur-2) var(--ease-out); }
+body.pointer-live .ui-actions { opacity: 1; visibility: visible; }
+.ui-actions .ui-btn { min-height: 2.4em; padding: 0 var(--sp-4); font-size: var(--fs-hint); font-weight: 700; }
+.ui-actions kbd { margin-left: var(--sp-2); padding: 0.1em 0.5em; border-radius: var(--r-sm, 6px); background: var(--c-surface-3); font: 700 0.85em var(--display); }
+.ui-cta { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-3); margin-top: var(--sp-4); }
+button.ui-chip { border: 0; font: inherit; cursor: pointer; }

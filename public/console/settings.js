@@ -31,29 +31,29 @@ export function createSettings(prefs) {
     const on = (v) => (v ? 'On' : 'Off');
     return `
         <h1>Settings</h1>
-        <div class="set-row ui-row ui-focus" data-row="0"><span class="set-label label">Theme</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="0"><span class="set-label label">Theme</span>
           <button class="set-btn ui-btn wide" data-action="theme">${THEME_LABELS[prefs.getTheme()]}</button></div>
-        <div class="set-row ui-row ui-focus" data-row="1">
+        <div class="set-row ui-row ui-focus" data-ui data-row="1">
           <span class="set-label label">Pointer speed</span>
           <button class="set-btn ui-btn" data-action="sens-down">−</button>
           <span class="levels">${bars}</span>
           <button class="set-btn ui-btn" data-action="sens-up">+</button>
         </div>
-        <div class="set-row ui-row ui-focus" data-row="2"><span class="set-label label">Sound</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="2"><span class="set-label label">Sound</span>
           <button class="set-btn ui-btn wide" data-action="mute">${api.sound.muted ? 'Off' : 'On'}</button></div>
-        <div class="set-row ui-row ui-focus" data-row="3"><span class="set-label label">Phone sounds</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="3"><span class="set-label label">Phone sounds</span>
           <button class="set-btn ui-btn wide" data-action="phone-sounds">${on(prefs.getPhoneSounds())}</button></div>
-        <div class="set-row ui-row ui-focus" data-row="4"><span class="set-label label">Steady cursor</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="4"><span class="set-label label">Steady cursor</span>
           <button class="set-btn ui-btn wide" data-action="steady">${on(prefs.getSteady())}</button></div>
-        <div class="set-row ui-row ui-focus" data-row="5"><span class="set-label label">Cartoon look (karts)</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="5"><span class="set-label label">Cartoon look (karts)</span>
           <button class="set-btn ui-btn wide" data-action="cartoon">${on(graphics.cartoon)}</button></div>
-        <div class="set-row ui-row ui-focus" data-row="6"><span class="set-label label">Soft shadows (karts)</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="6"><span class="set-label label">Soft shadows (karts)</span>
           <button class="set-btn ui-btn wide" data-action="ao">${on(graphics.ao)}</button></div>
-        <div class="set-row ui-row ui-focus" data-row="7"><span class="set-label label">Debug readout (fps, ping)</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="7"><span class="set-label label">Debug readout (fps, ping)</span>
           <button class="set-btn ui-btn wide" data-action="debug">${on(prefs.getDebug())}</button></div>
-        <div class="set-row ui-row ui-focus" data-row="8"><span class="set-label label">Party</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="8"><span class="set-label label">Party</span>
           <button class="set-btn ui-btn wide" data-action="party">Open ›</button></div>
-        <div class="set-row ui-row ui-focus" data-row="9"><span class="set-label label">Add a phone</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="9"><span class="set-label label">Add a phone</span>
           <button class="set-btn ui-btn wide" data-action="qr">Show QR code</button></div>
         <p class="set-hint">Theme: Light, Dark or Auto (follows this laptop); the phones follow it too. Steady cursor: turn it On if the cursor wanders or shakes. Cartoon look and soft shadows make Turbo Karts prettier; turn them Off if it runs slowly. D-pad to choose · A to press · B to go back</p>`;
   }
@@ -64,21 +64,21 @@ export function createSettings(prefs) {
     const end = ['End party & delete data', 'Delete everything? Press A again', 'Really? This cannot be undone. A again'][endStep];
     return `
         <h1>Party</h1>
-        <div class="set-row ui-row ui-focus" data-row="0"><span class="set-label label">Name</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="0"><span class="set-label label">Name</span>
           <button class="set-btn ui-btn wide" data-action="rename">${esc(ev.name || '…')} ✎</button></div>
-        <div class="set-row ui-row ui-focus" data-row="1"><span class="set-label label">Start a new party</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="1"><span class="set-label label">Start a new party</span>
           <button class="set-btn ui-btn wide" data-action="new-party">New ›</button></div>
-        <div class="set-row ui-row ui-focus" data-row="2"><span class="set-label label">Approve photos first</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="2"><span class="set-label label">Approve photos first</span>
           <button class="set-btn ui-btn wide" data-action="approve">${s.approvePhotos ? 'On' : 'Off'}</button></div>
-        <div class="set-row ui-row ui-focus" data-row="3"><span class="set-label label">Photo storage limit</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="3"><span class="set-label label">Photo storage limit</span>
           <button class="set-btn ui-btn wide" data-action="limit-up">${s.photoLimitGB ?? 3} GB</button></div>
-        <div class="set-row ui-row ui-focus" data-row="4"><span class="set-label label">Pause music in games</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="4"><span class="set-label label">Pause music in games</span>
           <button class="set-btn ui-btn wide" data-action="music-pause">${s.pauseMusicInGames === false ? 'Off' : 'On'}</button></div>
-        <div class="set-row ui-row ui-focus" data-row="5"><span class="set-label label">All photos</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="5"><span class="set-label label">All photos</span>
           <button class="set-btn ui-btn wide" data-action="download">Download ZIP ⬇</button></div>
-        <div class="set-row ui-row ui-focus ${endStep ? 'danger' : ''}" data-row="6"><span class="set-label label">${endStep ? '⚠️' : ''} Danger zone</span>
+        <div class="set-row ui-row ui-focus ${endStep ? 'danger' : ''}" data-ui data-row="6"><span class="set-label label">${endStep ? '⚠️' : ''} Danger zone</span>
           <button class="set-btn ui-btn wide" data-action="end-party">${end}</button></div>
-        <div class="set-row ui-row ui-focus" data-row="7"><span class="set-label label"> </span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="7"><span class="set-label label"> </span>
           <button class="set-btn ui-btn wide" data-action="back">‹ Back</button></div>
         <p class="set-hint">${message || `${people.length} here now (${people.filter((p) => p.role === 'player').length} playing). Data is saved on this laptop in the data folder. B = back`}</p>`;
   }
@@ -185,11 +185,7 @@ export function createSettings(prefs) {
       return;
     }
     if (button === 'A') {
-      // A pointer over a control wins; otherwise press the focused row's main control.
-      const p = api.pointer(playerId);
-      const hit = p && document.elementFromPoint(p.x, p.y)?.closest('[data-action]');
-      if (hit && root.contains(hit)) return act(hit.dataset.action);
-      act(actions()[row]);
+      act(actions()[row]); // (a pointer over a button is handled by the shared layer: it clicks, see mount)
     }
   }
 
@@ -213,6 +209,15 @@ export function createSettings(prefs) {
       row = 0; page = 'main'; endStep = 0; message = '';
       api.onButton(onButton);
       api.onText?.(onText);
+      // Pointer: hovering a row selects it, a tap / A on a button clicks it
+      root.addEventListener('ui-hover', (ev) => {
+        const r = ev.target.closest?.('.set-row');
+        if (r && Number(r.dataset.row) !== row) { row = Number(r.dataset.row); root.querySelectorAll('.set-row').forEach((x, i) => x.classList.toggle('focused', i === row)); }
+      });
+      root.addEventListener('click', (ev) => {
+        const b = ev.target.closest?.('[data-action]');
+        if (b) { row = Number(b.closest('.set-row')?.dataset.row ?? row); act(b.dataset.action); }
+      });
       render();
     },
     unmount() {

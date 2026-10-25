@@ -153,6 +153,7 @@ export default {
     root.className = 'channel weather';
     container.append(root);
     api.onButton(onButton);
+    api.actions([{ key: 'B', label: '‹ Back' }, { key: 'LEFT', label: '‹ City' }, { key: 'RIGHT', label: 'City ›' }, { key: 'PLUS', label: '°C / °F' }, { key: 'A', label: 'Refresh' }]); // (on-screen keys, so the pointer can do everything the D-pad can)
     fetchWeather();
   },
   unmount() {

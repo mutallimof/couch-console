@@ -202,6 +202,7 @@ export default {
     container.append(root);
     videos = []; myList = []; grid = null; playing = null; searchTerm = null; typing = false;
     api.onButton(onButton);
+    api.actions([{ key: 'B', label: '‹ Back' }, { key: 'A', label: 'Play / Pause' }, { key: 'LEFT', label: '−10 s' }, { key: 'RIGHT', label: '+10 s' }, { key: 'MINUS', label: 'Vol −' }, { key: 'PLUS', label: 'Vol +' }]); // (on-screen keys, so the pointer can do everything the D-pad can)
     api.onText(onText);
     load();
     frame = requestAnimationFrame(hoverLoop);

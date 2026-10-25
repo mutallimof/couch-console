@@ -32,10 +32,10 @@ export function createKit({ api, root, id, title, rules, min = 2, blurb = '' }) 
         const ps = roster();
         root.innerHTML = `<div class="pg-lobby"><h1>${esc(title)}</h1><p class="pg-blurb">${esc(blurb)}</p>
           <ol class="pg-rules">${rules.map((r) => `<li>${esc(r)}</li>`).join('')}</ol>
-          ${modes ? `<div class="pg-modes">${modes.map((m, i) => `<span class="ui-chip ${i === mode ? 'on' : ''}" style="--player:var(--c-accent)">${esc(m.label)}</span>`).join('')}<small><kbd>◀▶</kbd> Change</small></div>` : ''}
+          ${modes ? `<div class="pg-modes">${modes.map((m, i) => `<button type="button" class="ui-chip ${i === mode ? 'on' : ''}" data-mode-i="${i}" style="--player:var(--c-accent)">${esc(m.label)}</button>`).join('')}<small><kbd>◀▶</kbd> Change</small></div>` : ''}
           <ul class="pg-who">${ps.map((p) => `<li class="${ready[p.id] ? 'ready' : ''}" style="--player:${p.color}"><i></i><b>${esc(p.emoji)} ${esc(p.name)}</b><span>${ready[p.id] ? 'Ready' : 'Not ready'}</span></li>`).join('')}</ul>
           <p class="pg-wait">${ps.length < min ? `Needs ${min} players: join with your phones` : allReady() ? 'Everyone is ready!' : 'Press Ready on your phone. P1 can press A to start now.'}</p>
-          <p class="ui-hints"><span><kbd>A</kbd> ${esc(startText)}</span><span><kbd>B</kbd> Back</span></p></div>`;
+          <div class="ui-cta"><button type="button" class="ui-btn primary" data-key="A">${esc(startText)}</button><button type="button" class="ui-btn ghost" data-key="B">‹ Back</button></div></div>`;
         kit.show({ view: 'lobby', rules, ready: { ...ready }, startText, canStart: canStart && (modes ? modes[mode].group : false), waiting: ps.length < min ? `Needs ${min} players` : '' });
       };
       const start = () => { if (roster().length >= min || (modes && modes[mode].group)) { stage = 'play'; onStart(modes ? modes[mode] : null, roster()); } };
@@ -50,6 +50,7 @@ export function createKit({ api, root, id, title, rules, min = 2, blurb = '' }) 
         if (modes && (button === 'LEFT' || button === 'RIGHT')) { mode = (mode + (button === 'RIGHT' ? 1 : modes.length - 1)) % modes.length; draw(); return true; }
         return false;
       };
+      root.onclick = (ev) => { const b = ev.target.closest('[data-mode-i]'); if (b && stage === 'lobby') { mode = Number(b.dataset.modeI); api.sound.play('hover'); draw(); } };
       draw();
       clearInterval(repeat);
       repeat = setInterval(() => { if (alive && view) api.partySend(view); }, 1500);
@@ -62,7 +63,7 @@ export function createKit({ api, root, id, title, rules, min = 2, blurb = '' }) 
       const w = winnerId ? kit.byId(winnerId) : null;
       root.innerHTML = `<div class="pg-results"><p class="pg-kicker">${esc(title)}</p><h1 style="${w ? `color:${w.color}` : ''}">${esc(headline)}</h1><p class="pg-blurb">${esc(sub)}</p>
         <ul class="pg-rank">${rows.map((r, i) => `<li style="--player:${r.color || 'var(--c-muted)'}"><b>${i + 1}</b><span>${esc(r.name)}</span><em>${esc(r.value ?? '')}</em></li>`).join('')}</ul>
-        <p class="ui-hints"><span><kbd>A</kbd> Play again</span><span><kbd>B</kbd> Back to Party Games</span></p></div>`;
+        <div class="ui-cta"><button type="button" class="ui-btn primary" data-key="A">Play again</button><button type="button" class="ui-btn ghost" data-key="B">‹ Back to Party Games</button></div></div>`;
       kit.show({ view: 'done', headline: w ? `${w.name} wins!` : headline, text: sub });
       if (w) { api.reportWin(w.id); api.sound.play('end'); import('../../console/results.js').then((m) => m.confetti?.(root)); }
       kit.resultsKey = (button) => { if (stage !== 'results') return false; if (button === 'A') { again(); return true; } return false; };

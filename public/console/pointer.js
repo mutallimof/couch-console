@@ -116,6 +116,12 @@ export function createPointers(layer) {
       cursors.get(playerId)?.el.remove();
       cursors.delete(playerId);
     },
+    ids: () => [...cursors.keys()],
+    // Is the cursor showing (moved in the last few seconds)? Taps and A only click what it points at while it is.
+    active(playerId) {
+      const c = cursors.get(playerId);
+      return !!c && performance.now() - c.lastMove < HIDE_AFTER_MS;
+    },
     // Screen position of a player's cursor, as drawn (null if none).
     position(playerId) {
       const c = cursors.get(playerId);

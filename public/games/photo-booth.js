@@ -128,10 +128,7 @@ function onButton({ button, state: s, playerId }) {
   if (s !== 'down') return;
   if (button === 'B') return api.exit();
   if (button === 'A') {
-    // a pointer over a control wins; otherwise the shutter
-    const p = api.pointer(playerId), hit = p && document.elementFromPoint(p.x, p.y)?.closest('[data-act]');
-    if (hit && root.contains(hit)) return act(hit.dataset.act);
-    return shoot();
+    return shoot(); // (a pointer over a control is a click, see the listener in mount)
   }
   if (button === 'LEFT') stepFrame(-1);
   else if (button === 'RIGHT') stepFrame(1);

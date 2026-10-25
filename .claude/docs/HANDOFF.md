@@ -37,7 +37,7 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 ## Progress (fix-and-finish run, 9 parts; one commit per part, on main)
 - Earlier overnight run (design system, kart look, KayKit cast, home, remote v2, booth, party games, QA, cleanup): done
 - Part 1 phone screens fit (scrolling forms, sticky Join, dot amber/green, tap = click): done
-- Part 2 pointer + D-pad everywhere: todo
+- Part 2 pointer + D-pad everywhere (console/ui-pointer.js, api.actions, data-ui/data-key, sweep test): done
 - Part 3 shared viewer: todo
 - Part 4 Juicy Splash difficulty: todo
 - Part 5 Turbo Karts perf + art + split screen: todo
