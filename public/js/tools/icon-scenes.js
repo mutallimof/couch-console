@@ -18,7 +18,7 @@ const add = (root, ...objs) => root.add(...objs);
 const TOP = {
   'turbo-karts': '#7ED957', 'table-tennis': '#FFD3D3', 'juicy-slash': '#FFE8B8', 'target-range': '#C7E8A0', 'air-hockey': '#BDE3FF', 'alien-strike': '#D9C8FF',
   dungeon: '#CFC6EE', 'balloon-pop': '#FFD6EA', draw: '#E4D9FF', 'paddle-duel': '#BFEFCB', bowling: '#FFD9A8', photos: '#BFEBDD', music: '#FFD9B8', present: '#C9D6FF',
-  weather: '#CDEBFF', video: '#FFC9C9', timer: '#FFE0B0', 'on-this-day': '#E1D6FF', 'folder-party': '#FFD9B8', 'folder-arcade': '#D9C8FF', 'folder-camera': '#FFC9DC', 'folder-channels': '#BDE6EE',
+  weather: '#CDEBFF', video: '#FFC9C9', timer: '#FFE0B0', 'on-this-day': '#E1D6FF', 'folder-party': '#FFD9B8', 'folder-arcade': '#D9C8FF', 'folder-camera': '#FFC9DC', 'photo-booth': '#FFC9DC', 'folder-channels': '#BDE6EE',
 };
 export function makeBase(T, id) {
   const g = new THREE.Group();
@@ -50,6 +50,16 @@ export const SCENES = {
     kart.position.set(1.7, 0.1, 0.2); kart.rotation.y = -0.3;
     add(r, kart);
     add(r, cyl(0.08, 0.08, 2.1, '#fff', -1.4, 0, -1.7), cyl(0.08, 0.08, 2.1, '#fff', 0.4, 0, -1.7), box(2.1, 0.45, 0.12, '#3FA9FF', -0.5, 1.7, -1.7));
+  },
+  'photo-booth'(T, r) {
+    // a little booth: a pink cabin with a camera eye, a striped curtain, and a photo strip coming out
+    add(r, box(2.2, 2.7, 1.8, '#E64980', -0.2, 0, -0.4), box(2.4, 0.3, 2.0, '#C2255C', -0.2, 2.7, -0.4));
+    add(r, box(1.7, 1.9, 0.12, '#2A2F45', -0.2, 0.15, 0.52));
+    add(r, box(0.8, 1.9, 0.18, '#FFE8CC', -0.7, 0.15, 0.6), box(0.8, 1.9, 0.18, '#FFD43B', 0.3, 0.15, 0.6));
+    const lens = group(rot(cyl(0.42, 0.42, 0.22, '#2A2F45', 0, 0, 0), Math.PI / 2), rot(cyl(0.3, 0.3, 0.26, '#3FA9FF', 0, 0, 0), Math.PI / 2), rot(cyl(0.12, 0.12, 0.3, '#fff', 0.1, 0.1, 0), Math.PI / 2));
+    lens.position.set(-0.2, 2.2, 0.55); add(r, lens);
+    const strip = group(box(0.62, 1.7, 0.06, '#fff', 0, 0, 0), box(0.46, 0.4, 0.07, '#FF8A3D', 0, 0.2, 0), box(0.46, 0.4, 0.07, '#3FA9FF', 0, 0.7, 0), box(0.46, 0.4, 0.07, '#2FD6A4', 0, 1.2, 0));
+    strip.position.set(1.7, 0.05, 0.9); strip.rotation.y = -0.5; strip.rotation.z = 0.12; add(r, strip);
   },
   'table-tennis'(T, r) {
     add(r, box(3.6, 0.2, 2.4, '#2FB872', 0, 0.9, 0), box(3.6, 0.04, 0.07, '#fff', 0, 1.1, 0), box(0.1, 0.06, 2.4, '#fff', 0, 1.1, 0));

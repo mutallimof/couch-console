@@ -1,0 +1,37 @@
+/* Photo Booth on the TV: a big mirror, a bar with frame / shutter / sticker, the 3-2-1 and the flash. Tokens: theme.css. */
+.booth { position: absolute; inset: 0; display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-4) var(--sp-6) var(--sp-3); background: #0C0E16; color: #fff; }
+.booth-stage { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; }
+.booth-video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.booth-canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; aspect-ratio: 16 / 9; border-radius: var(--r-lg); background: #161A28; box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.55); object-fit: contain; }
+.booth-top { position: absolute; left: var(--sp-4); top: var(--sp-3); right: var(--sp-4); display: flex; align-items: center; gap: var(--sp-3); pointer-events: none; }
+.booth-top > span { display: inline-flex; align-items: center; gap: var(--sp-2); padding: 0.3rem 0.9rem; border-radius: var(--r-pill); background: rgba(12, 14, 22, 0.66); font: 600 1.125rem var(--display); }
+.booth-cam { color: #fff; }
+.booth-cam i { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: #FF3B5C; box-shadow: 0 0 0.8rem #FF3B5C; animation: rec 1.6s ease-in-out infinite; }
+@keyframes rec { 50% { opacity: 0.35; } }
+.booth-priv { color: rgba(255, 255, 255, 0.78); font-weight: 600; }
+.booth-faces { margin-left: auto; color: rgba(255, 255, 255, 0.9); }
+.booth-faces:empty { display: none !important; }
+.booth-count { position: absolute; inset: 0; display: grid; place-items: center; font: 600 min(30vh, 22rem) / 1 var(--display); color: #fff; text-shadow: 0 0.06em 0.3em rgba(0, 0, 0, 0.45); pointer-events: none; }
+.booth-count:empty { display: none; }
+.booth-count.pop { animation: booth-pop 0.9s var(--ease-out) both; }
+@keyframes booth-pop { 0% { opacity: 0; transform: scale(1.5); } 25% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(0.85); } }
+.booth-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; border-radius: var(--r-lg); }
+.booth-flash.go { animation: booth-flash 0.55s ease-out both; }
+@keyframes booth-flash { 0% { opacity: 0.95; } 100% { opacity: 0; } }
+.booth-shot { position: absolute; right: var(--sp-4); bottom: var(--sp-4); width: min(22vw, 20rem); padding: var(--sp-2); border-radius: var(--r-md); background: #fff; color: #2A2F45; text-align: center; box-shadow: var(--sh-3); transform: translateY(1rem) rotate(2deg) scale(0.9); opacity: 0; pointer-events: none; transition: transform var(--dur-3) var(--ease-out), opacity var(--dur-3) var(--ease-out); }
+.booth-shot.show { opacity: 1; transform: rotate(2deg); }
+.booth-shot img { width: 100%; display: block; border-radius: var(--r-sm); }
+.booth-shot span { display: block; margin-top: var(--sp-1); font: 600 1rem var(--display); }
+.booth-msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; max-width: 40rem; padding: var(--sp-4) var(--sp-5); border-radius: var(--r-lg); background: rgba(12, 14, 22, 0.85); font: 600 var(--fs-title) / 1.3 var(--display); text-align: center; text-wrap: balance; }
+.booth-bar { display: flex; align-items: center; justify-content: center; gap: var(--sp-6); }
+.booth-pick { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-pill); background: rgba(255, 255, 255, 0.1); }
+.booth-pick button { width: 3rem; height: 3rem; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.14); color: #fff; font-size: 1.125rem; cursor: pointer; }
+.booth-pick button:hover { background: rgba(255, 255, 255, 0.28); }
+.booth-pick span { min-width: 11rem; text-align: center; display: flex; flex-direction: column; line-height: 1.1; }
+.booth-pick small { color: rgba(255, 255, 255, 0.65); font: 700 0.9375rem var(--font); }
+.booth-pick b { font: 600 1.5rem var(--display); }
+.booth-shutter { min-width: 14rem; min-height: 4.25rem; font-size: 1.5rem; gap: var(--sp-3); background: #FF4D7A; color: #fff; }
+.booth-shutter:disabled { opacity: 0.55; }
+.booth-hints { justify-content: center; color: rgba(255, 255, 255, 0.7); margin: 0; }
+.booth-hints kbd { background: rgba(255, 255, 255, 0.16); color: #fff; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .booth-cam i { animation: none; } .booth-count.pop { animation-duration: 0.4s; } }

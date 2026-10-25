@@ -254,7 +254,7 @@ function openApp(app) {
   busy = true;
   sound.play('select');
   const stage = $('stage');
-  current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set(), text: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
+  current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set(), text: new Set(), booth: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
   stage.style.setProperty('--tile', app.color);
   // Games (not the hubs and channels) pause the party music, unless Settings -> Party says otherwise
   musicPlayer.setGameActive(!['music', 'photos', 'present', 'settings'].includes(app.id) && app.folder !== 'channels');
@@ -326,6 +326,8 @@ function makeApi(cur, mode) {
     onSwing: (fn) => handlers.swing.add(fn),
     onWheel: (fn) => handlers.wheel.add(fn),          // { playerId, steer: -1..1 }
     onText: (fn) => handlers.text.add(fn),            // { playerId, text } typed on a phone
+    onBooth: (fn) => handlers.booth.add(fn),          // Photo Booth: a phone pressed the shutter or changed the frame / sticker
+    emitBooth: (state) => socket.emit(EV.BOOTH_STATE, state), // ...and tells the phones what the booth is doing
     setController,                                    // 'wheel' for driving games, 'keyboard' to type
     setCursor: (style) => pointers.setStyle(style),   // 'crosshair' for aiming games
     // Smoothed cursor position in screen pixels (the stage fills the screen).
@@ -442,6 +444,7 @@ function onInputText(e) {
   if (gameGets(e.playerId)) current.handlers.text.forEach((fn) => fn({ playerId: e.playerId, text: e.text.slice(0, 100) }));
 }
 socket.on(EV.INPUT_TEXT, onInputText);
+socket.on(EV.BOOTH_CMD, (cmd) => { if (current?.mounted && current.missing.size === 0) current.handlers.booth.forEach((fn) => fn(cmd)); });
 
 socket.on(EV.INPUT_RECENTER, (e) => { count(e.playerId); gyro.recenter(e.playerId, !!e.relearn); }); // relearn: the phone's screen turned
 

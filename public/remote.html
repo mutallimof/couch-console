@@ -83,6 +83,16 @@
     </div>
   </main>
 
+  <!-- Photo Booth: the TV is using its camera. A big shutter button and the frames and stickers to pick from. -->
+  <section id="booth-pad" class="booth-pad" hidden>
+    <header><h2>Photo Booth</h2><p id="bp-status">Waiting for the TV…</p></header>
+    <button id="bp-shutter" class="bp-shutter" type="button" disabled data-status="idle"><b></b><span>Take photo</span></button>
+    <div class="bp-block"><h3>Frame</h3><div id="bp-frames" class="bp-chips"></div></div>
+    <div class="bp-block"><h3>Sticker</h3><div id="bp-stickers" class="bp-chips"></div></div>
+    <p class="bp-note">Photos land in the Photos tab: open one to save it to your phone.</p>
+    <button id="bp-home" class="join-btn ghost" type="button">Back to the menu</button>
+  </section>
+
   <!-- Keyboard layout: type text for the console (e.g. a YouTube search) -->
   <form id="keyboard-pad" class="panel keyboard-pad" hidden>
     <p id="keyboard-prompt" class="kb-prompt">Type here</p>

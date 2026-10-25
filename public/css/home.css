@@ -21,10 +21,10 @@ html, body { font-family: var(--font); }
 .home { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
 .crumb { margin: 0 0 0 var(--sp-3); font: 600 var(--fs-h1) / 1 var(--display); }
 /* ONE grid: the hero takes two columns and two rows on the left, the rest fills the right */
-.tiles { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: var(--sp-5); padding: var(--sp-6); overflow: hidden auto; }
+.tiles { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: var(--sp-5); padding: var(--sp-6); overflow: hidden auto; }
 .tiles .hero { grid-column: span 2; grid-row: span 2; }
 .tiles.in-folder .hero { grid-column: auto; grid-row: auto; }
-.tiles.in-folder { grid-template-rows: none; grid-auto-rows: 17rem; align-content: start; }
+.tiles.in-folder { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: 17rem; align-content: start; }
 .tile { min-height: 0; }
 .hero .name { font-size: var(--fs-title); }
 

@@ -100,3 +100,6 @@ The eight racers are KayKit "Adventurers Character Pack 1.0" (Knight, Barbarian,
 
 ## Developer tools (npm devDependencies, not shipped to players)
 playwright (Apache-2.0: headless screenshots and the end-to-end tests), @gltf-transform/core, /functions and /extensions (MIT) and meshoptimizer (MIT): used by `scripts/build-cast.mjs` to optimize the character models. lil-gui (MIT) comes inside three (`three/addons/libs/lil-gui.module.min.js`) and powers the F4 tuning panel.
+
+## MediaPipe (Apache-2.0)
+Photo Booth's face stickers use @mediapipe/tasks-vision (Google, Apache-2.0; served from node_modules under /vendor/mediapipe) and the Face Landmarker model `public/assets/models/face_landmarker.task` (Google, Apache-2.0, from https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task). Everything runs in the browser on the laptop; no picture is sent anywhere.

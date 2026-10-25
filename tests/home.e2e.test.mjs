@@ -42,7 +42,7 @@ test('home: one grid, hero tile, folders open as screens, nothing is reachable t
     assert.equal(await tv.locator('.side, #hero, #who, #phones').count(), 0, 'no sidebar, recently played, Guest chip');
 
     // One grid, in order, each item once; folders without games are not shown
-    assert.deepEqual(await titles(), ['Turbo Karts', 'Arcade', 'Channels', 'Photos', 'Music', 'Present', 'Settings']);
+    assert.deepEqual(await titles(), ['Turbo Karts', 'Arcade', 'Camera', 'Channels', 'Photos', 'Music', 'Present', 'Settings']);
     assert.equal(await tv.locator('#tiles .tile.hero').count(), 1);
     const [hero, small] = await tv.evaluate(() => [...document.querySelectorAll('#tiles .tile')].slice(0, 2).map((t) => t.getBoundingClientRect().width * t.getBoundingClientRect().height));
     assert.ok(hero > small * 3, 'Turbo Karts is the big tile');

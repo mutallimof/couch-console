@@ -1,0 +1,8 @@
+{
+  "title": "Photo Booth",
+  "color": "#C2255C",
+  "order": 1,
+  "players": 4,
+  "hidden": false,
+  "folder": "camera"
+}

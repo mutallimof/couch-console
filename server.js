@@ -93,6 +93,7 @@ app.get('/api/icons', (req, res) => {
 app.use('/vendor/postprocessing', express.static(file('./node_modules/postprocessing/build')));
 app.use('/vendor/three.quarks', express.static(file('./node_modules/three.quarks/dist')));
 app.use('/vendor/quarks.core', express.static(file('./node_modules/quarks.core/dist'))); // (three.quarks 0.17 imports it)
+app.use('/vendor/mediapipe', express.static(file('./node_modules/@mediapipe/tasks-vision'))); // (Photo Booth: face tracking, runs in the browser)
 app.use('/vendor/gsap', express.static(file('./node_modules/gsap')));
 app.use('/vendor/pixi.js', express.static(file('./node_modules/pixi.js/dist')));
 app.use('/vendor/pixi-filters', express.static(file('./node_modules/pixi-filters/dist')));
@@ -286,6 +287,23 @@ io.on('connection', (socket) => {
     io.to(remotesChannel(socket.data.room)).emit(EV.FEEDBACK_MODE, payload);
   });
 
+  // Photo Booth: a phone asks the TV to take a photo or change the frame / sticker, and the TV tells the phones what is going on.
+  // The room remembers the last state, so a phone that joins late shows the right frame.
+  const BOOTH_CMDS = new Set(['shoot', 'frame', 'sticker']);
+  socket.on(EV.BOOTH_CMD, (cmd) => {
+    if (socket.data.role !== 'remote') return;
+    const room = rooms.get(socket.data.room);
+    if (!room || !BOOTH_CMDS.has(cmd?.cmd)) return;
+    io.to(room.consoleId).emit(EV.BOOTH_CMD, { cmd: cmd.cmd, dir: cmd.dir === -1 ? -1 : 1, id: typeof cmd.id === 'string' ? cmd.id.slice(0, 30) : undefined, by: room.people.get(socket.data.personKey)?.name || 'Someone' });
+  });
+  socket.on(EV.BOOTH_STATE, (state) => {
+    if (socket.data.role !== 'console') return;
+    const room = rooms.get(socket.data.room);
+    if (!room || !state || typeof state !== 'object') return;
+    room.booth = state.camera === 'off' ? null : state;
+    io.to(remotesChannel(socket.data.room)).emit(EV.BOOTH_STATE, state);
+  });
+
   // --- Remote (phone) ---
   socket.on(EV.REMOTE_JOIN, (payload, ack) => {
     if (typeof ack !== 'function') return;
@@ -326,7 +344,7 @@ io.on('connection', (socket) => {
     socket.join(remotesChannel(code));
     const color = colorOf(person);
     if (playerId) io.to(room.consoleId).emit(EV.PLAYER_JOINED, { playerId, color });
-    ack({ ok: true, role: playerId ? 'player' : 'guest', playerId: playerId || null, color, layout: room.layout, theme: room.theme,
+    ack({ ok: true, role: playerId ? 'player' : 'guest', playerId: playerId || null, color, layout: room.layout, theme: room.theme, booth: room.booth || null,
       person: { id: person.id, name: person.name, emoji: person.emoji, avatar: person.avatar }, full, ...roster(room) });
     broadcastRoster(room, code);
     console.log(`Room ${code}: ${playerId ? `P${playerId}` : `guest ${person.name}`} joined`);

@@ -59,6 +59,8 @@ export const EV = {
   PRESENT_STATE: 'present:state',   // server -> TV + phones: { active, deck, page, black, presenter, laser, notes }
   PRESENT_DECK: 'present:deck',     // server -> TV + phones: { kind: 'added' | 'updated' | 'removed', deck }
   PRESENT_MOTION: 'present:motion', // presenter's phone -> server -> TV: raw sensors for the laser dot (only while the laser is on)
+  BOOTH_CMD: 'booth:cmd',           // phone -> server -> TV (Photo Booth): { cmd: 'shoot' | 'frame' | 'sticker', dir?: 1 | -1, id?: string }
+  BOOTH_STATE: 'booth:state',       // TV -> server -> phones: { frames: [{ id, name }], stickers: [{ id, name }], frame, sticker, status: 'idle' | 'counting' | 'saving' | 'saved', count?, camera }
   REMOTE_PROFILE: 'remote:profile', // phone -> server, with ack: { name, emoji } -> { ok }
 };
 

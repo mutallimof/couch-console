@@ -5,6 +5,7 @@ import { createSwing } from './swing.js';
 import { createWheel } from './wheel.js';
 import { createKartPad } from './kart-pad.js';
 import { createHaptics } from './haptics.js';
+import { createBoothPad } from './booth.js';
 import { createParty } from './party.js';
 import './no-zoom.js';
 
@@ -131,6 +132,7 @@ function join() {
     $('welcome').hidden = true;
     followTheme(res.theme);
     setLayout(res.layout, 'join'); // the layout the console wants right now (e.g. the kart pad mid-race)
+    if (res.booth) booth.update(res.booth); // (the Photo Booth may already be running)
     party.onJoined(res);
     applyMode();
     if (!started && role === 'player') $('start').hidden = false;
@@ -259,6 +261,8 @@ const sendSteer = (steer) => {
   socket.emit(EV.INPUT_WHEEL, { steer }); // (not volatile: "straight again" must never get lost)
 };
 const haptics = createHaptics();
+const booth = createBoothPad({ root: $('booth-pad'), send: (cmd) => socket.emit(EV.BOOTH_CMD, cmd), onHome: () => emit(EV.INPUT_BUTTON, { button: 'HOME', state: 'down' }), haptics });
+socket.on(EV.BOOTH_STATE, (st) => booth.update(st));
 const wheel = createWheel({ onSteer: (steer) => { if (kartPad.tilt) { sendSteer(steer); kartPad.setWheelVisual(steer); } } });
 const kartPad = createKartPad({
   haptics,
@@ -280,10 +284,12 @@ function applyMode() {
   $('start').hidden = started || role !== 'player' || party.tab !== 'remote';
   // Guests have no controller: the kart pad and the keyboard are for players. Tabs other than Remote hide the controller.
   const isPlayer = role === 'player';
-  const isKart = isPlayer && mode === 'wheel', isKeys = isPlayer && mode === 'keyboard';
+  const isKart = isPlayer && mode === 'wheel', isKeys = isPlayer && mode === 'keyboard', isBooth = mode === 'booth'; // (the booth is for everyone, guests too)
   const wasKart = !$('kart-pad').hidden;
   party.setMode(isKart || isKeys ? mode : 'pointer');
-  $('controller').hidden = isKart || isKeys || !isPlayer || party.tab !== 'remote';
+  $('controller').hidden = isKart || isKeys || isBooth || !isPlayer || party.tab !== 'remote';
+  $('booth-pad').hidden = !isBooth;
+  $('bp-home').hidden = !isPlayer; // (guests have no buttons to press)
   $('kart-pad').hidden = !isKart;
   document.body.classList.toggle('kart-mode', isKart); // hides the top bar: the pad has its own
   $('keyboard-pad').hidden = !isKeys;
@@ -299,7 +305,7 @@ function applyMode() {
 // real change does anything (repeating 'keyboard' must not wipe what you're typing).
 let layoutInfo = { from: 'none', at: 0 }; // for the ?debug=1 readout
 function setLayout({ mode: m, prompt } = {}, from = 'console') {
-  const next = ['wheel', 'keyboard'].includes(m) ? m : 'pointer';
+  const next = ['wheel', 'keyboard', 'booth'].includes(m) ? m : 'pointer';
   layoutInfo = { from, at: Date.now() };
   if (next === mode && (prompt || 'Type here') === $('keyboard-prompt').textContent) return;
   mode = next;

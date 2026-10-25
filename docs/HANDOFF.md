@@ -42,7 +42,8 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Part 2 Turbo Karts race look: done (karts-sky/terrain/props/skids/items/tuning.js, karts.css HUD, F4 lil-gui panel, shots in docs/screenshots/tracks/)
 - Part 3 KayKit cast: done (8 racers in public/assets/cast, new select screen with track cards, 3D podium, hero icon re-rendered)
 - Part 4 home polish: done (dock, live 3D hero tile via home-live.js, animated art, drifting glow, taglines.json)
-- Part 5 phone remote v2: code done (haptics.js, wheel smoothing, kart pad v2), committed with Part 5
+- Part 5 phone remote v2: done (haptics.js, wheel smoothing, kart pad v2)
+- Part 6 Photo Booth: done (games/photo-booth*, MediaPipe face stickers with the model in public/assets/models, phone booth pad, booth:cmd / booth:state socket events)
 
 ## Phases (from `docs/REBUILD-PLAN.md`)
 | # | What | Status |

@@ -30,7 +30,7 @@ export function sniff(buf) {
 
 export function createPhotos({ app, io, rooms, party, activity }) {
   const { events, need, who } = party;
-  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_FILE_BYTES, files: 2, fields: 8 } });
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_FILE_BYTES, files: 2, fields: 9 } });
   const rate = new Map(); // personKey -> [timestamps]
   const router = express.Router();
 
@@ -85,7 +85,7 @@ export function createPhotos({ app, io, rooms, party, activity }) {
       const w = Math.min(20000, Math.max(0, parseInt(req.body?.w, 10) || 0)), h = Math.min(20000, Math.max(0, parseInt(req.body?.h, 10) || 0));
       const p = {
         id, ext: kind.ext, hash, size: full.length, w, h, at: Date.now(),
-        by: a.person?.id || 'host', byName: a.person?.name || 'TV', byEmoji: a.person?.emoji || '📺', byAvatar: a.person?.avatar || null,
+        by: a.person?.id || 'host', byName: a.person?.name || (req.body?.booth ? 'Photo Booth' : 'TV'), byEmoji: a.person?.emoji || (req.body?.booth ? '📸' : '📺'), byAvatar: a.person?.avatar || null,
         byColor: a.person ? (a.person.playerId ? ['#2F80ED', '#EB5757', '#27AE60', '#D99A00'][a.person.playerId - 1] : a.person.guestColor) : '#5B6577',
         hidden: false, pending: !!event.settings.approvePhotos && !a.host, noPreview: !kind.preview,
       };
