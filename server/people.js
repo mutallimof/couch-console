@@ -1,8 +1,8 @@
 // Who is in a room (Phase 43): players (P1-P4, with a controller) and guests (a name, an emoji and
 // a color; no controller). The roster is what the TV and every phone show. Pure functions around a
 // room object, so they can be tested without sockets.
-import { cleanAvatar } from '../public/js/shared/avatar.js';
-import { MAX_PLAYERS, MAX_GUESTS, PLAYER_COLORS, GUEST_COLORS, EMOJIS, NAME_MAX } from '../public/js/shared/protocol.js';
+import { cleanAvatar } from '../public/shared/avatar.js';
+import { MAX_PLAYERS, MAX_GUESTS, PLAYER_COLORS, GUEST_COLORS, EMOJIS, NAME_MAX } from '../public/shared/protocol.js';
 
 // Names come from phones: keep them short and free of control characters. (The pages also escape them.)
 export function cleanName(name, fallback) {

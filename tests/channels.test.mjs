@@ -1,7 +1,7 @@
 // Timer channel rules (countdown, stopwatch, time format), tested without a browser: npm test
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTime, createCountdown, createStopwatch, MAX_TIMER } from '../public/js/console/channels/timer-logic.js';
+import { formatTime, createCountdown, createStopwatch, MAX_TIMER } from '../public/apps/timer-logic.js';
 
 // A fake clock we can move by hand
 function clock() { let t = 1000; return { now: () => t, wait: (ms) => { t += ms; } }; }

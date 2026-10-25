@@ -2,7 +2,7 @@
 // (adapted from OpenWii's games/fruit-ninja/logic.test.mjs, MIT)
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SlashBoard, FIELD_H } from '../public/js/console/games/juicy-slash-rules.js';
+import { SlashBoard, FIELD_H } from '../public/games/juicy-slash-rules.js';
 
 /**
  * The eight mechanics that had to survive the 2D→3D port.
@@ -183,7 +183,7 @@ test('spawning emits a launch event (the throw sound hook)', () => {
 });
 
 // ── Multiplayer: several phones on the same board ───────────────────────────
-// The server tags every packet with a `slot` (see server.js); logic.js fans
+// The server tags every packet with a `slot` (see server/index.js); logic.js fans
 // out its single blade into one per connected phone. These tests exercise
 // slots directly rather than through a socket, same as every other test here.
 

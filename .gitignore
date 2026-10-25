@@ -1,11 +1,26 @@
-node_modules
-.DS_Store
-*.log
+# Dependencies
+node_modules/
+
+# Secrets and private data (never commit these)
+config.json
 certs/
 *.pem
+data/
 photos/*
 !photos/README.txt
 videos.txt
-config.json
-data/
+.env
+
+# Generated output (screenshots from scripts/qa-shots.mjs, test runs)
 out/
+test-results/
+playwright-report/
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log

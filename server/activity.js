@@ -3,7 +3,7 @@
 // and the phones, and fetched when a screen opens. Lines from the same person and kind that come
 // close together are merged ("added 3 photos") instead of flooding the feed.
 import { randomBytes } from 'node:crypto';
-import { EV } from '../public/js/shared/protocol.js';
+import { EV } from '../public/shared/protocol.js';
 
 const KEEP = 60;
 const MERGE_MS = 45_000;

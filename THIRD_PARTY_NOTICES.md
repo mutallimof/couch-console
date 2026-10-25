@@ -1,20 +1,12 @@
 # Third-party notices
 
 Couch Console includes assets and code adapted from the projects below. This list covers only what is
-still in the project (unused files were removed in Phase 53).
-
-## Quaternius Ultimate Animated Character Pack
-
-- Source: https://quaternius.com (Quaternius, "LowPoly Models by @Quaternius")
-- Used in: `public/assets/quaternius-characters/` (glTF models and `License.txt`), the racers of
-  Turbo Karts (`public/js/console/games/turbo-karts/ow-kart/characters.js`)
-- License: CC0 1.0 Universal (public domain dedication), https://creativecommons.org/publicdomain/zero/1.0/
-  Credit is not required but given with thanks. The pack's `License.txt` is kept next to the models.
+still in the project (unused files were removed in the final cleanup).
 
 ## Kenney: Toy Car Kit and Racing Kit
 
 - Source: https://kenney.nl (Kenney)
-- Used in: `public/assets/car-kit/` (the karts, the item box, the coin, two trees: 12 models and their
+- Used in: `public/assets/car-kit/` (the karts, the item box, the coin, two trees: 8 models and their
   colour texture) and `public/assets/racing-kit/` (11 trackside models: grandstand, tents, flags, banners,
   light post, pylon, billboard). Each kit's `License.txt` is kept next to its models.
 - License: CC0 1.0 Universal (public domain dedication). Credit is not required but given with thanks.
@@ -32,32 +24,31 @@ still in the project (unused files were removed in Phase 53).
 - **pdf.js** (Apache-2.0, https://mozilla.github.io/pdf.js/, `pdfjs-dist`): served from `node_modules` (PDF slides).
 - **Nunito** font (SIL Open Font License, Google Fonts): loaded from Google Fonts by both pages.
 - **YouTube** (Music and Video): played with YouTube's own embedded player under YouTube's terms of service; nothing is downloaded or stored.
-- **Poly Haven** (CC0, https://polyhaven.com): optional, only if you add files to `public/assets/polyhaven/`.
 
 ## OpenWii
 
 - Source: https://github.com/pattssun/OpenWii
 - Used in:
-  - `public/js/console/pointer/gyro-pointer.js` (from `core/pointer.js`)
-  - `public/js/console/pointer/orientation.js` (from `core/orientation.js`)
+  - `public/console/pointer/gyro-pointer.js` (from `core/pointer.js`)
+  - `public/console/pointer/orientation.js` (from `core/orientation.js`)
   - `tests/gyro-pointer.test.mjs` (from `core/core.test.mjs`)
-  - `public/js/console/games/turbo-karts/karts-fx.js` (drift sparks, smoke, sparkle bursts and the boost
+  - `public/games/turbo-karts/karts-fx.js` (drift sparks, smoke, sparkle bursts and the boost
     flame, adapted from `games/mario-kart/race-effects.js` and `boost-effect.js`)
-  - `public/js/console/games/turbo-karts/karts-materials.js` (procedural asphalt with normal/roughness maps
+  - `public/games/turbo-karts/karts-materials.js` (procedural asphalt with normal/roughness maps
     and tyre-wear shader, adapted from `games/mario-kart/materials.js`)
   - Techniques (no code copied verbatim) in `karts-look.js` (PBR Neutral tone mapping,
     multisampled half-float effect chain) and `turbo-karts.js` (fill light, tight follow-shadow)
-  - `public/js/console/games/juicy-slash.js`, `juicy-slash-rules.js`, `tests/juicy-slash.test.mjs`
+  - `public/games/juicy-slash.js`, `juicy-slash-rules.js`, `tests/juicy-slash.test.mjs`
     (from `games/fruit-ninja/game.js`, `logic.js`, `logic.test.mjs` and `core/trail.js`)
-  - `public/js/console/games/alien-strike.js`, `alien-strike-rules.js`, `tests/alien-strike.test.mjs`
+  - `public/games/alien-strike.js`, `alien-strike-rules.js`, `tests/alien-strike.test.mjs`
     (from `games/alien-attack/game.js`, `logic.js`, `logic.test.mjs`)
-  - `public/js/console/games/ow-audio.js` (from `core/audio.js`, the synthesized sound effects engine)
-  - `public/js/console/games/turbo-karts/ow-kart/` and `turbo-karts.js` (Turbo Karts): `rules.js`, `frame.js`,
+  - `public/games/ow-audio.js` (from `core/audio.js`, the synthesized sound effects engine)
+  - `public/games/turbo-karts/ow-kart/` and `turbo-karts.js` (Turbo Karts): `rules.js`, `frame.js`,
     `contact.js` and `track-model.js` follow `games/mario-kart/logic.js`, `visual-frame.js`,
     `contact.js` and `track.js` (physics, handling, drifting, items, computer drivers, camera pose);
     `turbo-karts.js` follows `game.js` (camera smoothing, HUD, race flow); `tests/ow-kart-rules.test.mjs`
     is adapted from `logic.test.mjs`
-  - `public/js/console/games/turbo-karts/ow-kart/stadium/` (the Grand Stadium scenery, from `world.js`,
+  - `public/games/turbo-karts/ow-kart/stadium/` (the Grand Stadium scenery, from `world.js`,
     `atmosphere.js`, `materials.js`, `stadium-*.js`) and its turf texture `art/turf-v1.png`.
     Signs, sponsors, lettering and the tower statue were replaced with original ones, and the
     course layout (`stadium/stadium-def.js`) is our own original shape, not OpenWii's.
@@ -90,10 +81,13 @@ SOFTWARE.
 ```
 
 ## Poly Haven (CC0)
-HDRIs: kloofendal_48d_partly_cloudy, snowy_field, cloud_layers, solitude_night, rogland_moonlit_night. Textures: asphalt_03, concrete_pavement_03 and ground sets. https://polyhaven.com, CC0.
+Texture: concrete_pavement_03 (the Grand Stadium's road), `public/assets/polyhaven/`. https://polyhaven.com, CC0.
+
+## Kenney sound effects (CC0)
+20 short sounds from Kenney's Interface, Impact and Jingles packs, in `public/assets/sounds/kenney/` (each pack's `License.txt` kept). https://kenney.nl
 
 ## Libraries added in Phase 55 (npm, served from node_modules under /vendor)
-gsap (GreenSock Standard License, free for this use), howler (MIT), lottie-web (MIT), pixi.js and pixi-filters (MIT), postprocessing (Zlib), three.quarks (MIT).
+gsap (GreenSock Standard License, free for this use), howler (MIT), pixi.js and pixi-filters (MIT), postprocessing (Zlib), three.quarks (MIT).
 
 ## KayKit character packs (CC0)
 The eight racers are KayKit "Adventurers Character Pack 1.0" (Knight, Barbarian, Mage, Rogue, Rogue Hooded) and "Skeletons Character Pack 1.0" (Skeleton Warrior, Skeleton Mage, Skeleton Rogue) by Kay Lousberg, https://kaylousberg.com, CC0. Sources: https://github.com/KayKit-Game-Assets. We only ship the optimized files in `public/assets/cast/` (held weapons removed, only the clips we play kept, made by `scripts/build-cast.mjs`); the pack's license text is in `public/assets/cast/LICENSE.txt`. The names and colors of the racers are ours.

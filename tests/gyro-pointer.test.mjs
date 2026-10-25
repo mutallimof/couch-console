@@ -4,8 +4,8 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bodyAxes, bodyAxesFromQuat, DEG } from '../public/js/console/pointer/orientation.js';
-import { Pointer } from '../public/js/console/pointer/gyro-pointer.js';
+import { bodyAxes, bodyAxesFromQuat, DEG } from '../public/console/pointer/orientation.js';
+import { Pointer } from '../public/console/pointer/gyro-pointer.js';
 
 /**
  * Tests for the rate-based pointer with the learned device axis map.

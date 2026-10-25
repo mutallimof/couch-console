@@ -18,7 +18,7 @@ const pw = findPlaywright();
 const PORT = 5100 + Math.floor(Math.random() * 300);
 
 test('welcome card, player and guest tabs, joined notes, folders', { skip: !pw && 'Playwright is not installed', timeout: 240000 }, async () => {
-  const server = spawn(process.execPath, ['server.js'], {
+  const server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));

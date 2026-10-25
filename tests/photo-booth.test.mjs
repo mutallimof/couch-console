@@ -1,10 +1,10 @@
 // Photo Booth without a camera: the frames and stickers draw, the face anchor math is right, sticker choices work out. npm test
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FRAMES, drawFrame } from '../public/js/console/games/photo-booth/booth-frames.js';
-import { STICKERS, faceAnchor, drawSticker } from '../public/js/console/games/photo-booth/booth-stickers.js';
-import { wrapIndex, stickerFor, applyCommand } from '../public/js/console/games/photo-booth.js';
-import { EV } from '../public/js/shared/protocol.js';
+import { FRAMES, drawFrame } from '../public/games/photo-booth/booth-frames.js';
+import { STICKERS, faceAnchor, drawSticker } from '../public/games/photo-booth/booth-stickers.js';
+import { wrapIndex, stickerFor, applyCommand } from '../public/games/photo-booth.js';
+import { EV } from '../public/shared/protocol.js';
 
 // A pretend 2D canvas context: remembers the calls, answers gradients, counts save() and restore()
 function fakeContext() {

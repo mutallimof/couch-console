@@ -7,19 +7,19 @@ import { join, dirname, normalize } from 'node:path';
 
 const pub = new URL('../public/', import.meta.url).pathname;
 const code = [];
-(function walk(dir) {
+function walk(dir) {
   for (const f of readdirSync(dir)) {
     const p = join(dir, f);
     if (statSync(p).isDirectory()) walk(p); else if (/\.(js|json)$/.test(f)) code.push(readFileSync(p, 'utf8'));
   }
-})(join(pub, 'js'));
+}
+for (const d of ['console', 'phone', 'games', 'apps', 'shared', 'tools']) walk(join(pub, d));
 const all = code.join('\n');
 
 function wanted() {
   const out = new Set();
   for (const m of all.matchAll(/\b(CAR|RACE|PIRATE)\('([^']+)'\)/g)) out.add(m[1] === 'CAR' ? `car-kit/Models/GLB format/${m[2]}.glb` : m[1] === 'RACE' ? `racing-kit/Models/GLTF format/${m[2]}.glb` : `pirate-kit/glTF/${m[2]}.gltf`);
   for (const m of all.matchAll(/model: '(vehicle-[\w-]+)'/g)) out.add(`car-kit/Models/GLB format/${m[1]}.glb`);
-  for (const m of all.matchAll(/\bQ\('([^']+)'\)/g)) out.add(`quaternius-characters/glTF/${m[1]}.gltf`);
   return [...out];
 }
 
@@ -45,5 +45,5 @@ test('every model the code asks for exists, and so does everything it loads', ()
 });
 
 test('each asset pack keeps its license file', () => {
-  for (const f of ['car-kit/License.txt', 'racing-kit/License.txt', 'quaternius-characters/License.txt']) assert.ok(existsSync(join(pub, 'assets', f)), f);
+  for (const f of ['car-kit/License.txt', 'racing-kit/License.txt', 'cast/LICENSE.txt']) assert.ok(existsSync(join(pub, 'assets', f)), f);
 });

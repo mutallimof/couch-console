@@ -17,7 +17,7 @@ const pw = findPlaywright();
 const PORT = 8800 + Math.floor(Math.random() * 300);
 
 test('home: one grid, hero tile, folders open as screens, nothing is reachable two ways', { skip: !pw && 'Playwright is not installed', timeout: 240000 }, async () => {
-  const server = spawn(process.execPath, ['server.js'], {
+  const server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));

@@ -3,12 +3,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { TRACKS } from '../public/js/console/games/turbo-karts/kart-path.js';
-import { createTrackModel } from '../public/js/console/games/turbo-karts/ow-kart/track-model.js';
-import { renderPath } from '../public/js/console/games/turbo-karts/ow-kart/render-path.js';
-import { buildTerrain } from '../public/js/console/games/turbo-karts/karts-terrain.js';
-import { makeNoise } from '../public/js/console/games/turbo-karts/karts-noise.js';
-import { WORLD, worldOf } from '../public/js/console/games/turbo-karts/karts-themes.js';
+import { TRACKS } from '../public/games/turbo-karts/kart-path.js';
+import { createTrackModel } from '../public/games/turbo-karts/ow-kart/track-model.js';
+import { renderPath } from '../public/games/turbo-karts/ow-kart/render-path.js';
+import { buildTerrain } from '../public/games/turbo-karts/karts-terrain.js';
+import { makeNoise } from '../public/games/turbo-karts/karts-noise.js';
+import { WORLD, worldOf } from '../public/games/turbo-karts/karts-themes.js';
 
 test('noise is deterministic and stays in 0..1', () => {
   const a = makeNoise(5), b = makeNoise(5);

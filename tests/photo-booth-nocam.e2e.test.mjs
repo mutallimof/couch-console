@@ -16,7 +16,7 @@ const pw = findPlaywright();
 const PORT = 7400 + Math.floor(Math.random() * 200);
 
 test('photo booth without a camera: a clear message, no shutter, no crash, B leaves', { skip: !pw && 'Playwright is not installed', timeout: 120000 }, async () => {
-  const server = spawn(process.execPath, ['server.js'], {
+  const server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-nocam-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));

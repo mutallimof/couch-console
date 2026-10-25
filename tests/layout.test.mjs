@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { EV } from '../public/js/shared/protocol.js';
+import { EV } from '../public/shared/protocol.js';
 
 const require = createRequire(import.meta.url);
 // The same socket.io client the phone page uses. It needs WebSocket (built into Node 22+;
@@ -17,7 +17,7 @@ const PORT = 9700 + Math.floor(Math.random() * 300);
 let server;
 
 test.before(async () => {
-  server = spawn(process.execPath, ['server.js'], {
+  server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve, reject) => {
@@ -75,8 +75,8 @@ test('only the console can change the layout', { timeout: 10000 }, async () => {
 // The phone page must keep its zoom guards (iPhone Safari ignores the viewport tag)
 import { readFileSync } from 'node:fs';
 test('the phone page loads the no-zoom guards', () => {
-  const main = readFileSync(new URL('../public/js/remote/main.js', import.meta.url), 'utf8');
-  const guard = readFileSync(new URL('../public/js/remote/no-zoom.js', import.meta.url), 'utf8');
+  const main = readFileSync(new URL('../public/phone/main.js', import.meta.url), 'utf8');
+  const guard = readFileSync(new URL('../public/phone/no-zoom.js', import.meta.url), 'utf8');
   assert.match(main, /import '\.\/no-zoom\.js'/);
   for (const part of ['gesturestart', 'touchend', 'visualViewport']) assert.ok(guard.includes(part), `no-zoom.js handles ${part}`);
 });

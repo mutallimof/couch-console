@@ -1,3 +1,4 @@
-# Poly Haven (CC0) files go here
+# Poly Haven (CC0)
 
-See docs/kart-art-options.md for what to download and the exact file names. Empty is fine: the game then uses its generated sky and road.
+`textures/concrete/textures/concrete_pavement_03_*_1k.jpg`: the Grand Stadium's concrete road (https://polyhaven.com/a/concrete_pavement_03, CC0).
+If these files are missing the game uses its generated road instead.

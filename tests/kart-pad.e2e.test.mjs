@@ -20,7 +20,7 @@ const pw = findPlaywright();
 const PORT = 8100 + Math.floor(Math.random() * 300);
 
 test('the kart pad appears on every phone during a race, and steers', { skip: !pw && 'Playwright is not installed', timeout: 300000 }, async () => {
-  const server = spawn(process.execPath, ['server.js'], {
+  const server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), PING_TIMEOUT_MS: '300000', DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));
@@ -29,7 +29,7 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
     const B = `http://localhost:${PORT}`;
     // Console: remember the last steering value that arrived, and expose the game state
     const lctx = await browser.newContext({ viewport: { width: 1000, height: 560 } });
-    await lctx.route('**/js/console/main.js', async (route) => {
+    await lctx.route('**/console/main.js', async (route) => {
       const r = await route.fetch();
       const body = (await r.text()).replace('socket.on(EV.INPUT_WHEEL, (e) => {', 'socket.on(EV.INPUT_WHEEL, (e) => {\n  window.__steer = e.steer;');
       route.fulfill({ response: r, body });

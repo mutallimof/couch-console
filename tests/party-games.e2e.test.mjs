@@ -17,7 +17,7 @@ const PORT = 7700 + Math.floor(Math.random() * 200);
 const SHOTS = process.env.PARTY_SHOTS; // a folder: save screenshots there
 
 test('party games: lobby, a duel measured on the phones, and the other two games start', { skip: !pw && 'Playwright is not installed', timeout: 240000 }, async () => {
-  const server = spawn(process.execPath, ['server.js'], {
+  const server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-party-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));

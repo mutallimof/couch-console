@@ -9,7 +9,7 @@ import { ZipArchive } from 'archiver';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync, statSync, createReadStream, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { EV } from '../public/js/shared/protocol.js';
+import { EV } from '../public/shared/protocol.js';
 
 export const MAX_FILE_BYTES = 15 * 1024 * 1024;
 export const MIN_FREE_BYTES = 300 * 1024 * 1024; // refuse uploads when the laptop has less free space than this

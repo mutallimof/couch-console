@@ -1,7 +1,7 @@
 // Phone haptics: patterns scale with the intensity setting and "off" is silent. npm test
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { patternFor } from '../public/js/remote/haptics.js';
+import { patternFor } from '../public/phone/haptics.js';
 
 test('haptic patterns scale with the intensity and "off" is silent', () => {
   assert.equal(patternFor('hit', 'off'), null);

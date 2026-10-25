@@ -6,7 +6,7 @@ import { mkdtempSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { EV } from '../public/js/shared/protocol.js';
+import { EV } from '../public/shared/protocol.js';
 import { createEvents, cleanEventName } from '../server/events.js';
 
 const require = createRequire(import.meta.url);
@@ -37,7 +37,7 @@ test('events are saved on disk: the last one is continued, a new one can start, 
 const PORT = 4700 + Math.floor(Math.random() * 200);
 let server, base;
 test.before(async () => {
-  server = spawn(process.execPath, ['server.js'], {
+  server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: mkdtempSync(join(tmpdir(), 'couch-api-')) }, stdio: 'pipe',
   });
   await new Promise((resolve, reject) => {

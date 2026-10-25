@@ -1,9 +1,9 @@
 // The Party Games' rules (Quick Draw Duel, Hot Potato, Steady Hands) and the phone's gesture helpers, driven with a fake clock. npm test
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createDuel, DUEL } from '../public/js/console/games/party/duel-rules.js';
-import { createPotato, createGroupPotato, tickInterval, randomTask, POTATO } from '../public/js/console/games/party/potato-rules.js';
-import { createEggs, limits, ACTIONS } from '../public/js/console/games/party/eggs-rules.js';
+import { createDuel, DUEL } from '../public/games/party/duel-rules.js';
+import { createPotato, createGroupPotato, tickInterval, randomTask, POTATO } from '../public/games/party/potato-rules.js';
+import { createEggs, limits, ACTIONS } from '../public/games/party/eggs-rules.js';
 
 const seq = (...v) => { let i = 0; return () => v[i++ % v.length]; };
 const P = (...ids) => ids.map((id) => ({ id, name: id }));
@@ -113,8 +113,8 @@ test('steady hands: the last egg wins; if the last two drop together the lowest 
 });
 
 // ---------- the phone's gesture helpers and the shared clock, with recorded (made-up but realistic) samples ----------
-import { holstered, raisedLevel, pitch, swing, wobble, flatness } from '../public/js/remote/gestures.js';
-import { estimateOffset } from '../public/js/shared/clock.js';
+import { holstered, raisedLevel, pitch, swing, wobble, flatness } from '../public/phone/gestures.js';
+import { estimateOffset } from '../public/shared/clock.js';
 
 test('gestures: pointing at the floor is holstered, level is raised (either sign convention)', () => {
   const floor = { x: 0.3, y: -9.7, z: 1.1 }, floorIOS = { x: -0.3, y: 9.7, z: -1.1 }, level = { x: 0.2, y: 0.9, z: 9.7 }, upright = { x: 0, y: 9.8, z: 0.4 };

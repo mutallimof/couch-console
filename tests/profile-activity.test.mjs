@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { EV } from '../public/js/shared/protocol.js';
-import { cleanAvatar, randomAvatar, avatarSvg, LIMITS } from '../public/js/shared/avatar.js';
+import { EV } from '../public/shared/protocol.js';
+import { cleanAvatar, randomAvatar, avatarSvg, LIMITS } from '../public/shared/avatar.js';
 
 const require = createRequire(import.meta.url);
 globalThis.WebSocket ??= require('ws').WebSocket;
@@ -14,7 +14,7 @@ const io = require('../node_modules/socket.io/client-dist/socket.io.js');
 const PORT = 7950 + Math.floor(Math.random() * 100);
 let server;
 test.before(async () => {
-  server = spawn(process.execPath, ['server.js'], {
+  server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve, reject) => {

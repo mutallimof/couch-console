@@ -18,7 +18,7 @@ const pw = findPlaywright();
 const PORT = 8500 + Math.floor(Math.random() * 300);
 
 test('a PDF from a phone is presented on the TV, with page turns, black screen, laser and help for PowerPoint', { skip: !pw && 'Playwright is not installed', timeout: 240000 }, async () => {
-  const server = spawn(process.execPath, ['server.js'], {
+  const server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));

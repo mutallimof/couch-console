@@ -3,12 +3,12 @@
 // THIRD_PARTY_NOTICES.md): the same checks, run on one of our tracks with our item names.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Race as BaseRace, topSpeed, turboTier, rollItem, seeded, EVENT_TYPES } from "../public/js/console/games/turbo-karts/ow-kart/rules.js";
-import { createTrackModel, wrap, angle } from "../public/js/console/games/turbo-karts/ow-kart/track-model.js";
-import { TRACKS as KART_TRACKS } from "../public/js/console/games/turbo-karts/kart-path.js";
-import { STADIUM } from "../public/js/console/games/turbo-karts/ow-kart/stadium/stadium-def.js";
+import { Race as BaseRace, topSpeed, turboTier, rollItem, seeded, EVENT_TYPES } from "../public/games/turbo-karts/ow-kart/rules.js";
+import { createTrackModel, wrap, angle } from "../public/games/turbo-karts/ow-kart/track-model.js";
+import { TRACKS as KART_TRACKS } from "../public/games/turbo-karts/kart-path.js";
+import { STADIUM } from "../public/games/turbo-karts/ow-kart/stadium/stadium-def.js";
 const TRACKS = [...KART_TRACKS, STADIUM]; // our six courses plus the Grand Stadium
-import { GP_CHARACTERS as CHARACTERS } from "../public/js/console/games/turbo-karts/ow-kart/characters.js";
+import { GP_CHARACTERS as CHARACTERS } from "../public/games/turbo-karts/ow-kart/characters.js";
 
 const T = createTrackModel(TRACKS.find((t) => t.id === "park"));
 const L = T.length, TRACK_SAMPLES = T.samples, BOOST_PADS = T.boostPads;
@@ -533,7 +533,7 @@ test("computer drivers stay on the road on every track (no wall-hugging, no gett
 });
 
 // ---- Turbo Karts additions: the kart pad's input and the kart stats ----
-import { kartInput } from "../public/js/console/games/turbo-karts/ow-kart/input.js";
+import { kartInput } from "../public/games/turbo-karts/ow-kart/input.js";
 test("holding DRIFT or ITEM keeps accelerating; BRAKE wins over everything", () => {
   assert.equal(kartInput({ gas: false, drift: true }).gas, true);
   assert.equal(kartInput({ item: true }).gas, true);

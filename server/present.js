@@ -7,7 +7,7 @@ import multer from 'multer';
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, createReadStream, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { EV } from '../public/js/shared/protocol.js';
+import { EV } from '../public/shared/protocol.js';
 import { sniff } from './photos.js';
 
 export const MAX_PDF_BYTES = 60 * 1024 * 1024;

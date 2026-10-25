@@ -7,7 +7,7 @@ import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { EV } from '../public/js/shared/protocol.js';
+import { EV } from '../public/shared/protocol.js';
 import { parseVideoId, orderQueue, createMusicState, addSong, advance, vote, skipVote, removeSong, moveSong, skipNeeded, MAX_WAITING_PER_PERSON } from '../server/music.js';
 
 const person = (id) => ({ id, name: id, emoji: '🙂', color: '#000' });
@@ -104,7 +104,7 @@ test.before(async () => {
     res.end(JSON.stringify({ title: `Title of ${id}`, author_name: 'Some Channel', thumbnail_url: 'https://example.com/t.jpg' }));
   });
   await new Promise((r) => fake.listen(FAKE, r));
-  server = spawn(process.execPath, ['server.js'], {
+  server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url),
     env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: mkdtempSync(join(tmpdir(), 'couch-music-')), YOUTUBE_OEMBED_URL: `http://localhost:${FAKE}/oembed` }, stdio: 'pipe',
   });

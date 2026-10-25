@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveTheme, nextChoice, normalizeChoice } from '../public/js/shared/theme.js';
+import { resolveTheme, nextChoice, normalizeChoice } from '../public/shared/theme.js';
 
 test('auto follows the device, light and dark ignore it', () => {
   assert.equal(resolveTheme('auto', true), 'dark');

@@ -16,7 +16,7 @@ const [theme = 'light', outDir = 'out/qa'] = process.argv.slice(2);
 mkdirSync(outDir, { recursive: true });
 const root = fileURLToPath(new URL('..', import.meta.url));
 const PORT = 9300 + Math.floor(Math.random() * 300);
-const server = spawn(process.execPath, ['server.js'], { cwd: root, env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), PING_TIMEOUT_MS: '300000', DATA_DIR: `${tmpdir()}/couch-qa-${PORT}` }, stdio: 'pipe' });
+const server = spawn(process.execPath, ['server/index.js'], { cwd: root, env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), PING_TIMEOUT_MS: '300000', DATA_DIR: `${tmpdir()}/couch-qa-${PORT}` }, stdio: 'pipe' });
 await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));
 const browser = await pw.chromium.launch({ args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
 try {

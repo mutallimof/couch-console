@@ -16,7 +16,7 @@ const pw = findPlaywright();
 const PORT = 7000 + Math.floor(Math.random() * 300);
 
 test('photo booth: camera on, a phone takes the photo, it reaches the album, the camera turns off', { skip: !pw && 'Playwright is not installed', timeout: 240000 }, async () => {
-  const server = spawn(process.execPath, ['server.js'], {
+  const server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-booth-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));
@@ -57,7 +57,7 @@ test('photo booth: camera on, a phone takes the photo, it reaches the album, the
     await tv.evaluate(() => { window.__camTracks = document.querySelector('.booth-video').srcObject.getTracks(); });
     // The face model and its WebAssembly load from this server (nothing from the internet), and the tracker runs on the fake camera (no face in it)
     const tracking = await tv.evaluate(async () => {
-      const { createFaceTracker } = await import('/js/console/games/photo-booth/booth-faces.js');
+      const { createFaceTracker } = await import('/games/photo-booth/booth-faces.js');
       const t = await createFaceTracker();
       if (!t) return 'no tracker';
       const faces = t.detect(document.querySelector('.booth-video'), performance.now());
@@ -79,7 +79,7 @@ test('photo booth: camera on, a phone takes the photo, it reaches the album, the
     // The photo is in the party album
     const headers = await tv.evaluate(() => { const h = { 'x-couch-room': document.getElementById('room-code').textContent }; return h; });
     const album = await tv.evaluate(async () => {
-      const mod = await import('/js/console/party.js');
+      const mod = await import('/console/party.js');
       return (await mod.party.call('GET', '/photos')).photos;
     });
     void headers;

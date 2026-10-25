@@ -1,7 +1,7 @@
 // Air Hockey rules, tested without a browser: npm test
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMatch, HALF_L, HALF_W, MALLET_R, WIN } from '../public/js/console/games/air-hockey-rules.js';
+import { createMatch, HALF_L, HALF_W, MALLET_R, WIN } from '../public/games/air-hockey-rules.js';
 
 const STEP = 1 / 60;
 const run = (m, secs, each = () => {}) => { for (let t = 0; t < secs; t += STEP) { each(); m.update(STEP); } };

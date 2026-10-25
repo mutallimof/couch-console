@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 // A tiny localStorage so the module can save like it does in the browser
 const store = new Map();
 globalThis.localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)) };
-const { graphics } = await import('../public/js/console/graphics-prefs.js');
+const { graphics } = await import('../public/console/graphics-prefs.js');
 
 test('both graphics options are on by default', () => {
   assert.equal(graphics.cartoon, true);

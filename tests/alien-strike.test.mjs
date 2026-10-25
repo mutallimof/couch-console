@@ -8,7 +8,7 @@ import {
   LANE_HALF, LATERAL_SPEED, STEER_FULL, SHIP_R, ALIEN_R,
   FIRE_COOLDOWN_MS, LIVES, INVULN_MS, KILL_POINTS,
   SPAWN_MS_START, SPAWN_MS_MIN, ALIEN_BOLT_SPEED,
-} from '../public/js/console/games/alien-strike-rules.js';
+} from '../public/games/alien-strike-rules.js';
 
 // ── Tray-grip steering, same proofs the cow carried ────────────────────────
 // World: x east, y north, z up. The player sits SOUTH; the phone lies flat,

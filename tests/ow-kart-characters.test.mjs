@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync } from 'node:fs';
-import { GP_CHARACTERS, CLIPS } from '../public/js/console/games/turbo-karts/ow-kart/characters.js';
+import { GP_CHARACTERS, CLIPS } from '../public/games/turbo-karts/ow-kart/characters.js';
 
 // The JSON part of a .glb file
 const glbJson = (file) => {

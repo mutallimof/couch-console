@@ -19,7 +19,7 @@ const PORT = 9100 + Math.floor(Math.random() * 300);
 const SHOTS = process.env.SHOTS;
 
 test('theme: Settings -> Theme restyles the TV and the phones, and is remembered', { skip: !pw && 'Playwright is not installed', timeout: 180000 }, async () => {
-  const server = spawn(process.execPath, ['server.js'], {
+  const server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));

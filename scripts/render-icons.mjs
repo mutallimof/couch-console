@@ -18,7 +18,7 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const out = `${root}public/assets/icons`;
 mkdirSync(out, { recursive: true });
 const PORT = 9300 + Math.floor(Math.random() * 300);
-const server = spawn(process.execPath, ['server.js'], { cwd: root, env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-icons-${PORT}` }, stdio: 'pipe' });
+const server = spawn(process.execPath, ['server/index.js'], { cwd: root, env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-icons-${PORT}` }, stdio: 'pipe' });
 await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));
 const browser = await pw.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 try {

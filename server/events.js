@@ -4,7 +4,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, rmSync, statfsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { PHOTO_LIMITS_GB } from '../public/js/shared/protocol.js';
+import { PHOTO_LIMITS_GB } from '../public/shared/protocol.js';
 
 export function createEvents(dataDir) {
   const root = join(dataDir, 'events');

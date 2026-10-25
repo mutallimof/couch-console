@@ -26,7 +26,7 @@ test('three phones queue songs; the TV plays them fairly; skip and blocked links
     res.end(JSON.stringify({ title: `Song ${id}`, author_name: 'Channel', thumbnail_url: '' }));
   });
   await new Promise((r) => fake.listen(FAKE, r));
-  const server = spawn(process.execPath, ['server.js'], {
+  const server = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-test-${PORT}`, YOUTUBE_OEMBED_URL: `http://localhost:${FAKE}/oembed` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));

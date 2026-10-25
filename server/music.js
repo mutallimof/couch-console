@@ -3,7 +3,7 @@
 //   Fair order: songs go round-robin by person (a person's 1st song, then everyone else's 1st, then 2nd...);
 //   within a round, more votes play first, then whoever added first. Everybody may have 3 songs waiting.
 import express from 'express';
-import { EV } from '../public/js/shared/protocol.js';
+import { EV } from '../public/shared/protocol.js';
 
 export const MAX_WAITING_PER_PERSON = 3;
 export const skipNeeded = (online) => Math.max(2, Math.ceil(online * 0.4));
