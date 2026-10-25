@@ -17,7 +17,7 @@ Everything must be original: no Nintendo names, art, sounds or logos.
 phone. Local https setup: `npm run certs`. Remote link: `cloudflared tunnel --url http://localhost:3000`.
 Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does not turn it on; phone: `&debug=1`, not remembered). Full guide: `docs/GUIDE.md` (README is the short version).
 
-## Current state (Phase 1 done, waiting for the owner's phone/TV test)
+## Current state (fix-and-finish run done; waiting for the owner's real phone/TV test)
 - Home screen, profiles, party hub (photos, music, present), 11 arcade/camera games, theme switch (Light/Dark/Auto).
 - Turbo Karts: 8 tracks (Sunny Park, Dune Canyon, Frosty Peaks, Neon City, Neon Avenue, Pirate Cove,
   Cloud Gardens, Grand Stadium), 8 racers, 6 items, 3-tier drift turbo, CPU drivers, 1-2 human players.
@@ -29,7 +29,7 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Reference audit done: `.claude/docs/REFERENCE-AUDIT.md` (licenses, comparison, top-10, risks).
 
 ## Known issues
-- City / avenue skylines are busy; barrier stripes smear a little; avenue lamp glows look like blobs; Neon City starts under the bridge.
+- Grand Stadium keeps its original dark tower skyline (OpenWii world code). News feeds were only tested with fixtures (no internet in the build sandbox).
 - The 2-player kart select layout was not visually reviewed. Haptics are Android-only (iOS skips them).
 - Software-GL (headless) numbers are not real fps: check on the real laptop (F3). Grand Stadium is the heaviest scene.
 - Tests that run a kart race need a long socket timeout on software GL (`PING_TIMEOUT_MS`, set by the test).
@@ -44,7 +44,7 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Part 6 News channel (server/news.js feeds + cache, apps/news.js, Settings -> News, Today in History tab): done
 - Part 7 runs anywhere (.env, npm run tunnel, engines, run-tests.mjs, README, fresh-clone check): done
 - Part 8 camera games (Mirror Match + Party Workout, MediaPipe pose, up to 4 people, ?posetest=1): done
-- Part 9 final QA + secret check: todo
+- Part 9 final QA (60 screens x light/dark, no page errors), secret check (clean), docs, TEST-TOMORROW: done
 
 ## Phases (from `.claude/docs/REBUILD-PLAN.md`)
 | # | What | Status |
