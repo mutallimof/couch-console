@@ -13,6 +13,7 @@ import { createSettings } from './settings.js';
 import { sound } from './sound.js';
 import { playBoot } from './boot.js';
 import { loadApps } from './apps.js';
+import { createClock } from '../shared/clock.js';
 import { applyTheme, normalizeChoice, resolveTheme, systemPrefersDark } from '../shared/theme.js';
 
 const $ = (id) => document.getElementById(id);
@@ -227,6 +228,9 @@ let current = null;
 slides.setGameOpen(() => !!current && current.app.id !== 'present'); // (a running game covers the slides)
 // Phones show the normal remote ('pointer'), a steering wheel ('wheel') or a text box ('keyboard')
 let controllerMode = 'pointer', controllerPrompt = '';
+const pgClock = createClock(socket, EV.PG_TIME);
+socket.on('connect', () => pgClock.sync());
+
 function setController(mode, prompt = '') {
   if (mode !== controllerMode) gyro.relearnAll(); // turning the phone for the kart pad (and back) must not leave a stale gyro map
   controllerMode = mode;
@@ -254,7 +258,7 @@ function openApp(app) {
   busy = true;
   sound.play('select');
   const stage = $('stage');
-  current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set(), text: new Set(), booth: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
+  current = { app, handlers: { button: new Set(), pointer: new Set(), swing: new Set(), wheel: new Set(), text: new Set(), booth: new Set(), party: new Set() }, allowed: new Set(), missing: new Set(), mounted: false };
   stage.style.setProperty('--tile', app.color);
   // Games (not the hubs and channels) pause the party music, unless Settings -> Party says otherwise
   musicPlayer.setGameActive(!['music', 'photos', 'present', 'settings'].includes(app.id) && app.folder !== 'channels');
@@ -327,6 +331,9 @@ function makeApi(cur, mode) {
     onWheel: (fn) => handlers.wheel.add(fn),          // { playerId, steer: -1..1 }
     onText: (fn) => handlers.text.add(fn),            // { playerId, text } typed on a phone
     onBooth: (fn) => handlers.booth.add(fn),          // Photo Booth: a phone pressed the shutter or changed the frame / sticker
+    onParty: (fn) => handlers.party.add(fn),          // Party Games: a phone sent { t, playerId, name, ... }
+    partySend: (msg) => socket.emit(EV.PG_DOWN, msg), // ...and the game tells one phone ({ to: playerId }) or all of them what to show
+    clock: pgClock,                                   // server time shared with the phones (clock.now() ms, toLocal / toServer)
     emitBooth: (state) => socket.emit(EV.BOOTH_STATE, state), // ...and tells the phones what the booth is doing
     setController,                                    // 'wheel' for driving games, 'keyboard' to type
     setCursor: (style) => pointers.setStyle(style),   // 'crosshair' for aiming games
@@ -444,6 +451,7 @@ function onInputText(e) {
   if (gameGets(e.playerId)) current.handlers.text.forEach((fn) => fn({ playerId: e.playerId, text: e.text.slice(0, 100) }));
 }
 socket.on(EV.INPUT_TEXT, onInputText);
+socket.on(EV.PG_UP, (m) => { if (current?.mounted) current.handlers.party.forEach((fn) => fn(m)); });
 socket.on(EV.BOOTH_CMD, (cmd) => { if (current?.mounted && current.missing.size === 0) current.handlers.booth.forEach((fn) => fn(cmd)); });
 
 socket.on(EV.INPUT_RECENTER, (e) => { count(e.playerId); gyro.recenter(e.playerId, !!e.relearn); }); // relearn: the phone's screen turned

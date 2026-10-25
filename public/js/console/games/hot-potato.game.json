@@ -1,0 +1,8 @@
+{
+  "title": "Hot Potato",
+  "color": "#E03131",
+  "order": 2,
+  "players": 4,
+  "hidden": false,
+  "folder": "party"
+}

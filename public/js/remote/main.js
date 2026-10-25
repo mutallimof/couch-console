@@ -6,6 +6,8 @@ import { createWheel } from './wheel.js';
 import { createKartPad } from './kart-pad.js';
 import { createHaptics } from './haptics.js';
 import { createBoothPad } from './booth.js';
+import { createPartyPad } from './party-game.js';
+import { createClock } from '../shared/clock.js';
 import { createParty } from './party.js';
 import './no-zoom.js';
 
@@ -36,6 +38,7 @@ const clientId = getClientId();
 const isValidRoom = (code) => new RegExp(`^[${ROOM_LETTERS}]{${ROOM_CODE_LENGTH}}$`).test(code);
 let room = (new URLSearchParams(location.search).get('room') || '').toUpperCase();
 let joined = false;
+let myPlayerId = 0;
 let role = 'player'; // 'player' (has a controller) or 'guest' (photos, music, slides only)
 
 // Party: the welcome card, the tabs and the "me" sheet (party.js)
@@ -90,6 +93,7 @@ function setConnected(on, text) {
 }
 
 function setPlayer(playerId, color) {
+  myPlayerId = playerId || 0;
   document.documentElement.style.setProperty('--player', color || '');
   $('badge').textContent = playerId ? `P${playerId}` : role === 'guest' && joined ? '👀' : '–';
   $('kp-badge').textContent = $('badge').textContent;
@@ -263,6 +267,10 @@ const sendSteer = (steer) => {
 const haptics = createHaptics();
 const booth = createBoothPad({ root: $('booth-pad'), send: (cmd) => socket.emit(EV.BOOTH_CMD, cmd), onHome: () => emit(EV.INPUT_BUTTON, { button: 'HOME', state: 'down' }), haptics });
 socket.on(EV.BOOTH_STATE, (st) => booth.update(st));
+const clock = createClock(socket, EV.PG_TIME);
+const partyPad = createPartyPad({ root: $('party-pad'), send: (m) => socket.emit(EV.PG_UP, m), clock, haptics, getPlayerId: () => myPlayerId, onHome: () => emit(EV.INPUT_BUTTON, { button: 'HOME', state: 'down' }) });
+socket.on(EV.PG_DOWN, (m) => { if (!m.to || m.to === myPlayerId) partyPad.update(m); });
+window.__partyPad = partyPad; // (for the tests)
 const wheel = createWheel({ onSteer: (steer) => { if (kartPad.tilt) { sendSteer(steer); kartPad.setWheelVisual(steer); } } });
 const kartPad = createKartPad({
   haptics,
@@ -284,11 +292,14 @@ function applyMode() {
   $('start').hidden = started || role !== 'player' || party.tab !== 'remote';
   // Guests have no controller: the kart pad and the keyboard are for players. Tabs other than Remote hide the controller.
   const isPlayer = role === 'player';
-  const isKart = isPlayer && mode === 'wheel', isKeys = isPlayer && mode === 'keyboard', isBooth = mode === 'booth'; // (the booth is for everyone, guests too)
+  const isKart = isPlayer && mode === 'wheel', isKeys = isPlayer && mode === 'keyboard', isBooth = mode === 'booth', isParty = mode === 'party'; // (the booth is for everyone, guests too)
   const wasKart = !$('kart-pad').hidden;
   party.setMode(isKart || isKeys ? mode : 'pointer');
-  $('controller').hidden = isKart || isKeys || isBooth || !isPlayer || party.tab !== 'remote';
+  $('controller').hidden = isKart || isKeys || isBooth || isParty || !isPlayer || party.tab !== 'remote';
   $('booth-pad').hidden = !isBooth;
+  $('party-pad').hidden = !isParty;
+  if (!isParty) partyPad.reset();
+  else clock.sync();
   $('bp-home').hidden = !isPlayer; // (guests have no buttons to press)
   $('kart-pad').hidden = !isKart;
   document.body.classList.toggle('kart-mode', isKart); // hides the top bar: the pad has its own
@@ -305,7 +316,7 @@ function applyMode() {
 // real change does anything (repeating 'keyboard' must not wipe what you're typing).
 let layoutInfo = { from: 'none', at: 0 }; // for the ?debug=1 readout
 function setLayout({ mode: m, prompt } = {}, from = 'console') {
-  const next = ['wheel', 'keyboard', 'booth'].includes(m) ? m : 'pointer';
+  const next = ['wheel', 'keyboard', 'booth', 'party'].includes(m) ? m : 'pointer';
   layoutInfo = { from, at: Date.now() };
   if (next === mode && (prompt || 'Type here') === $('keyboard-prompt').textContent) return;
   mode = next;

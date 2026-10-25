@@ -18,7 +18,7 @@ const add = (root, ...objs) => root.add(...objs);
 const TOP = {
   'turbo-karts': '#7ED957', 'table-tennis': '#FFD3D3', 'juicy-slash': '#FFE8B8', 'target-range': '#C7E8A0', 'air-hockey': '#BDE3FF', 'alien-strike': '#D9C8FF',
   dungeon: '#CFC6EE', 'balloon-pop': '#FFD6EA', draw: '#E4D9FF', 'paddle-duel': '#BFEFCB', bowling: '#FFD9A8', photos: '#BFEBDD', music: '#FFD9B8', present: '#C9D6FF',
-  weather: '#CDEBFF', video: '#FFC9C9', timer: '#FFE0B0', 'on-this-day': '#E1D6FF', 'folder-party': '#FFD9B8', 'folder-arcade': '#D9C8FF', 'folder-camera': '#FFC9DC', 'photo-booth': '#FFC9DC', 'folder-channels': '#BDE6EE',
+  weather: '#CDEBFF', video: '#FFC9C9', timer: '#FFE0B0', 'on-this-day': '#E1D6FF', 'folder-party': '#FFD9B8', 'folder-arcade': '#D9C8FF', 'folder-camera': '#FFC9DC', 'photo-booth': '#FFC9DC', 'quick-draw': '#FFD9B8', 'hot-potato': '#FFC9C9', 'steady-hands': '#C9F0D2', 'folder-channels': '#BDE6EE',
 };
 export function makeBase(T, id) {
   const g = new THREE.Group();
@@ -60,6 +60,26 @@ export const SCENES = {
     lens.position.set(-0.2, 2.2, 0.55); add(r, lens);
     const strip = group(box(0.62, 1.7, 0.06, '#fff', 0, 0, 0), box(0.46, 0.4, 0.07, '#FF8A3D', 0, 0.2, 0), box(0.46, 0.4, 0.07, '#3FA9FF', 0, 0.7, 0), box(0.46, 0.4, 0.07, '#2FD6A4', 0, 1.2, 0));
     strip.position.set(1.7, 0.05, 0.9); strip.rotation.y = -0.5; strip.rotation.z = 0.12; add(r, strip);
+  },
+  'quick-draw'(T, r) {
+    // two phones facing each other across a duel line, and a big stopwatch in the middle
+    const phone = (x, ry, c) => { const g = group(box(0.9, 1.7, 0.2, '#2A2F45', 0, 0, 0, 0.08), box(0.74, 1.5, 0.05, c, 0, 0, 0.12)); g.position.set(x, 0.1, 0); g.rotation.set(-0.35, ry, 0); return g; };
+    add(r, phone(-1.8, 0.5, '#3FA9FF'), phone(1.8, -0.5, '#FF5C8A'));
+    const watch = group(rot(cyl(0.95, 0.95, 0.4, '#fff', 0, 0, 0, 40), Math.PI / 2), rot(cyl(0.75, 0.75, 0.44, '#FFF4E0', 0, 0, 0, 40), Math.PI / 2), box(0.1, 0.62, 0.1, '#E03131', 0, 0.28, 0.24), box(0.45, 0.1, 0.1, '#2A2F45', 0.2, 0, 0.24), box(0.28, 0.14, 0.3, '#FFC93C', 0, 1.1, 0));
+    watch.position.set(0, 1.4, -0.2); add(r, watch);
+  },
+  'hot-potato'(T, r) {
+    // a round cartoon bomb with a lit fuse
+    add(r, ball(1.25, '#2A2F45', 0, 1.2, 0), ball(0.35, '#5E6677', -0.45, 1.7, 0.85), cyl(0.38, 0.38, 0.3, '#5E6677', 0, 2.35, 0, 20));
+    add(r, rot(cyl(0.06, 0.06, 0.9, '#C98A4B', 0.35, 3.0, 0), 0, 0, -0.7), ball(0.22, '#FFC93C', 0.78, 3.35, 0), ball(0.12, '#FF5C5C', 0.78, 3.45, 0));
+    for (const [x, z] of [[-1.9, 1.3], [1.9, 1.2]]) add(r, ball(0.28, '#FF8A3D', x, 0.35, z));
+  },
+  'steady-hands'(T, r) {
+    // an egg on a spoon
+    const spoon = group(cyl(0.8, 0.8, 0.14, '#E8EEF7', 0, 0, 0, 30), box(0.22, 0.1, 2.4, '#E8EEF7', 0, 0, -1.7));
+    spoon.position.set(0.3, 0.9, 0.2); spoon.rotation.set(0, 0.5, 0); add(r, spoon);
+    const egg = ball(0.75, '#FFF4E0', 0.3, 1.72, 0.2); egg.scale.set(0.86, 1.1, 0.86); add(r, egg);
+    add(r, ball(0.2, '#FFC93C', -1.6, 0.2, 1.4), ball(0.2, '#FF5C8A', 1.9, 0.2, -1.2));
   },
   'table-tennis'(T, r) {
     add(r, box(3.6, 0.2, 2.4, '#2FB872', 0, 0.9, 0), box(3.6, 0.04, 0.07, '#fff', 0, 1.1, 0), box(0.1, 0.06, 2.4, '#fff', 0, 1.1, 0));

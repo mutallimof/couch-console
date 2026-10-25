@@ -44,6 +44,7 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Part 4 home polish: done (dock, live 3D hero tile via home-live.js, animated art, drifting glow, taglines.json)
 - Part 5 phone remote v2: done (haptics.js, wheel smoothing, kart pad v2)
 - Part 6 Photo Booth: done (games/photo-booth*, MediaPipe face stickers with the model in public/assets/models, phone booth pad, booth:cmd / booth:state socket events)
+- Part 7 Party Games: done (Quick Draw, Hot Potato, Steady Hands in games/*.js + games/party/ rules; pg:up / pg:down / pg:time socket events; shared/clock.js sync; remote/party-game.js + gestures.js; folder visible)
 
 ## Phases (from `docs/REBUILD-PLAN.md`)
 | # | What | Status |

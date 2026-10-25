@@ -47,7 +47,8 @@ function lanIp() {
 
 const app = express();
 const server = createServer(app);
-const io = new Server(server);
+// (PING_TIMEOUT_MS: the tests run a heavy 3D race on a software GPU, which can freeze the console page for a long time)
+const io = new Server(server, process.env.PING_TIMEOUT_MS ? { pingTimeout: Number(process.env.PING_TIMEOUT_MS) } : {});
 const httpsServer = httpsReady ? createHttpsServer({ cert: readFileSync(CERT), key: readFileSync(KEY) }, app) : null;
 if (httpsServer) io.attach(httpsServer); // same rooms on both
 
@@ -302,6 +303,25 @@ io.on('connection', (socket) => {
     if (!room || !state || typeof state !== 'object') return;
     room.booth = state.camera === 'off' ? null : state;
     io.to(remotesChannel(socket.data.room)).emit(EV.BOOTH_STATE, state);
+  });
+
+  // Party Games: a small message bus. Phones send to the TV (stamped with who they are), the TV sends to one phone or to all.
+  // The server keeps no game state. PG_TIME gives everyone the same clock, so "DRAW at T" lands at the same moment on every phone.
+  socket.on(EV.PG_TIME, (_, ack) => { if (typeof ack === 'function') ack(Date.now()); });
+  const small = (m) => m && typeof m === 'object' && JSON.stringify(m).length < 2000;
+  socket.on(EV.PG_UP, (msg) => {
+    if (socket.data.role !== 'remote' || !small(msg)) return;
+    const room = rooms.get(socket.data.room);
+    if (!room) return;
+    const person = room.people.get(socket.data.personKey);
+    io.to(room.consoleId).emit(EV.PG_UP, { ...msg, playerId: socket.data.playerId || null, key: socket.data.personKey, name: person?.name || 'Someone' });
+  });
+  socket.on(EV.PG_DOWN, (msg) => {
+    if (socket.data.role !== 'console' || !small(msg)) return;
+    const room = rooms.get(socket.data.room);
+    if (!room) return;
+    const slot = msg.to ? room.slots.get(msg.to) : null;
+    if (msg.to) { if (slot?.socketId) io.to(slot.socketId).emit(EV.PG_DOWN, msg); } else io.to(remotesChannel(socket.data.room)).emit(EV.PG_DOWN, msg);
   });
 
   // --- Remote (phone) ---

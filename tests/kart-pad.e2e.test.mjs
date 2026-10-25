@@ -21,7 +21,7 @@ const PORT = 8100 + Math.floor(Math.random() * 300);
 
 test('the kart pad appears on every phone during a race, and steers', { skip: !pw && 'Playwright is not installed', timeout: 300000 }, async () => {
   const server = spawn(process.execPath, ['server.js'], {
-    cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
+    cwd: new URL('..', import.meta.url), env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), PING_TIMEOUT_MS: '300000', DATA_DIR: `${tmpdir()}/couch-test-${PORT}` }, stdio: 'pipe',
   });
   await new Promise((resolve) => server.stdout.on('data', (d) => { if (String(d).includes('running at')) resolve(); }));
   const browser = await pw.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
@@ -38,6 +38,7 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
       const r = await route.fetch();
       route.fulfill({ response: r, body: (await r.text()).replace('let state, shown,', 'window.__tk = { state: () => state };\nlet state, shown,') });
     });
+    await lctx.addInitScript(() => { localStorage.setItem('couch.cartoonLook', '0'); localStorage.setItem('couch.ambientOcclusion', '0'); }); // (the software-GL test browser is slow: lighter rendering keeps the console's socket heartbeat alive)
     const lap = await lctx.newPage();
     await lap.goto(`${B}/console.html?noboot=1&fx=off`);
     await lap.waitForFunction(() => /^[A-Z]{4}$/.test(document.getElementById('room-code').textContent));
