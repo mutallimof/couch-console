@@ -24,9 +24,11 @@ body { display: flex; flex-direction: column; background: transparent; padding: 
 .top { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) 0; }
 .badge { min-width: 3rem; height: 3rem; padding: 0 var(--sp-3); border-radius: var(--r-pill); display: grid; place-items: center; font: 600 1.25rem var(--display); color: #fff; background: var(--player); }
 .conn { flex: 1; display: flex; align-items: center; gap: var(--sp-2); color: var(--c-muted); font-weight: 700; font-size: var(--fs-hint); }
-.dot { width: 0.625rem; height: 0.625rem; border-radius: 50%; background: var(--c-danger); flex: none; }
-.dot.on { background: var(--c-ok); }
+.dot { width: 0.625rem; height: 0.625rem; border-radius: 50%; background: var(--c-danger); flex: none; } /* red = connection lost */
+.dot.wait { background: #F2A100; } /* amber = not joined yet */
+.dot.on { background: var(--c-ok); } /* green = joined */
 .recenter { padding: var(--sp-2) var(--sp-4); border: 0; border-radius: var(--r-md); background: var(--c-surface); color: var(--c-text); box-shadow: var(--sh-1); font: 600 var(--fs-hint) var(--display); }
+body:not(.is-joined) .recenter { display: none; }
 .recenter:active { background: var(--c-surface-3); transform: scale(0.97); }
 
 /* ---------- Controller ---------- */
@@ -58,7 +60,14 @@ body { display: flex; flex-direction: column; background: transparent; padding: 
 .touchpad { width: 100%; flex: 1; min-height: 110px; max-height: 220px; border: 2px dashed var(--c-line); border-radius: var(--r-lg); display: grid; place-items: center; color: var(--c-muted); font-weight: 700; background: var(--c-surface); }
 
 /* ---------- Join form ---------- */
-.panel { margin: auto; width: 100%; max-width: 22.5rem; display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); text-align: center; }
+.panel { margin: 0 auto; width: 100%; max-width: 22.5rem; flex: 1; min-height: 0; display: flex; flex-direction: column; text-align: center; }
+/* Join forms: the content scrolls (touch-action: pan-y), the main button stays pinned above the home bar on every phone. */
+.panel-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-3) 0; }
+.panel-scroll > :first-child { margin-top: auto; } .panel-scroll > :last-child { margin-bottom: auto; }
+.panel-actions { flex: none; position: sticky; bottom: 0; display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3) 0 env(safe-area-inset-bottom); background: linear-gradient(to bottom, transparent, var(--c-bg-2) 18%); }
+.w-look { width: 100%; text-align: left; } .w-look summary { cursor: pointer; padding: var(--sp-3); border-radius: var(--r-md); background: var(--c-surface); font-weight: 700; text-align: center; list-style: none; box-shadow: var(--sh-1); }
+.w-look summary::-webkit-details-marker { display: none; } .w-look[open] summary { margin-bottom: var(--sp-3); }
+.w-look > div { margin: 0 auto var(--sp-3); }
 .muted { margin: 0; color: var(--c-muted); }
 .message { margin: 0; min-height: 1.4em; color: var(--c-danger); font-weight: 700; }
 
@@ -143,7 +152,6 @@ body.kart-mode .top { display: none; }
   font: 800 15px/1 'Nunito', system-ui, sans-serif; color: var(--text); box-shadow: 0 1px 4px rgba(20, 30, 50, 0.15); touch-action: manipulation; }
 .me-btn span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #me-emoji { font-size: 22px; }
-.welcome { gap: 14px; }
 .w-title { margin: 0; font-size: 30px; font-weight: 900; }
 .w-name { text-align: center; letter-spacing: 0; font-size: 26px; text-transform: none; }
 .emoji-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; width: 100%; max-width: 360px; }

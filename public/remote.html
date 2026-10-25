@@ -24,7 +24,7 @@
   <!-- The controller, shown once joined -->
   <main id="controller" class="controller" hidden>
     <!-- Fallback pointer control when motion isn't available (or in ?debug=1) -->
-    <div id="touchpad" class="touchpad" hidden>Drag here to move the pointer</div>
+    <div id="touchpad" class="touchpad" hidden>Drag to move · tap to click</div>
 
     <div class="dpad">
       <button class="btn dir d-up" data-button="UP" aria-label="Up">▲</button>
@@ -110,11 +110,13 @@
 
   <!-- Shown when there's no room in the link, or the room is gone -->
   <form id="join-form" class="panel" hidden>
-    <p id="message" class="message"></p>
-    <label for="room-input" class="muted">Enter the room code from the laptop</label>
-    <input id="room-input" class="room-input" maxlength="4" autocomplete="off"
-           autocapitalize="characters" spellcheck="false" inputmode="text" placeholder="ABCD">
-    <button class="join-btn" type="submit">Join</button>
+    <div class="panel-scroll">
+      <p id="message" class="message"></p>
+      <label for="room-input" class="muted">Enter the room code from the laptop</label>
+      <input id="room-input" class="room-input" maxlength="4" autocomplete="off"
+             autocapitalize="characters" spellcheck="false" inputmode="text" enterkeyhint="go" placeholder="ABCD">
+    </div>
+    <div class="panel-actions"><button class="join-btn" type="submit">Join</button></div>
   </form>
 
   <!-- "Tap to start": a tap is needed to ask for motion permission (iPhone) -->
@@ -128,14 +130,21 @@
 
   <!-- Party (Phase 43): welcome card, the tabs, the sheet with "me" -->
   <form id="welcome" class="panel welcome" hidden>
-    <h1 class="w-title">Join the party</h1>
-    <label for="w-name" class="muted">What's your name?</label>
-    <input id="w-name" class="room-input w-name" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name">
-    <div id="w-avatar"></div>
-    <div id="w-emoji" class="emoji-row" role="group" aria-label="Pick an emoji" hidden></div>
-    <button id="w-play" class="join-btn" type="submit" value="player">🎮 Play</button>
-    <button id="w-guest" class="join-btn ghost" type="submit" value="guest">👀 Just join (photos, music, slides)</button>
-    <p id="w-note" class="muted w-note"></p>
+    <div class="panel-scroll">
+      <h1 class="w-title">Join the party</h1>
+      <label for="w-name" class="muted">What's your name?</label>
+      <input id="w-name" class="room-input w-name" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="go" placeholder="Your name">
+      <details class="w-look">
+        <summary>🎨 Customize your look (optional)</summary>
+        <div id="w-avatar"></div>
+        <div id="w-emoji" class="emoji-row" role="group" aria-label="Pick an emoji" hidden></div>
+      </details>
+      <p id="w-note" class="muted w-note"></p>
+    </div>
+    <div class="panel-actions">
+      <button id="w-play" class="join-btn" type="submit" value="player">🎮 Play</button>
+      <button id="w-guest" class="join-btn ghost" type="submit" value="guest">👀 Just join (photos, music, slides)</button>
+    </div>
   </form>
 
   <section id="panes" class="panes" hidden>

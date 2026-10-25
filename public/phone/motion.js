@@ -12,7 +12,7 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 // onSample(sample) gets the raw sensors as soon as they change (rate-capped):
 //   { alpha, beta, gamma, motion: { rx, ry, rz } | null }
 // onPointer(x, y) is for the touchpad: at most ~60 times per second, only when it changed.
-export function createMotion({ onSample, onPointer }) {
+export function createMotion({ onSample, onPointer, onTap }) {
   const stats = { alpha: null, beta: null, gamma: null, mag: null, gyro: false };
   let rate = null;          // latest gyroscope reading (rotationRate)
   let lastSample = 0;
@@ -80,10 +80,12 @@ export function createMotion({ onSample, onPointer }) {
     let target = { x: 0, y: 0 };
     let sent = { x: NaN, y: NaN, at: 0 };
     let last = null;
+    let down = null; // where and when the finger landed: a short touch that barely moved is a tap (= A)
     const GAIN = 2.5; // a drag across the full pad width moves 2.5 screen-halves
     el.addEventListener('pointerdown', (e) => {
       el.setPointerCapture(e.pointerId);
       last = { x: e.clientX, y: e.clientY };
+      down = { x: e.clientX, y: e.clientY, t: performance.now() };
     });
     el.addEventListener('pointermove', (e) => {
       if (!last) return;
@@ -94,8 +96,11 @@ export function createMotion({ onSample, onPointer }) {
       };
       last = { x: e.clientX, y: e.clientY };
     });
-    const end = () => { last = null; };
-    el.addEventListener('pointerup', end);
+    const end = () => { last = null; down = null; };
+    el.addEventListener('pointerup', (e) => {
+      if (down && onTap && performance.now() - down.t < 300 && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 12) onTap();
+      end();
+    });
     el.addEventListener('pointercancel', end);
     // Send loop: every animation frame, rate-limited and change-filtered.
     (function tick(now) {

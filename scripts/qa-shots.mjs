@@ -14,6 +14,7 @@ for (const where of [process.env.PLAYWRIGHT_PATH, 'playwright', '/opt/node22/lib
 if (!pw) { console.error('Playwright is needed (npm i -D playwright).'); process.exit(1); }
 const [theme = 'light', outDir = 'out/qa'] = process.argv.slice(2);
 mkdirSync(outDir, { recursive: true });
+const PHONE_VP = (() => { const [w, h] = (process.env.QA_PHONE || '390x844').split('x').map(Number); return { width: w, height: h }; })();
 const root = fileURLToPath(new URL('..', import.meta.url));
 const PORT = 9300 + Math.floor(Math.random() * 300);
 const server = spawn(process.execPath, ['server/index.js'], { cwd: root, env: { ...process.env, PORT: String(PORT), HTTPS_PORT: String(PORT + 1), PING_TIMEOUT_MS: '300000', DATA_DIR: `${tmpdir()}/couch-qa-${PORT}` }, stdio: 'pipe' });
@@ -27,7 +28,7 @@ try {
   await tv.goto(`${B}/console.html?noboot=1&fx=off&theme=${theme}`);
   await tv.waitForFunction(() => /^[A-Z]{4}$/.test(document.getElementById('room-code').textContent));
   const room = await tv.textContent('#room-code');
-  const pctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, });
+  const pctx = await browser.newContext({ viewport: PHONE_VP, hasTouch: true, isMobile: true, });
   await pctx.addInitScript(() => localStorage.setItem('couch.profile', JSON.stringify({ name: 'Ana', emoji: '🦊', role: 'player' })));
   const ph = await pctx.newPage();
   ph.on('pageerror', (e) => console.log('Phone page error:', String(e).slice(0, 200)));

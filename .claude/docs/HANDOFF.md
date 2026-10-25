@@ -34,16 +34,17 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Software-GL (headless) numbers are not real fps: check on the real laptop (F3). Grand Stadium is the heaviest scene.
 - Tests that run a kart race need a long socket timeout on software GL (`PING_TIMEOUT_MS`, set by the test).
 
-## Progress (overnight run, 9 parts; one commit per part)
-- Part 1 design system: done (tokens in theme.css, components in components.css)
-- Part 2 Turbo Karts race look: done (karts-sky/terrain/props/skids/items/tuning.js, karts.css HUD, F4 lil-gui panel, shots in docs/screenshots/tracks/)
-- Part 3 KayKit cast: done (8 racers in public/assets/cast, new select screen with track cards, 3D podium, hero icon re-rendered)
-- Part 4 home polish: done (dock, live 3D hero tile via home-live.js, animated art, drifting glow, taglines.json)
-- Part 5 phone remote v2: done (haptics.js, wheel smoothing, kart pad v2)
-- Part 6 Photo Booth: done (games/photo-booth*, MediaPipe face stickers with the model in public/assets/models, phone booth pad, booth:cmd / booth:state socket events)
-- Part 7 Party Games: done (Quick Draw, Hot Potato, Steady Hands in games/*.js + games/party/ rules; pg:up / pg:down / pg:time socket events; shared/clock.js sync; remote/party-game.js + gestures.js; folder visible)
-- Part 8 final design QA: done (scripts/qa-shots.mjs walks every TV + phone screen in both themes; paddle duel / bowling follow the theme; phone motion note hidden on booth + party screens; new tests: photo-booth-nocam, party-rules, party-games e2e)
-- Part 9 cleanup: done (structure public/{console,phone,games,apps,shared}, server/index.js, planning docs in .claude/docs, unused assets removed: see CLEANUP-LOG.md, new README + docs/GUIDE.md + docs/TEST-TOMORROW.md)
+## Progress (fix-and-finish run, 9 parts; one commit per part, on main)
+- Earlier overnight run (design system, kart look, KayKit cast, home, remote v2, booth, party games, QA, cleanup): done
+- Part 1 phone screens fit (scrolling forms, sticky Join, dot amber/green, tap = click): done
+- Part 2 pointer + D-pad everywhere: todo
+- Part 3 shared viewer: todo
+- Part 4 Juicy Splash difficulty: todo
+- Part 5 Turbo Karts perf + art + split screen: todo
+- Part 6 News channel: todo
+- Part 7 runs anywhere + README: todo
+- Part 8 camera games: todo
+- Part 9 final QA + secret check: todo
 
 ## Phases (from `.claude/docs/REBUILD-PLAN.md`)
 | # | What | Status |

@@ -87,8 +87,11 @@ party.registerPane('music', 'Music', '🎵', musicPane);
 party.registerPane('present', 'Present', '🖥️', presentPane);
 party.registerPane('activity', 'Activity', '🔔', activityPane);
 
+// on: true = joined (green), false = connection lost (red), 'wait' = not joined yet (amber)
 function setConnected(on, text) {
-  $('dot').classList.toggle('on', on);
+  $('dot').classList.toggle('on', on === true);
+  $('dot').classList.toggle('wait', on === 'wait');
+  document.body.classList.toggle('is-joined', on === true);
   $('conn-text').textContent = text;
 }
 
@@ -117,14 +120,14 @@ function join() {
   // First time on this phone: ask for a name (then this runs again)
   if (party.needsWelcome()) {
     $('join-form').hidden = true;
-    setConnected(false, `Room ${room}`);
+    setConnected('wait', 'Not joined yet');
     return party.showWelcome();
   }
-  setConnected(false, 'Joining…');
+  setConnected('wait', 'Joining…');
   const p = party.profile;
   socket.emit(EV.REMOTE_JOIN, { room, clientId, name: p.name, emoji: p.emoji, avatar: p.avatar, role: p.role === 'guest' ? 'guest' : 'player' }, (res) => {
     if (!res?.ok) {
-      setConnected(false, 'Not joined');
+      setConnected('wait', 'Not joined yet');
       return showJoinForm(ERRORS[res?.error] || 'Could not join.');
     }
     joined = true;
@@ -186,7 +189,7 @@ $('replaced-btn').addEventListener('click', () => {
 });
 
 socket.on(EV.CONSOLE_DISCONNECTED, () => {
-  setConnected(false, 'Not joined');
+  setConnected('wait', 'Not joined yet');
   room = '';
   history.replaceState(null, '', location.pathname);
   showJoinForm('The console closed. Scan the new QR code on the laptop.');
@@ -243,6 +246,12 @@ const motion = createMotion({
     if (!joined || mode === 'wheel' || role !== 'player' || party.tab !== 'remote') return;
     sentCount++;
     socket.volatile.emit(EV.INPUT_POINTER, { x, y });
+  },
+  // A tap on the touchpad clicks, like A
+  onTap: () => {
+    if (!joined || role !== 'player') return;
+    emit(EV.INPUT_BUTTON, { button: 'A', state: 'down' });
+    setTimeout(() => emit(EV.INPUT_BUTTON, { button: 'A', state: 'up' }), 60);
   },
 });
 let touchpad = null;
