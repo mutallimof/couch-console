@@ -81,61 +81,56 @@ body { display: flex; flex-direction: column; background: transparent; padding: 
   background: rgba(0, 0, 0, 0.7); color: #9f9; font: 12px/1.35 ui-monospace, monospace; pointer-events: none; }
 
 /* ---------- Kart pad (Turbo Karts), held sideways ----------
-   Built from the game's own world: dark kart trim for the body, grass-green GAS,
-   spark-orange DRIFT, item-box purple ITEM, curb-red BRAKE, and a track-white steering
-   strip with red-and-white curb stripes. Buttons are solid keycaps that sink when pressed. */
+   Left thumb: LEFT / RIGHT keys, or a steering wheel you steer by tilting the phone. Right thumb: a tall GAS, DRIFT, ITEM, BRAKE.
+   Flat keys in the design system's colors; pressed keys shrink a little. The page stays upright when rotation lock is on: then the
+   pad turns itself a quarter turn (Flip = the other way round). */
 body.kart-mode { background: var(--pad-bg); padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(12px, env(safe-area-inset-left)); }
 body.kart-mode .top { display: none; }
-.kart-pad { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 8px 0 10px; color: var(--pad-ink); }
-.kp-bar { display: flex; align-items: center; gap: 8px; }
-.kp-badge { min-width: 44px; height: 36px; padding: 0 10px; border-radius: 18px; display: grid; place-items: center;
-  font-weight: 900; font-size: 17px; background: var(--player); }
-.kp-home { width: 52px; height: 36px; border: none; border-radius: 18px; display: grid; place-items: center;
-  background: var(--pad-chip); color: var(--pad-ink); }
+.kart-pad { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-2) 0 var(--sp-3); color: var(--pad-ink); }
+.kp-bar { display: flex; align-items: center; gap: var(--sp-2); }
+.kp-badge { min-width: 2.75rem; height: 2.25rem; padding: 0 var(--sp-3); border-radius: var(--r-pill); display: grid; place-items: center; font: 600 1.0625rem var(--display); color: #fff; background: var(--player); }
+.kp-home { width: 3.25rem; height: 2.25rem; border: 0; border-radius: var(--r-pill); display: grid; place-items: center; background: var(--pad-chip); color: var(--pad-ink); }
 .kp-home.pressed { background: var(--pad-chip-down); }
-.kp-switch { height: 36px; padding: 0 12px; border: 2px solid var(--pad-chip-down); border-radius: 18px;
-  background: none; color: var(--pad-ink); font: 800 14px 'Nunito', sans-serif; }
-.kp-switch[aria-pressed="true"] { background: var(--surface); border-color: #fff; color: #2B3445; }
-.kp-switch:active { transform: scale(0.97); }
-#kp-recenter { margin-left: auto; }
-
-.kp-main { flex: 1; min-height: 0; display: flex; gap: 14px; }
-
-/* Left thumb: two big steering keycaps, curb-white with a red-and-white curb stripe on top */
-.kp-steer { position: relative; flex: 1.15; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; touch-action: none; }
-.kp-btn.steer { --c: #F4F7FB; --edge: #B8C2D1; color: #2B3445; overflow: hidden; align-content: center; gap: 2px;
-  font-size: clamp(15px, 4vh, 22px); }
-.kp-btn.steer span { font-size: clamp(34px, 12vh, 64px); line-height: 1; }
-.kp-btn.steer::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 10px;
-  background: repeating-linear-gradient(90deg, #E03131 0 18px, #fff 18px 36px); }
-.kp-btn.steer { position: relative; }
-.kp-btn.steer.pressed { --c: var(--player); color: #fff; }
-.kp-tilt-hint { display: none; }
-.kp-steer.tilt .kp-btn.steer { opacity: 0.25; }
-.kp-steer.tilt .kp-tilt-hint { display: grid; place-items: center; position: absolute; inset: 0; font-weight: 900; font-size: 20px; color: var(--pad-ink); pointer-events: none; }
-
-/* Right thumb: four keycaps; GAS (bottom right) is where the thumb rests, DRIFT next to it */
-.kp-buttons { flex: 1; display: grid; grid-template: 1fr 1.35fr / 1fr 1.2fr; gap: 10px; touch-action: none; }
-.kp-btn { display: grid; place-items: center; border-radius: 20px; font: 900 clamp(17px, 4.6vh, 26px) 'Nunito', sans-serif;
-  letter-spacing: 0.02em; color: #fff; background: var(--c); box-shadow: 0 6px 0 var(--edge), 0 10px 18px rgba(0, 0, 0, 0.25);
-  transition: transform 90ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 90ms cubic-bezier(0.23, 1, 0.32, 1); }
-.kp-btn.pressed { transform: translateY(5px); box-shadow: 0 1px 0 var(--edge), 0 3px 8px rgba(0, 0, 0, 0.2); }
-.kp-btn.item { --c: #BB6BD9; --edge: #8E44AD; }
-.kp-btn.brake { --c: #E03131; --edge: #A61E1E; }
-.kp-btn.drift { --c: #F2994A; --edge: #C4701F; }
-.kp-btn.gas { --c: #27AE60; --edge: #1B7A43; font-size: clamp(22px, 6vh, 34px); }
-
-/* Rotation lock on: the page stays upright while you hold the phone sideways, so the pad turns
-   itself a quarter turn (Flip = the other way round). Without rotation lock the phone turns the page. */
+.kp-chip, .kp-seg button { height: 2.25rem; padding: 0 var(--sp-3); border: 0; border-radius: var(--r-pill); background: var(--pad-chip); color: var(--pad-ink); font: 600 0.875rem var(--display); touch-action: manipulation; }
+.kp-chip[aria-pressed="true"], .kp-seg button[aria-pressed="true"] { background: var(--pad-ink); color: var(--pad-bg); }
+.kp-chip:active { transform: scale(0.96); }
+.kp-seg { display: flex; padding: 3px; gap: 3px; border-radius: var(--r-pill); background: var(--pad-chip); }
+.kp-seg button { height: calc(2.25rem - 6px); background: transparent; }
+#kp-autogas { margin-left: auto; }
 .kp-flip { display: none; }
+
+.kp-main { flex: 1; min-height: 0; display: flex; gap: var(--sp-3); }
+.kp-steer { position: relative; flex: 1.15; display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); touch-action: none; }
+.kp-buttons { flex: 1; display: grid; grid-template: 0.6fr 1fr 1.25fr / 1fr 1.15fr; gap: var(--sp-3); touch-action: none; }
+
+.kp-btn { display: grid; place-items: center; border-radius: var(--r-lg); font: 600 clamp(1.0625rem, 4.6vh, 1.625rem) var(--display); letter-spacing: 0.03em; color: #fff; background: var(--c);
+  box-shadow: var(--sh-2), inset 0 -5px 0 rgba(0, 0, 0, 0.16); transition: transform var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out); }
+.kp-btn.pressed { transform: scale(0.95); box-shadow: var(--sh-1), inset 0 -2px 0 rgba(0, 0, 0, 0.16); filter: brightness(0.92); }
+.kp-btn.item { --c: var(--t-violet); grid-area: 2 / 1; }
+.kp-btn.brake { --c: var(--t-pink); grid-area: 1 / 1; font-size: clamp(0.875rem, 3.4vh, 1.25rem); }
+.kp-btn.drift { --c: var(--t-orange); grid-area: 3 / 1; }
+.kp-btn.gas { --c: var(--t-green); grid-area: 1 / 2 / 4 / 3; font-size: clamp(1.75rem, 8vh, 3rem); }
+.kp-btn.steer { --c: var(--c-surface); color: var(--c-text); align-content: center; gap: 2px; font-size: clamp(0.9375rem, 4vh, 1.25rem); }
+.kp-btn.steer span { font-size: clamp(2.25rem, 12vh, 4rem); line-height: 1; }
+.kp-btn.steer.pressed { --c: var(--player); color: #fff; }
+
+/* Wheel mode: the steering keys give way to a wheel that turns with the phone */
+.kp-wheel { display: none; }
+.kp-steer.tilt .kp-btn.steer { display: none; }
+.kp-steer.tilt .kp-wheel { grid-column: 1 / -1; display: grid; place-items: center; align-content: center; gap: var(--sp-2); border-radius: var(--r-lg); background: var(--c-surface); box-shadow: var(--sh-1); color: var(--c-text); }
+.kp-wheel svg { width: min(52%, 36vh); height: auto; }
+.kp-wheel svg g { transform-origin: 60px 60px; transform: rotate(var(--wheel, 0deg)); transition: transform 60ms linear; }
+.kp-wheel p { margin: 0; font: 700 0.9375rem var(--font); color: var(--c-muted); }
+
+/* Rotation lock on: the page stays upright while you hold the phone sideways, so the pad turns itself a quarter turn */
 @media (orientation: portrait) {
   .kart-pad { position: fixed; top: 50%; left: 50%; width: 100vh; width: 100dvh; height: 100vw;
     padding: max(10px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-top)); box-sizing: border-box;
     transform: translate(-50%, -50%) rotate(90deg); }
   .kart-pad.flipped { transform: translate(-50%, -50%) rotate(-90deg); }
-  .kp-flip { display: inline-block; margin-left: auto; }
+  .kp-flip { display: inline-block; }
 }
-@media (prefers-reduced-motion: reduce) { .kp-btn { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .kp-btn, .kp-wheel svg g { transition: none; } }
 
 /* Keyboard layout */
 .keyboard-pad { margin-top: 24px; }

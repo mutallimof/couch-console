@@ -4,7 +4,7 @@
 //   can slide from one to the other without lifting.
 //   Right thumb: GAS, DRIFT, ITEM, BRAKE. Your thumb can slide between them too (e.g. GAS -> DRIFT);
 //   the game keeps accelerating while DRIFT or ITEM is held.
-//   Switches: Tilt steering (turn the phone like a wheel instead of the buttons) and Auto-gas.
+//   Steering: Buttons, or Wheel (turn the phone like a wheel; wheel.js smooths it). Also Auto-gas and the haptics level.
 // With the phone's rotation lock on, the page stays upright: then the pad turns itself sideways
 // (and "Flip" turns it the other way round).
 // Every way a touch can end is handled (lift, cancel, app switch), so nothing stays pressed.
@@ -44,7 +44,7 @@ function trackFingers(zone, attr, onHold, onLetGo) {
 }
 
 // onButton(button, 'down' | 'up'), onSteer(-1..1), onTilt(on), onRecenter()
-export function createKartPad({ root, onButton, onSteer, onTilt, onRecenter }) {
+export function createKartPad({ root, onButton, onSteer, onTilt, onRecenter, haptics }) {
   const zone = root.querySelector('#kp-buttons');
   const steerZone = root.querySelector('#kp-steer');
   const buttons = [...zone.querySelectorAll('[data-kart]')];
@@ -61,7 +61,7 @@ export function createKartPad({ root, onButton, onSteer, onTilt, onRecenter }) {
     set.add(who);
     if (set.size === 1) {
       onButton(button, 'down');
-      navigator.vibrate?.(8);
+      haptics?.play('tap');
       buttons.find((b) => b.dataset.kart === button).classList.add('pressed');
     }
   }
@@ -96,7 +96,7 @@ export function createKartPad({ root, onButton, onSteer, onTilt, onRecenter }) {
     onSteer(value);
   }
   const left = trackFingers(steerZone, 'steer',
-    (dir, finger) => { held.push({ dir: Number(dir), finger }); navigator.vibrate?.(6); aim(); },
+    (dir, finger) => { held.push({ dir: Number(dir), finger }); haptics?.play('tap'); aim(); },
     (dir, finger) => { const i = held.findIndex((h) => h.finger === finger && h.dir === Number(dir)); if (i >= 0) held.splice(i, 1); aim(); });
 
   // ---- Let go of everything (app switch, notification, leaving the kart screen)
@@ -112,19 +112,27 @@ export function createKartPad({ root, onButton, onSteer, onTilt, onRecenter }) {
   // ---- Switches
   const tiltBtn = root.querySelector('#kp-tilt'), gasBtn = root.querySelector('#kp-autogas');
   const recenterBtn = root.querySelector('#kp-recenter'), flipBtn = root.querySelector('#kp-flip');
+  const buttonsBtn = root.querySelector('#kp-buttons-mode'), hapticBtn = root.querySelector('#kp-haptic'), wheelArt = root.querySelector('.kp-wheel');
   function render() {
     tiltBtn.setAttribute('aria-pressed', tilt);
+    buttonsBtn.setAttribute('aria-pressed', !tilt);
+    hapticBtn.textContent = haptics ? `Haptics: ${haptics.supported ? haptics.level[0].toUpperCase() + haptics.level.slice(1) : 'not on this phone'}` : 'Haptics';
+    hapticBtn.hidden = !haptics;
     gasBtn.setAttribute('aria-pressed', autoGas);
     recenterBtn.hidden = !tilt;
     steerZone.classList.toggle('tilt', tilt);
     root.classList.toggle('flipped', flipped);
   }
   function applyAutoGas() { if (autoGas) hold('A', 'auto'); else letGo('A', 'auto'); }
-  tiltBtn.addEventListener('click', () => {
-    tilt = !tilt; save('couch.kartTilt', tilt);
+  const setTilt = (on) => {
+    if (tilt === on) return;
+    tilt = on; save('couch.kartTilt', tilt);
     left.releaseAll(); held.length = 0; aim();
     render(); onTilt(tilt);
-  });
+  };
+  tiltBtn.addEventListener('click', () => setTilt(true));
+  buttonsBtn.addEventListener('click', () => setTilt(false));
+  hapticBtn.addEventListener('click', () => { haptics?.cycle(); render(); });
   gasBtn.addEventListener('click', () => { autoGas = !autoGas; save('couch.kartAutoGas', autoGas); render(); applyAutoGas(); });
   recenterBtn.addEventListener('click', () => onRecenter());
   flipBtn.addEventListener('click', () => { flipped = !flipped; save('couch.kartFlip', flipped); render(); });
@@ -133,6 +141,8 @@ export function createKartPad({ root, onButton, onSteer, onTilt, onRecenter }) {
   return {
     get tilt() { return tilt; },
     get steer() { return steer; },
+    // The wheel picture follows the phone (steer -1..1 turns it up to 80 degrees)
+    setWheelVisual(value) { wheelArt?.style.setProperty('--wheel', `${(value * 80).toFixed(1)}deg`); },
     // The kart screen appears: Auto-gas holds GAS. It disappears: let go of everything.
     show() { applyAutoGas(); },
     hide() { releaseAll(); letGo('A', 'auto'); },

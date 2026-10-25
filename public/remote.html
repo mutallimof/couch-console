@@ -48,28 +48,35 @@
     <button class="btn round b" data-button="B">B</button>
   </main>
 
-  <!-- Kart pad (Turbo Karts): hold the phone sideways. Left thumb: LEFT / RIGHT buttons,
-       right thumb slides between the four buttons. "Tilt" switches to tilt steering. -->
+  <!-- Kart pad (Turbo Karts): hold the phone sideways. Left thumb: LEFT / RIGHT, or switch to Wheel and tilt the phone like a
+       steering wheel. Right thumb: a tall GAS, DRIFT, ITEM and BRAKE. Haptics: Off / Low / Medium / High. -->
   <main id="kart-pad" class="kart-pad" hidden>
     <div class="kp-bar">
       <span id="kp-badge" class="kp-badge">P1</span>
       <button class="kp-home" data-button="HOME" aria-label="Home">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11 12 3l9 8v10h-6v-6H9v6H3z" fill="currentColor"/></svg>
       </button>
-      <button id="kp-tilt" class="kp-switch" type="button" aria-pressed="false">Tilt steering</button>
-      <button id="kp-autogas" class="kp-switch" type="button" aria-pressed="false">Auto-gas</button>
-      <button id="kp-recenter" class="kp-switch" type="button" hidden>Recenter</button>
-      <button id="kp-flip" class="kp-switch kp-flip" type="button">Flip ↻</button>
+      <div class="kp-seg" role="group" aria-label="Steering">
+        <button id="kp-buttons-mode" type="button" aria-pressed="true">Buttons</button>
+        <button id="kp-tilt" type="button" aria-pressed="false">Wheel</button>
+      </div>
+      <button id="kp-autogas" class="kp-chip" type="button" aria-pressed="false">Auto-gas</button>
+      <button id="kp-haptic" class="kp-chip" type="button">Haptics: Medium</button>
+      <button id="kp-recenter" class="kp-chip" type="button" hidden>Recenter</button>
+      <button id="kp-flip" class="kp-chip kp-flip" type="button">Flip ↻</button>
     </div>
     <div class="kp-main">
       <div id="kp-steer" class="kp-steer">
         <div class="kp-btn steer" data-steer="-1" aria-label="Left"><span>◀</span>LEFT</div>
         <div class="kp-btn steer" data-steer="1" aria-label="Right"><span>▶</span>RIGHT</div>
-        <span class="kp-tilt-hint">Tilt the phone to steer</span>
+        <div class="kp-wheel" aria-hidden="true">
+          <svg viewBox="0 0 120 120"><g id="kp-wheel-art"><circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" stroke-width="10"/><circle cx="60" cy="60" r="12" fill="currentColor"/><path d="M60 60V12M60 60 18 84M60 60l42 24" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><circle cx="60" cy="9" r="5" fill="var(--player)"/></g></svg>
+          <p>Tilt the phone to steer</p>
+        </div>
       </div>
       <div id="kp-buttons" class="kp-buttons">
-        <div class="kp-btn item" data-kart="UP">ITEM</div>
         <div class="kp-btn brake" data-kart="B">BRAKE</div>
+        <div class="kp-btn item" data-kart="UP">ITEM</div>
         <div class="kp-btn drift" data-kart="R">DRIFT</div>
         <div class="kp-btn gas" data-kart="A">GAS</div>
       </div>

@@ -4,6 +4,7 @@ import { createMotion } from './motion.js';
 import { createSwing } from './swing.js';
 import { createWheel } from './wheel.js';
 import { createKartPad } from './kart-pad.js';
+import { createHaptics } from './haptics.js';
 import { createParty } from './party.js';
 import './no-zoom.js';
 
@@ -257,8 +258,10 @@ const sendSteer = (steer) => {
   sentCount++;
   socket.emit(EV.INPUT_WHEEL, { steer }); // (not volatile: "straight again" must never get lost)
 };
-const wheel = createWheel({ onSteer: (steer) => { if (kartPad.tilt) sendSteer(steer); } });
+const haptics = createHaptics();
+const wheel = createWheel({ onSteer: (steer) => { if (kartPad.tilt) { sendSteer(steer); kartPad.setWheelVisual(steer); } } });
 const kartPad = createKartPad({
+  haptics,
   root: $('kart-pad'),
   onButton: (button, state) => emit(EV.INPUT_BUTTON, { button, state }),
   onSteer: (steer) => { if (!kartPad.tilt) sendSteer(steer); },
@@ -367,9 +370,9 @@ socket.on(EV.FEEDBACK_SETTINGS, (s) => {
   if (typeof s?.phoneSounds === 'boolean') phoneSounds = s.phoneSounds;
   followTheme(s?.theme);
 });
-socket.on(EV.FEEDBACK_RUMBLE, ({ ms }) => {
+socket.on(EV.FEEDBACK_RUMBLE, ({ ms, kind }) => {
   ms = Math.min(Number(ms) || 0, 1000);
-  navigator.vibrate?.(ms);
+  haptics.play(typeof kind === 'string' ? kind : '', ms); // (a named moment, or just a length; iPhones: nothing, silently)
   if (phoneSounds) phoneSound(ms);
 });
 
