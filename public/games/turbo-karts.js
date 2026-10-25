@@ -272,6 +272,7 @@ function onRaceEvent(e) {
 // ---------- Driving input ----------
 
 function controls(h) {
+  if (window.__kart?.auto) { const a = race.cpuInput(h.racer); return { gas: a.gas, brake: a.brake, drift: a.drift, item: !!a.item, steer: a.steer }; }
   const c = input.get(h.playerId) || {};
   const digital = (c.right ? 1 : 0) - (c.left ? 1 : 0);
   const held = kartInput({ ...c, steer: digital || c.steer || 0 });
@@ -614,20 +615,34 @@ function personFace(playerId) {
 
 // ---------- Loop & input ----------
 
+// ?perf=1 records how long each part of every frame takes (window.__kartPerf), for finding lag: see scripts/kart-perf.mjs
+const PERF = new URLSearchParams(location.search).get('perf') === '1';
+const perf = PERF ? (window.__kartPerf = { raf: [], upd: [], sync: [], render: [], hud: [], programs: [], states: [], geometries: [], textures: [] }) : null;
+
 function loop(t) {
   const dt = Math.min(0.05, (t - (lastT ?? t)) / 1000);
+  const raf = t - (lastT ?? t);
   lastT = t;
+  const p0 = PERF ? performance.now() : 0;
   podium?.update(dt);
   if (!paused) { update(dt); fx?.update(dt); qfx?.update(dt); skids?.update(performance.now() / 1000, TUNE.effects.skidOpacity); }
   if (state === 'select') showrooms.forEach((room) => room.update(dt));
+  const p1 = PERF ? performance.now() : 0;
   if (race && views.length) {
     syncMeshes(t, dt);
     humans.forEach((h) => moveCamera(h, dt));
   }
+  const p2 = PERF ? performance.now() : 0;
   render();
+  const p3 = PERF ? performance.now() : 0;
   if (state === 'race' || state === 'countdown') look.tick(dt);
   updateHud();
   drawMinimap();
+  if (PERF && (state === 'race' || state === 'countdown')) {
+    perf.raf.push(raf); perf.upd.push(p1 - p0); perf.sync.push(p2 - p1); perf.render.push(p3 - p2); perf.hud.push(performance.now() - p3);
+    perf.programs.push(renderer.info.programs?.length || 0); perf.states.push(state);
+    perf.geometries.push(renderer.info.memory.geometries); perf.textures.push(renderer.info.memory.textures);
+  }
   frame = requestAnimationFrame(loop);
 }
 
@@ -667,8 +682,8 @@ async function init(token) {
   setThree(THREE);
   setShowroomThree(THREE);
   root.querySelector('.kart-loading').remove();
-  const ok = await loadModels([...KARTS.map((k) => CAR(k.model)), ...CHARACTERS.map((c) => c.path),
-    CAR('item-box'), CAR('item-coin-gold')]);
+  const ok = await loadModels([...KARTS.map((k) => k.model && CAR(k.model)), ...CHARACTERS.map((c) => c.path),
+    CAR('item-box'), CAR('item-coin-gold')].filter(Boolean));
   if (!ok) return;
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
@@ -720,6 +735,7 @@ async function init(token) {
       // drive the human karts like computer drivers for a while (fixed steps, no rendering)
       freeCam: null, // (screenshots) a function racer -> { eye: [x, y, z], aim: [x, y, z] } that replaces the chase camera
       get podium() { return podium; },
+      auto: false, // (perf test) the human karts drive themselves like computer drivers
       skip(seconds) { for (let t = 0; t < seconds; t += 1 / 60) race.update(1 / 60, humans.map((h) => race.cpuInput(h.racer))); },
     };
   }
