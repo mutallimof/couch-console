@@ -35,11 +35,11 @@ test('home: one grid, hero tile, folders open as screens, nothing is reachable t
     const key = async (k) => { await tv.keyboard.press(k); await tv.waitForTimeout(250); };
     const titles = () => tv.$$eval('#tiles .name', (t) => t.map((x) => x.textContent));
 
-    // The top bar: clock and date, the four player chips, the small QR with the room code; nothing else
+    // The dock: clock and date, what is focused, the four player chips, the small QR with the room code; nothing else
     assert.match(await tv.textContent('#clock'), /\d/);
     assert.equal(await tv.locator('.bar-players .ui-chip').count(), 4);
     assert.equal(await tv.isVisible('#mini-join'), true);
-    assert.equal(await tv.locator('.side, .dock, #hero, #who, #phones').count(), 0, 'no sidebar, dock, recently played, Guest chip');
+    assert.equal(await tv.locator('.side, #hero, #who, #phones').count(), 0, 'no sidebar, recently played, Guest chip');
 
     // One grid, in order, each item once; folders without games are not shown
     assert.deepEqual(await titles(), ['Turbo Karts', 'Arcade', 'Channels', 'Photos', 'Music', 'Present', 'Settings']);

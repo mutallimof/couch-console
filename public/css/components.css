@@ -65,14 +65,14 @@ kbd { display: inline-grid; place-items: center; min-width: 1.8em; height: 1.8em
 
 /* ---------- Tile: a card, with the picture on a soft plate in the tile's own color ---------- */
 .ui-tile { position: relative; display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); border-radius: var(--r-lg); background: var(--c-surface); box-shadow: var(--sh-1);
-  --plate-mix: 16%; --plate: color-mix(in srgb, var(--tile, var(--c-accent)) var(--plate-mix), var(--c-surface)); }
-html[data-theme="dark"] .ui-tile { --plate-mix: 24%; }
-.ui-tile .plate { position: relative; flex: 1; min-height: 0; border-radius: calc(var(--r-lg) - var(--sp-2)); background: var(--plate); transition: background-color var(--dur-2) var(--ease-out); overflow: hidden; }
+  --plate-base: var(--c-surface); --plate-rest: 16%; --plate-focus: 30%; }
+html[data-theme="dark"] .ui-tile { --plate-base: var(--c-surface-3); --plate-rest: 12%; --plate-focus: 20%; }
+.ui-tile .plate { position: relative; flex: 1; min-height: 0; border-radius: calc(var(--r-lg) - var(--sp-2)); overflow: hidden;
+  background: color-mix(in srgb, var(--tile, var(--c-accent)) var(--plate-rest), var(--plate-base)); transition: background-color var(--dur-2) var(--ease-out); }
+.ui-tile.focused .plate, .ui-tile.is-focus .plate { background: color-mix(in srgb, var(--tile, var(--c-accent)) var(--plate-focus), var(--plate-base)); }
 .ui-tile .plate img { position: absolute; inset: 4% 4% 2%; width: 92%; height: 94%; object-fit: contain; filter: drop-shadow(0 0.4rem 0.4rem rgba(30, 40, 80, 0.18)); transition: transform var(--dur-3) var(--ease-out); }
-.ui-tile .plate svg { position: absolute; inset: 0; margin: auto; width: 38%; height: 52%; padding: 7%; border-radius: 50%; background: var(--tile, var(--c-accent)); }
+.ui-tile .plate svg { position: absolute; inset: 0; margin: auto; height: 44%; width: auto; aspect-ratio: 1; padding: 7%; border-radius: 50%; background: var(--tile, var(--c-accent)); }
 .ui-tile .name { padding: 0 var(--sp-2) var(--sp-1); font: 600 var(--fs-body) / 1.1 var(--display); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ui-tile.focused .plate, .ui-tile.is-focus .plate { background: color-mix(in srgb, var(--tile, var(--c-accent)) calc(var(--plate-mix) + 12%), var(--c-surface)); }
-.ui-tile.focused .plate img, .ui-tile.is-focus .plate img { transform: scale(1.05); }
 .ui-tile.pressed { transform: scale(0.97); }
 
 @media (prefers-reduced-motion: reduce) {

@@ -15,10 +15,23 @@
   <link rel="stylesheet" href="/css/karts.css">
 </head>
 <body>
-  <!-- Home menu (Phase 55): a top bar and ONE grid of big tiles; a folder opens as its own screen -->
+  <!-- Home menu: the brand and the button hints on top, ONE grid of big tiles in the middle (a folder opens as its own screen),
+       and a dock at the bottom: the clock, what is focused, the players and a small QR to join -->
   <main class="menu theme-bg">
-    <header class="ui-topbar">
+    <header class="home-top">
+      <span class="brand">
+        <svg viewBox="0 0 170 150" width="34" height="30" aria-hidden="true" fill="currentColor"><path d="M72 14 104 31 72 48z" transform="translate(4 -1)" fill="var(--c-focus)"/><rect x="12" y="62" width="146" height="62" rx="26"/><rect x="0" y="82" width="38" height="60" rx="18"/><rect x="132" y="82" width="38" height="60" rx="18"/></svg>
+        <b>couch console</b>
+      </span>
+      <p class="panel-hint ui-hints"><span><kbd>A</kbd> Open</span><span class="back-hint"><kbd>B</kbd> Back</span><span><kbd>Home</kbd> Menu</span></p>
+    </header>
+    <section class="home">
+      <h2 id="crumb" class="crumb" hidden></h2>
+      <div id="tiles" class="tiles"></div>
+    </section>
+    <footer class="dock">
       <div class="when"><b id="clock" class="clock"></b><span id="date" class="date"></span></div>
+      <div class="dock-focus" aria-live="polite"><b id="dock-title"></b><span id="dock-tag"></span></div>
       <span id="sound-hint" class="sound-hint">Click this page once to turn on sound</span>
       <span class="status-right">
         <span id="bar-players" class="bar-players"></span>
@@ -28,12 +41,7 @@
           <span>Scan to join<br><b id="mini-room"></b></span>
         </span>
       </span>
-    </header>
-    <section class="home">
-      <h2 id="crumb" class="crumb" hidden></h2>
-      <div id="tiles" class="tiles"></div>
-      <p class="panel-hint ui-hints"><span><kbd>A</kbd> Open</span><span class="back-hint"><kbd>B</kbd> Back</span><span><kbd>Home</kbd> Menu</span></p>
-    </section>
+    </footer>
   </main>
 
   <!-- An open app (game or settings) zooms out of its tile into this layer -->

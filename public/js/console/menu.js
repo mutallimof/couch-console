@@ -70,7 +70,7 @@ export function createMenu({ grid, clock, date, crumb, apps, folders = {}, icons
     focusEl = el;
     el.classList.add('focused', 'is-focus');
     el.scrollIntoView?.({ block: 'nearest', behavior: 'instant' }); // (a long folder scrolls to the focused tile)
-    if (!silent) onFocusChange?.(Math.max(0, visible().indexOf(el)) % 4); // the column: each one sounds a bit different
+    onFocusChange?.(Math.max(0, visible().indexOf(el)) % 4, el._entry, el, silent); // the column: each one sounds a bit different; the entry for the dock and the live preview
   }
   const center = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
   function nearest(dir) {
@@ -106,7 +106,7 @@ export function createMenu({ grid, clock, date, crumb, apps, folders = {}, icons
 
   function animateIn(nodes) {
     if (!gsap || REDUCED || !nodes.length) return;
-    gsap.fromTo(nodes, { opacity: 0, y: 22, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'back.out(1.6)', stagger: 0.03, clearProps: 'transform,opacity', overwrite: true });
+    gsap.fromTo(nodes, { opacity: 0, y: 18, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.38, ease: 'power3.out', stagger: 0.03, clearProps: 'transform,opacity', overwrite: true });
   }
 
   return {
@@ -140,7 +140,7 @@ export function createMenu({ grid, clock, date, crumb, apps, folders = {}, icons
     // A landed: the tile squashes briefly (the game then zooms out of it)
     press() {
       if (!focusEl) return;
-      if (gsap && !REDUCED) gsap.fromTo(focusEl, { scale: 1.04 }, { scale: 0.95, duration: 0.09, yoyo: true, repeat: 1, ease: 'power2.out', clearProps: 'transform' });
+      if (gsap && !REDUCED) gsap.fromTo(focusEl, { scale: 1.03 }, { scale: 0.96, duration: 0.09, yoyo: true, repeat: 1, ease: 'power2.out', clearProps: 'transform' });
       else { const el = focusEl; el.classList.add('pressed'); setTimeout(() => el.classList.remove('pressed'), 110); }
     },
     // The menu appears (after pairing / coming back): the tiles rise in

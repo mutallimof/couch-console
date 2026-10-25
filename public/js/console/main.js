@@ -8,6 +8,7 @@ import { createSlides } from './slides.js';
 import { createPointers } from './pointer.js';
 import { createGyroPointers } from './pointer/engine.js';
 import { createMenu } from './menu.js';
+import { createHomeLive } from './home-live.js';
 import { createSettings } from './settings.js';
 import { sound } from './sound.js';
 import { playBoot } from './boot.js';
@@ -96,9 +97,19 @@ const prefs = {
 // ---------- Menu ----------
 
 const apps = [...gameApps, createSettings(prefs)]; // Settings is built in, always last
+const taglines = await fetch('/js/console/taglines.json').then((r) => r.json()).catch(() => ({}));
+const homeLive = createHomeLive(); // (the focused hero tile plays a live 3D scene)
 const menu = createMenu({
   grid: $('tiles'), clock: $('clock'), date: $('date'), crumb: $('crumb'), apps, folders, icons,
-  onFocusChange: (column) => sound.play('hover', { step: column }),
+  onFocusChange: (column, entry, el, silent) => {
+    if (!silent) sound.play('hover', { step: column });
+    // The dock says what is focused
+    if (entry) {
+      $('dock-title').textContent = entry.title;
+      $('dock-tag').textContent = taglines[entry.isFolder ? `folder:${entry.id}` : entry.id] || '';
+    }
+    homeLive.focus(el, entry);
+  },
 });
 
 // ---------- Pairing / lobby ----------
@@ -249,6 +260,7 @@ function openApp(app) {
   musicPlayer.setGameActive(!['music', 'photos', 'present', 'settings'].includes(app.id) && app.folder !== 'channels');
   queueMicrotask(() => slides.refresh()); // (a running game covers the slides)
   menu.press();
+  homeLive.stop(); // (free the little 3D scene while a game runs)
   stage.hidden = false;
   const anim = REDUCED_MOTION
     ? stage.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: 'ease' })
@@ -299,7 +311,7 @@ function closeApp() {
       [{ clipPath: 'inset(0px 0px 0px 0px round 0px)' }, { clipPath: tileClip(menu.focusedTile()) }],
       { duration: ZOOM_BACK_MS, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
     );
-  anim.onfinish = () => { stage.hidden = true; busy = false; setPairing(); };
+  anim.onfinish = () => { stage.hidden = true; busy = false; setPairing(); homeLive.focus(menu.focusedTile(), menu.focusedApp()); };
 }
 
 // The `api` object every game gets in mount(). See docs/PLAN.md, Phase 4.
@@ -318,7 +330,7 @@ function makeApi(cur, mode) {
     setCursor: (style) => pointers.setStyle(style),   // 'crosshair' for aiming games
     // Smoothed cursor position in screen pixels (the stage fills the screen).
     pointer: (playerId) => pointers.position(playerId),
-    rumble: (playerId, ms) => socket.emit(EV.FEEDBACK_RUMBLE, { playerId, ms }),
+    rumble: (playerId, ms, kind) => socket.emit(EV.FEEDBACK_RUMBLE, { playerId, ms, ...(kind ? { kind } : {}) }), // kind: a named moment ('tier2', 'boost', 'hit', 'item'...) the phone turns into its own haptic pattern
     sound,
     // Tell the activity feed a player won ("Cem won Turbo Karts")
     reportWin: (playerId) => socket.emit(EV.ACTIVITY_GAME, { playerId, game: cur.app.title, what: 'won' }),

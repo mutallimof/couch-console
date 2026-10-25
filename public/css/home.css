@@ -1,33 +1,58 @@
-/* Home menu: a top bar, ONE grid of tiles (Turbo Karts large, then folders and hubs), and the button hints.
+/* Home menu: the brand and the button hints on top, ONE grid of tiles (Turbo Karts large, then folders and hubs), and a dock at the bottom.
    Components (tile, chip, focus ring, kbd) are in components.css; tokens in theme.css. */
 @keyframes tile-in { from { opacity: 0; transform: translateY(0.75rem) scale(0.97); } }
 @keyframes tile-fade { from { opacity: 0; } }
 html, body { font-family: var(--font); }
 
-.menu { height: 100%; display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-3) var(--sp-7) var(--sp-5); }
-.when { display: flex; align-items: baseline; gap: var(--sp-4); }
-.clock { font: 600 2.25rem / 1 var(--display); }
-.date { font-weight: 700; font-size: var(--fs-hint); color: var(--c-muted); }
-.sound-hint { padding: 0.2em 0.9em; border-radius: var(--r-pill); background: var(--c-warn-bg); color: var(--c-warn); font-weight: 700; font-size: 1.125rem; }
-.status-right { margin-left: auto; display: flex; align-items: center; gap: var(--sp-5); }
-.bar-players { display: flex; gap: var(--sp-2); }
-.mini-join { display: flex; align-items: center; gap: var(--sp-3); color: var(--c-muted); font: 700 1.125rem / 1.25 var(--font); }
-.mini-join img { width: 4.5rem; height: 4.5rem; padding: 4px; border-radius: var(--r-sm); background: #fff; image-rendering: pixelated; }
-.mini-join b { color: var(--c-text); font: 600 1.5rem var(--display); letter-spacing: 0.1em; }
+.menu { position: relative; height: 100%; display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3) var(--sp-7) var(--sp-4); overflow: hidden; isolation: isolate; }
+/* A very slow drifting glow behind everything (transform only: it costs almost nothing) */
+.menu::before, .menu::after { content: ''; position: absolute; z-index: -1; width: 62rem; height: 62rem; border-radius: 50%; filter: blur(2px); opacity: 0.55; pointer-events: none; will-change: transform; }
+.menu::before { left: -18rem; top: -26rem; background: radial-gradient(closest-side, color-mix(in srgb, var(--c-accent) 16%, transparent), transparent); animation: glow-a 46s ease-in-out infinite alternate; }
+.menu::after { right: -22rem; bottom: -30rem; background: radial-gradient(closest-side, color-mix(in srgb, var(--c-focus) 16%, transparent), transparent); animation: glow-b 58s ease-in-out infinite alternate; }
+@keyframes glow-a { to { transform: translate(34rem, 14rem) scale(1.15); } }
+@keyframes glow-b { to { transform: translate(-30rem, -16rem) scale(1.1); } }
+
+.home-top { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-1) var(--sp-3); }
+.brand { display: inline-flex; align-items: center; gap: var(--sp-3); color: var(--c-text); font: 600 1.5rem var(--display); letter-spacing: -0.01em; }
+.panel-hint { margin: 0; }
+.back-hint { display: none; }
+.menu.in-folder .back-hint { display: inline-flex; }
 
 .home { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
 .crumb { margin: 0 0 0 var(--sp-3); font: 600 var(--fs-h1) / 1 var(--display); }
 /* ONE grid: the hero takes two columns and two rows on the left, the rest fills the right */
-.tiles { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: var(--sp-5); padding: var(--sp-5) var(--sp-5) var(--sp-6); overflow: hidden auto; }
+.tiles { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: var(--sp-5); padding: var(--sp-6); overflow: hidden auto; }
 .tiles .hero { grid-column: span 2; grid-row: span 2; }
 .tiles.in-folder .hero { grid-column: auto; grid-row: auto; }
 .tiles.in-folder { grid-template-rows: none; grid-auto-rows: 17rem; align-content: start; }
 .tile { min-height: 0; }
 .hero .name { font-size: var(--fs-title); }
 
-.panel-hint { margin: 0; padding: 0 var(--sp-5); }
-.back-hint { display: none; }
-.menu.in-folder .back-hint { display: inline-flex; }
+/* Animated art: the focused tile's picture floats a little and a soft light sweeps across its plate (the hero plays a live 3D scene instead) */
+.ui-tile.focused .plate img { animation: art-float 3.4s var(--ease-inout) infinite alternate; }
+.ui-tile .plate::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.34) 50%, transparent 62%); transform: translateX(-120%); pointer-events: none; }
+.ui-tile.focused .plate::after { animation: art-sweep 3.8s var(--ease-inout) 0.4s infinite; }
+@keyframes art-float { from { transform: translateY(0) scale(1.05) rotate(-0.6deg); } to { transform: translateY(-2.5%) scale(1.07) rotate(0.8deg); } }
+@keyframes art-sweep { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+.plate .live-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity var(--dur-3) var(--ease-out); }
+.plate.live-on .live-canvas { opacity: 1; }
+.plate.live-on > img { opacity: 0; transition: opacity var(--dur-3) var(--ease-out); animation: none; }
+@media (prefers-reduced-motion: reduce) { .menu::before, .menu::after, .ui-tile.focused .plate img, .ui-tile.focused .plate::after { animation: none; } }
+
+/* The dock: clock · what is focused · players · QR */
+.dock { display: flex; align-items: center; gap: var(--sp-6); padding: var(--sp-3) var(--sp-5); border-radius: var(--r-lg); background: color-mix(in srgb, var(--c-surface) 88%, transparent); box-shadow: var(--sh-1); }
+.when { display: flex; align-items: baseline; gap: var(--sp-3); min-width: 15rem; }
+.clock { font: 600 2.25rem / 1 var(--display); font-variant-numeric: tabular-nums; }
+.date { font-weight: 700; font-size: 1.125rem; color: var(--c-muted); }
+.dock-focus { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.15; }
+.dock-focus b { font: 600 var(--fs-title) var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dock-focus span { color: var(--c-muted); font: 700 1.125rem var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sound-hint { padding: 0.2em 0.9em; border-radius: var(--r-pill); background: var(--c-warn-bg); color: var(--c-warn); font-weight: 700; font-size: 1.125rem; }
+.status-right { margin-left: auto; display: flex; align-items: center; gap: var(--sp-5); }
+.bar-players { display: flex; gap: var(--sp-2); }
+.mini-join { display: flex; align-items: center; gap: var(--sp-3); color: var(--c-muted); font: 700 1rem / 1.25 var(--font); }
+.mini-join img { width: 3.6rem; height: 3.6rem; padding: 3px; border-radius: var(--r-sm); background: #fff; image-rendering: pixelated; }
+.mini-join b { color: var(--c-text); font: 600 1.375rem var(--display); letter-spacing: 0.1em; }
 
 /* ---------- Result screens: the podium and confetti (results.js) ---------- */
 .podium { display: flex; justify-content: center; align-items: flex-end; gap: 10px; margin: 6px 0 10px; min-height: 20vh; }
