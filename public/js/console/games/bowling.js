@@ -291,10 +291,12 @@ function text(str, x, y, size, color, align = 'center') {
   ctx.fillStyle = color; ctx.fillText(str, x, y);
 }
 
+const isDark = () => document.documentElement.dataset.theme === 'dark'; // (the room and the scoreboard follow the Light / Dark theme)
+
 function drawLane() {
   const { x, y, w, h } = lane, gw = ballR() * 1.5;
   // gutters
-  ctx.fillStyle = '#C9D2DE';
+  ctx.fillStyle = isDark() ? '#2E3446' : '#C9D2DE';
   ctx.beginPath(); ctx.roundRect(x - gw, y, w + gw * 2, h, 10 * scale); ctx.fill();
   // wood
   const g = ctx.createLinearGradient(x, 0, x + w, 0);
@@ -357,15 +359,15 @@ function drawScoreboard() {
     text(`P${pl.playerId}`, left + (label - 10 * scale) / 2, y + rowH / 2, 24, '#fff');
     for (let f = 0; f < 10; f++) {
       const bx = left + label + f * box;
-      ctx.fillStyle = isTurn && f === turn.f ? '#FFF6D6' : '#fff';
+      const dk = isDark(); ctx.fillStyle = isTurn && f === turn.f ? (dk ? '#4A4020' : '#FFF6D6') : (dk ? '#1A1E28' : '#fff');
       ctx.fillRect(bx, y, box, rowH);
-      ctx.strokeStyle = '#C9D2DE'; ctx.lineWidth = 1.5; ctx.strokeRect(bx, y, box, rowH);
+      ctx.strokeStyle = dk ? '#2F3547' : '#C9D2DE'; ctx.lineWidth = 1.5; ctx.strokeRect(bx, y, box, rowH);
       const slots = f === 9 ? [0.2, 0.5, 0.8] : [0.3, 0.72];
-      marks(pl.frames[f], f === 9).forEach((mk, i) => text(mk, bx + box * slots[i], y + 18 * scale, 17, '#2B3445'));
-      if (sums[f] !== undefined) text(String(sums[f]), bx + box / 2, y + rowH - 22 * scale, 22, '#2B3445');
+      marks(pl.frames[f], f === 9).forEach((mk, i) => text(mk, bx + box * slots[i], y + 18 * scale, 17, dk ? '#F1F3F9' : '#2B3445'));
+      if (sums[f] !== undefined) text(String(sums[f]), bx + box / 2, y + rowH - 22 * scale, 22, dk ? '#F1F3F9' : '#2B3445');
     }
     const tx = left + label + 10 * box;
-    ctx.fillStyle = '#EEF2F7'; ctx.fillRect(tx, y, totalW, rowH);
+    ctx.fillStyle = isDark() ? '#232837' : '#EEF2F7'; ctx.fillRect(tx, y, totalW, rowH);
     ctx.strokeRect(tx, y, totalW, rowH);
     text(String(sums.at(-1) ?? 0), tx + totalW / 2, y + rowH / 2, 28, pl.color);
     y += rowH + 14 * scale;
@@ -381,7 +383,7 @@ function drawScoreboard() {
 }
 
 function draw() {
-  ctx.fillStyle = '#F4F7FB'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = isDark() ? '#101319' : '#F4F7FB'; ctx.fillRect(0, 0, W, H);
   drawLane();
   pins.filter((p) => !p.gone).forEach(drawPin);
   drawBall();

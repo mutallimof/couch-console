@@ -158,12 +158,15 @@ function text(str, x, y, size, color, align = 'center') {
   ctx.fillStyle = color; ctx.fillText(str, x, y);
 }
 
+const isDark = () => document.documentElement.dataset.theme === 'dark'; // (the table follows the Light / Dark theme)
+
 function draw() {
+  const dark = isDark();
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#F4F7FB'); g.addColorStop(1, '#E3EAF4');
+  g.addColorStop(0, dark ? '#1A1E28' : '#F4F7FB'); g.addColorStop(1, dark ? '#101319' : '#E3EAF4');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   // center line
-  ctx.strokeStyle = 'rgba(43,52,69,0.15)'; ctx.lineWidth = 6 * scale; ctx.setLineDash([18 * scale, 18 * scale]);
+  ctx.strokeStyle = dark ? 'rgba(241,243,249,0.22)' : 'rgba(43,52,69,0.15)'; ctx.lineWidth = 6 * scale; ctx.setLineDash([18 * scale, 18 * scale]);
   ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); ctx.setLineDash([]);
   // scores
   sides.forEach((s, i) => text(String(s.score), W / 2 + (i === 0 ? -90 : 90) * scale, 70 * scale, 80, s.color));
@@ -174,7 +177,7 @@ function draw() {
     ctx.beginPath(); ctx.roundRect(paddleX(i), s.y - paddleH() / 2, paddleW(), paddleH(), paddleW() / 2); ctx.fill();
   });
   // ball
-  ctx.fillStyle = '#2B3445';
+  ctx.fillStyle = dark ? '#F1F3F9' : '#2B3445';
   ctx.beginPath(); ctx.arc(ball.x, ball.y, ballR(), 0, Math.PI * 2); ctx.fill();
 
   if (state === 'serve' && sides[server].playerId) {

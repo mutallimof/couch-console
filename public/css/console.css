@@ -54,8 +54,8 @@ html, body { margin: 0; height: 100%; background: var(--c-bg); overflow: hidden;
 .swatch { width: 30px; height: 30px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.12); }
 .swatch.on { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--player, #2b3445); }
 .size { width: 52px; height: 52px; display: grid; place-items: center; }
-.size-dot { border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2); }
-.draw-hint { color: var(--muted); font-weight: 700; }
+.size-dot { border-radius: 50%; background: var(--c-text); }
+.draw-hint { color: var(--muted); font-weight: 700; font-size: 1.25rem; }
 
 /* ---------- Pairing screen ---------- */
 .pairing { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-5); padding: var(--sp-5); }
@@ -419,13 +419,13 @@ img.qr-img:not([src]) { visibility: hidden; }
 .alien .stat { display: inline-block; margin: 0 10px 20px; }
 .alien .stat b { display: block; font-size: 34px; }
 .alien .stat span { font-size: 14px; font-weight: 800; color: #8fa3c9; text-transform: uppercase; letter-spacing: .1em; }
-.alien .cta { font-size: 20px; font-weight: 800; color: #9fb2d4; }
+.alien .cta { font-size: 24px; font-weight: 800; color: #9fb2d4; }
 .alien .cta strong { color: #fff; }
 .alien .as-goal { font-size: 24px; font-weight: 700; line-height: 1.4; margin: 0 0 18px; color: #dbe6ff; }
 .alien .as-goal b { color: #6fe08f; }
-.alien .as-how { display: grid; gap: 8px; text-align: left; margin: 0 auto 22px; max-width: 520px; font-size: 18px; font-weight: 700; color: #9fb2d4; }
+.alien .as-how { display: grid; gap: 8px; text-align: left; margin: 0 auto 22px; max-width: 640px; font-size: 22px; font-weight: 700; color: #9fb2d4; }
 .alien .as-how div { padding: 10px 16px; border-radius: 12px; background: #0b1226cc; border: 1px solid #2b3a5e; }
-.alien .as-how span { display: block; font-size: 20px; font-weight: 900; color: #fff; }
+.alien .as-how span { display: block; font-size: 24px; font-weight: 900; color: #fff; }
 
 /* Photos album on the TV (Phase 44) */
 .photo-view.wall .photo-full { animation: wall-zoom 9s ease-out both; } /* a slow, gentle push in */

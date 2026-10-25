@@ -45,6 +45,7 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Part 5 phone remote v2: done (haptics.js, wheel smoothing, kart pad v2)
 - Part 6 Photo Booth: done (games/photo-booth*, MediaPipe face stickers with the model in public/assets/models, phone booth pad, booth:cmd / booth:state socket events)
 - Part 7 Party Games: done (Quick Draw, Hot Potato, Steady Hands in games/*.js + games/party/ rules; pg:up / pg:down / pg:time socket events; shared/clock.js sync; remote/party-game.js + gestures.js; folder visible)
+- Part 8 final design QA: done (scripts/qa-shots.mjs walks every TV + phone screen in both themes; paddle duel / bowling follow the theme; phone motion note hidden on booth + party screens; new tests: photo-booth-nocam, party-rules, party-games e2e)
 
 ## Phases (from `docs/REBUILD-PLAN.md`)
 | # | What | Status |

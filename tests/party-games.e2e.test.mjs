@@ -13,7 +13,7 @@ function findPlaywright() {
   return null;
 }
 const pw = findPlaywright();
-const PORT = 9700 + Math.floor(Math.random() * 200);
+const PORT = 7700 + Math.floor(Math.random() * 200);
 const SHOTS = process.env.PARTY_SHOTS; // a folder: save screenshots there
 
 test('party games: lobby, a duel measured on the phones, and the other two games start', { skip: !pw && 'Playwright is not installed', timeout: 240000 }, async () => {

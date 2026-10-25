@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 globalThis.WebSocket ??= require('ws').WebSocket;
 const io = require('../node_modules/socket.io/client-dist/socket.io.js');
 
-const PORT = 9650 + Math.floor(Math.random() * 100);
+const PORT = 7950 + Math.floor(Math.random() * 100);
 let server;
 test.before(async () => {
   server = spawn(process.execPath, ['server.js'], {

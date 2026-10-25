@@ -305,7 +305,7 @@ function applyMode() {
   document.body.classList.toggle('kart-mode', isKart); // hides the top bar: the pad has its own
   $('keyboard-pad').hidden = !isKeys;
   if (isKeys) { $('keyboard-input').value = ''; $('keyboard-input').focus(); }
-  if (isKart) $('motion-msg').hidden = true; // (the kart pad needs no motion, and the note would cover GAS)
+  if (isKart || isBooth || isParty) $('motion-msg').hidden = true; // (the kart pad, the booth and the party screen need no motion note: it would cover their buttons)
   if (isKart && !wasKart) kartPad.show();
   if (!isKart && wasKart) kartPad.hide();
   if (isKart && started && kartPad.tilt) wheel.start();

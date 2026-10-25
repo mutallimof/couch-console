@@ -13,7 +13,7 @@ function findPlaywright() {
   return null;
 }
 const pw = findPlaywright();
-const PORT = 9400 + Math.floor(Math.random() * 300);
+const PORT = 7000 + Math.floor(Math.random() * 300);
 
 test('photo booth: camera on, a phone takes the photo, it reaches the album, the camera turns off', { skip: !pw && 'Playwright is not installed', timeout: 240000 }, async () => {
   const server = spawn(process.execPath, ['server.js'], {
