@@ -33,11 +33,11 @@ test('home: one grid, hero tile, folders open as screens, nothing is reachable t
     await tv.waitForTimeout(800);
     const focused = () => tv.evaluate(() => document.querySelector('.menu .focused')?.dataset.focus);
     const key = async (k) => { await tv.keyboard.press(k); await tv.waitForTimeout(250); };
-    const titles = () => tv.$$eval('#tiles .tile-title', (t) => t.map((x) => x.textContent));
+    const titles = () => tv.$$eval('#tiles .name', (t) => t.map((x) => x.textContent));
 
     // The top bar: clock and date, the four player chips, the small QR with the room code; nothing else
     assert.match(await tv.textContent('#clock'), /\d/);
-    assert.equal(await tv.locator('.bar-players .chip').count(), 4);
+    assert.equal(await tv.locator('.bar-players .ui-chip').count(), 4);
     assert.equal(await tv.isVisible('#mini-join'), true);
     assert.equal(await tv.locator('.side, .dock, #hero, #who, #phones').count(), 0, 'no sidebar, dock, recently played, Guest chip');
 

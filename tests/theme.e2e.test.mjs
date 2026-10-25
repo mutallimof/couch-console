@@ -48,7 +48,7 @@ test('theme: Settings -> Theme restyles the TV and the phones, and is remembered
     await ph.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
     await shot(ph, 'theme-phone-dark');
     const darkPhoneBg = await bg(ph, 'html');
-    assert.notEqual(await ph.evaluate(() => getComputedStyle(document.querySelector('.btn')).backgroundImage), 'none');
+    assert.notEqual(await ph.evaluate(() => getComputedStyle(document.querySelector('.btn')).backgroundColor), 'rgb(255, 255, 255)');
 
     await ph.locator('#start-btn').tap();
     await ph.evaluate(() => { document.getElementById('motion-msg').hidden = true; });

@@ -9,7 +9,7 @@ function toast(text) {
   const box = document.getElementById('toasts');
   if (!box) return;
   const el = document.createElement('div');
-  el.className = 'toast';
+  el.className = 'ui-toast';
   el.textContent = text;
   box.append(el);
   while (box.children.length > 2) box.firstChild.remove(); // at most two at once

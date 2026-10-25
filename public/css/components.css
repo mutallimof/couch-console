@@ -1,0 +1,81 @@
+/* Shared components (tokens are in theme.css). Same classes on the TV and the phone.
+   .ui-focus    one focus ring for everything that can be selected (D-pad, pointer, keyboard)
+   .ui-tile     a home / folder tile      .ui-btn   a button       .ui-row   a list row (label + control)
+   .ui-dialog   a panel on a dim screen   .ui-toast a short note   .ui-topbar the bar at the top       .ui-chip a small pill */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { font-family: var(--font); color: var(--c-text); line-height: var(--lh); }
+button { font: inherit; color: inherit; }
+
+/* ---------- Focus: ONE look. The ring takes the color of whoever drives (--ring, set by main.js) ---------- */
+/* (older class names that follow the same focus look: .ui-focus is the one to use in new markup) */
+.ui-focus, .photo-tile, .video-tile, .deck-tile, .mu-queue li, .mode, .set-row, .ks-track { transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out); }
+.ui-focus.focused, .ui-focus.is-focus, .ui-focus:focus-visible, .photo-tile.focused, .video-tile.focused, .deck-tile.focused, .mu-queue li.focused, .mode.focused, .set-row.focused {
+  outline: none;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 0 0 0.1875rem var(--ring-gap, var(--c-bg)), 0 0 0 0.4375rem var(--ring, var(--c-focus)), var(--sh-3);
+  z-index: 1;
+}
+
+/* ---------- Top bar ---------- */
+.ui-topbar { display: flex; align-items: center; gap: var(--sp-5); padding: var(--sp-3) var(--sp-2); }
+.ui-topbar .grow { margin-left: auto; }
+
+/* ---------- Chip (a player, a status) ---------- */
+.ui-chip { display: inline-flex; align-items: center; gap: var(--sp-2); padding: 0.1em 0.8em; border-radius: var(--r-pill); font: 600 var(--fs-hint) var(--display);
+  color: var(--c-muted); background: var(--c-surface-2); border: 2px solid transparent; }
+.ui-chip.on { background: var(--player); color: #fff; }
+.ui-chip.off { color: var(--c-muted); border-color: var(--c-line); background: transparent; }
+
+/* ---------- Button ---------- */
+.ui-btn, .join-btn, .start-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: 2.75em; padding: 0 var(--sp-5); border: 0; border-radius: var(--r-md);
+  font: 700 var(--fs-body) var(--display); color: var(--c-text); background: var(--c-surface-2); cursor: pointer; touch-action: manipulation; }
+.ui-btn:active, .ui-btn.pressed, .join-btn:active, .start-btn:active { transform: scale(0.97); }
+.ui-btn.primary, .join-btn, .start-btn { background: var(--c-accent); color: var(--c-on-accent); }
+.ui-btn.player { background: var(--player, var(--c-accent)); color: #fff; }
+.ui-btn.ghost, .join-btn.ghost, .kb-cancel { background: transparent; color: var(--c-text); box-shadow: inset 0 0 0 2px var(--c-line); }
+.ui-btn.danger { background: var(--c-danger-bg); color: var(--c-danger); }
+.ui-btn.wide { min-width: 11em; }
+.ui-btn.round { width: 2.75em; padding: 0; border-radius: 50%; }
+
+/* ---------- List row: a label on the left, a control (or value) on the right ---------- */
+.ui-row { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-3) var(--sp-5); border-radius: var(--r-md); background: var(--c-surface); box-shadow: var(--sh-1); }
+.ui-row .label { flex: 1; min-width: 0; font: 600 var(--fs-body) var(--display); }
+.ui-row .value { color: var(--c-muted); font-weight: 700; }
+.ui-row.danger { background: var(--c-danger-bg); }
+
+/* ---------- Dialog: a panel that arrives from just under full size ---------- */
+.ui-dim { background: color-mix(in srgb, var(--c-bg-2) 70%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.ui-dialog { padding: var(--sp-6) var(--sp-7); border-radius: var(--r-lg); background: var(--c-surface); color: var(--c-text); box-shadow: var(--sh-3); text-align: center;
+  animation: ui-pop var(--dur-3) var(--ease-out) backwards; }
+.ui-dialog h1 { margin: 0 0 var(--sp-3); font: 600 var(--fs-h1) / 1.15 var(--display); }
+.ui-dialog p { margin: var(--sp-2) 0; font-size: var(--fs-body); font-weight: 600; text-wrap: balance; }
+@keyframes ui-pop { from { opacity: 0; transform: scale(0.96) translateY(0.5rem); } }
+@keyframes ui-fade { from { opacity: 0; } }
+
+/* ---------- Toast ---------- */
+.ui-toast { padding: var(--sp-3) var(--sp-5); border-radius: var(--r-md); background: var(--c-text); color: var(--c-bg); font: 600 var(--fs-hint) var(--display); box-shadow: var(--sh-2);
+  animation: ui-pop var(--dur-2) var(--ease-out) backwards; }
+
+/* ---------- Hints: "A Open  B Back" ---------- */
+.ui-hints { display: flex; gap: var(--sp-5); color: var(--c-muted); font: 700 var(--fs-hint) var(--font); }
+.ui-hints span { display: inline-flex; align-items: center; gap: var(--sp-2); }
+kbd { display: inline-grid; place-items: center; min-width: 1.8em; height: 1.8em; padding: 0 0.3em; border-radius: var(--r-pill); background: var(--c-surface); color: var(--c-text);
+  font: 800 0.8em var(--font); box-shadow: inset 0 0 0 2px var(--c-line); }
+
+/* ---------- Tile: a card, with the picture on a soft plate in the tile's own color ---------- */
+.ui-tile { position: relative; display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); border-radius: var(--r-lg); background: var(--c-surface); box-shadow: var(--sh-1);
+  --plate-mix: 16%; --plate: color-mix(in srgb, var(--tile, var(--c-accent)) var(--plate-mix), var(--c-surface)); }
+html[data-theme="dark"] .ui-tile { --plate-mix: 24%; }
+.ui-tile .plate { position: relative; flex: 1; min-height: 0; border-radius: calc(var(--r-lg) - var(--sp-2)); background: var(--plate); transition: background-color var(--dur-2) var(--ease-out); overflow: hidden; }
+.ui-tile .plate img { position: absolute; inset: 4% 4% 2%; width: 92%; height: 94%; object-fit: contain; filter: drop-shadow(0 0.4rem 0.4rem rgba(30, 40, 80, 0.18)); transition: transform var(--dur-3) var(--ease-out); }
+.ui-tile .plate svg { position: absolute; inset: 0; margin: auto; width: 38%; height: 52%; padding: 7%; border-radius: 50%; background: var(--tile, var(--c-accent)); }
+.ui-tile .name { padding: 0 var(--sp-2) var(--sp-1); font: 600 var(--fs-body) / 1.1 var(--display); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ui-tile.focused .plate, .ui-tile.is-focus .plate { background: color-mix(in srgb, var(--tile, var(--c-accent)) calc(var(--plate-mix) + 12%), var(--c-surface)); }
+.ui-tile.focused .plate img, .ui-tile.is-focus .plate img { transform: scale(1.05); }
+.ui-tile.pressed { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-focus.focused, .ui-focus.is-focus { transform: none; }
+  .ui-dialog, .ui-toast { animation-name: ui-fade; }
+}

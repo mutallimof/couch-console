@@ -37,6 +37,9 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Grand Stadium is the heaviest scene; GTAO + 4x MSAA may be slow on weak laptops (auto-fallback under 40 fps).
 - Headless/software-GL numbers are not real fps; check on the real laptop (F3).
 
+## Progress (overnight run, 9 parts; one commit per part)
+- Part 1 design system: done (tokens in theme.css, components in components.css)
+
 ## Phases (from `docs/REBUILD-PLAN.md`)
 | # | What | Status |
 |---|---|---|

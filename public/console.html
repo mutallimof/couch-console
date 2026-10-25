@@ -9,13 +9,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/console.css">
   <link rel="stylesheet" href="/css/home.css">
 </head>
 <body>
   <!-- Home menu (Phase 55): a top bar and ONE grid of big tiles; a folder opens as its own screen -->
   <main class="menu theme-bg">
-    <header class="status glass">
+    <header class="ui-topbar">
       <div class="when"><b id="clock" class="clock"></b><span id="date" class="date"></span></div>
       <span id="sound-hint" class="sound-hint">Click this page once to turn on sound</span>
       <span class="status-right">
@@ -30,7 +31,7 @@
     <section class="home">
       <h2 id="crumb" class="crumb" hidden></h2>
       <div id="tiles" class="tiles"></div>
-      <p class="panel-hint"><span><kbd>A</kbd> Open</span><span class="back-hint"><kbd>B</kbd> Back</span></p>
+      <p class="panel-hint ui-hints"><span><kbd>A</kbd> Open</span><span class="back-hint"><kbd>B</kbd> Back</span><span><kbd>Home</kbd> Menu</span></p>
     </section>
   </main>
 
@@ -39,15 +40,15 @@
     <div id="stage-content" class="stage-content"></div>
 
     <!-- Solo / Versus / Co-op, for 2-player games when 2 phones are connected -->
-    <div id="picker" class="picker" hidden>
+    <div id="picker" class="picker theme-bg" hidden>
       <h1 id="picker-title"></h1>
       <div id="picker-modes" class="modes"></div>
       <p class="picker-hint">P1: point or use the D-pad, then press A · B = back</p>
     </div>
 
     <!-- Shown when a player's phone disconnects mid-game -->
-    <div id="pause" class="pause" hidden>
-      <div class="pause-card">
+    <div id="pause" class="pause ui-dim" hidden>
+      <div class="pause-card ui-dialog">
         <img class="qr-img" alt="QR code to rejoin">
         <p id="pause-text"></p>
         <p class="pause-hint">Waiting… the game continues when they're back.</p>
@@ -77,7 +78,7 @@
 
     <div id="slots" class="slots"></div>
     <p id="guest-list" class="guest-list" hidden></p>
-    <button id="use-mouse" class="use-mouse" type="button">No phone? Use mouse &amp; keyboard</button>
+    <button id="use-mouse" class="use-mouse ui-btn ghost ui-focus" type="button">No phone? Use mouse &amp; keyboard</button>
     <p id="pairing-close" class="pairing-close" hidden>Press A or B to close</p>
     <p id="status" class="status"></p>
   </section>

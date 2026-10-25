@@ -31,30 +31,30 @@ export function createSettings(prefs) {
     const on = (v) => (v ? 'On' : 'Off');
     return `
         <h1>Settings</h1>
-        <div class="set-row" data-row="0"><span class="set-label">Theme</span>
-          <button class="set-btn wide" data-action="theme">${THEME_LABELS[prefs.getTheme()]}</button></div>
-        <div class="set-row" data-row="1">
-          <span class="set-label">Pointer speed</span>
-          <button class="set-btn" data-action="sens-down">−</button>
+        <div class="set-row ui-row ui-focus" data-row="0"><span class="set-label label">Theme</span>
+          <button class="set-btn ui-btn wide" data-action="theme">${THEME_LABELS[prefs.getTheme()]}</button></div>
+        <div class="set-row ui-row ui-focus" data-row="1">
+          <span class="set-label label">Pointer speed</span>
+          <button class="set-btn ui-btn" data-action="sens-down">−</button>
           <span class="levels">${bars}</span>
-          <button class="set-btn" data-action="sens-up">+</button>
+          <button class="set-btn ui-btn" data-action="sens-up">+</button>
         </div>
-        <div class="set-row" data-row="2"><span class="set-label">Sound</span>
-          <button class="set-btn wide" data-action="mute">${api.sound.muted ? 'Off' : 'On'}</button></div>
-        <div class="set-row" data-row="3"><span class="set-label">Phone sounds</span>
-          <button class="set-btn wide" data-action="phone-sounds">${on(prefs.getPhoneSounds())}</button></div>
-        <div class="set-row" data-row="4"><span class="set-label">Steady cursor</span>
-          <button class="set-btn wide" data-action="steady">${on(prefs.getSteady())}</button></div>
-        <div class="set-row" data-row="5"><span class="set-label">Cartoon look (karts)</span>
-          <button class="set-btn wide" data-action="cartoon">${on(graphics.cartoon)}</button></div>
-        <div class="set-row" data-row="6"><span class="set-label">Soft shadows (karts)</span>
-          <button class="set-btn wide" data-action="ao">${on(graphics.ao)}</button></div>
-        <div class="set-row" data-row="7"><span class="set-label">Debug readout (fps, ping)</span>
-          <button class="set-btn wide" data-action="debug">${on(prefs.getDebug())}</button></div>
-        <div class="set-row" data-row="8"><span class="set-label">Party</span>
-          <button class="set-btn wide" data-action="party">Open ›</button></div>
-        <div class="set-row" data-row="9"><span class="set-label">Add a phone</span>
-          <button class="set-btn wide" data-action="qr">Show QR code</button></div>
+        <div class="set-row ui-row ui-focus" data-row="2"><span class="set-label label">Sound</span>
+          <button class="set-btn ui-btn wide" data-action="mute">${api.sound.muted ? 'Off' : 'On'}</button></div>
+        <div class="set-row ui-row ui-focus" data-row="3"><span class="set-label label">Phone sounds</span>
+          <button class="set-btn ui-btn wide" data-action="phone-sounds">${on(prefs.getPhoneSounds())}</button></div>
+        <div class="set-row ui-row ui-focus" data-row="4"><span class="set-label label">Steady cursor</span>
+          <button class="set-btn ui-btn wide" data-action="steady">${on(prefs.getSteady())}</button></div>
+        <div class="set-row ui-row ui-focus" data-row="5"><span class="set-label label">Cartoon look (karts)</span>
+          <button class="set-btn ui-btn wide" data-action="cartoon">${on(graphics.cartoon)}</button></div>
+        <div class="set-row ui-row ui-focus" data-row="6"><span class="set-label label">Soft shadows (karts)</span>
+          <button class="set-btn ui-btn wide" data-action="ao">${on(graphics.ao)}</button></div>
+        <div class="set-row ui-row ui-focus" data-row="7"><span class="set-label label">Debug readout (fps, ping)</span>
+          <button class="set-btn ui-btn wide" data-action="debug">${on(prefs.getDebug())}</button></div>
+        <div class="set-row ui-row ui-focus" data-row="8"><span class="set-label label">Party</span>
+          <button class="set-btn ui-btn wide" data-action="party">Open ›</button></div>
+        <div class="set-row ui-row ui-focus" data-row="9"><span class="set-label label">Add a phone</span>
+          <button class="set-btn ui-btn wide" data-action="qr">Show QR code</button></div>
         <p class="set-hint">Theme: Light, Dark or Auto (follows this laptop); the phones follow it too. Steady cursor: turn it On if the cursor wanders or shakes. Cartoon look and soft shadows make Turbo Karts prettier; turn them Off if it runs slowly. D-pad to choose · A to press · B to go back</p>`;
   }
 
@@ -64,27 +64,27 @@ export function createSettings(prefs) {
     const end = ['End party & delete data', 'Delete everything? Press A again', 'Really? This cannot be undone. A again'][endStep];
     return `
         <h1>Party</h1>
-        <div class="set-row" data-row="0"><span class="set-label">Name</span>
-          <button class="set-btn wide" data-action="rename">${esc(ev.name || '…')} ✎</button></div>
-        <div class="set-row" data-row="1"><span class="set-label">Start a new party</span>
-          <button class="set-btn wide" data-action="new-party">New ›</button></div>
-        <div class="set-row" data-row="2"><span class="set-label">Approve photos first</span>
-          <button class="set-btn wide" data-action="approve">${s.approvePhotos ? 'On' : 'Off'}</button></div>
-        <div class="set-row" data-row="3"><span class="set-label">Photo storage limit</span>
-          <button class="set-btn wide" data-action="limit-up">${s.photoLimitGB ?? 3} GB</button></div>
-        <div class="set-row" data-row="4"><span class="set-label">Pause music in games</span>
-          <button class="set-btn wide" data-action="music-pause">${s.pauseMusicInGames === false ? 'Off' : 'On'}</button></div>
-        <div class="set-row" data-row="5"><span class="set-label">All photos</span>
-          <button class="set-btn wide" data-action="download">Download ZIP ⬇</button></div>
-        <div class="set-row ${endStep ? 'danger' : ''}" data-row="6"><span class="set-label">${endStep ? '⚠️' : ''} Danger zone</span>
-          <button class="set-btn wide" data-action="end-party">${end}</button></div>
-        <div class="set-row" data-row="7"><span class="set-label"> </span>
-          <button class="set-btn wide" data-action="back">‹ Back</button></div>
+        <div class="set-row ui-row ui-focus" data-row="0"><span class="set-label label">Name</span>
+          <button class="set-btn ui-btn wide" data-action="rename">${esc(ev.name || '…')} ✎</button></div>
+        <div class="set-row ui-row ui-focus" data-row="1"><span class="set-label label">Start a new party</span>
+          <button class="set-btn ui-btn wide" data-action="new-party">New ›</button></div>
+        <div class="set-row ui-row ui-focus" data-row="2"><span class="set-label label">Approve photos first</span>
+          <button class="set-btn ui-btn wide" data-action="approve">${s.approvePhotos ? 'On' : 'Off'}</button></div>
+        <div class="set-row ui-row ui-focus" data-row="3"><span class="set-label label">Photo storage limit</span>
+          <button class="set-btn ui-btn wide" data-action="limit-up">${s.photoLimitGB ?? 3} GB</button></div>
+        <div class="set-row ui-row ui-focus" data-row="4"><span class="set-label label">Pause music in games</span>
+          <button class="set-btn ui-btn wide" data-action="music-pause">${s.pauseMusicInGames === false ? 'Off' : 'On'}</button></div>
+        <div class="set-row ui-row ui-focus" data-row="5"><span class="set-label label">All photos</span>
+          <button class="set-btn ui-btn wide" data-action="download">Download ZIP ⬇</button></div>
+        <div class="set-row ui-row ui-focus ${endStep ? 'danger' : ''}" data-row="6"><span class="set-label label">${endStep ? '⚠️' : ''} Danger zone</span>
+          <button class="set-btn ui-btn wide" data-action="end-party">${end}</button></div>
+        <div class="set-row ui-row ui-focus" data-row="7"><span class="set-label label"> </span>
+          <button class="set-btn ui-btn wide" data-action="back">‹ Back</button></div>
         <p class="set-hint">${message || `${people.length} here now (${people.filter((p) => p.role === 'player').length} playing). Data is saved on this laptop in the data folder. B = back`}</p>`;
   }
 
   function render() {
-    root.innerHTML = `<div class="settings">${page === 'main' ? renderMain() : renderParty()}</div>`;
+    root.innerHTML = `<div class="settings theme-bg">${page === 'main' ? renderMain() : renderParty()}</div>`;
     root.querySelectorAll('.set-row').forEach((r, i) => r.classList.toggle('focused', i === row));
     root.querySelector('.set-row.focused')?.scrollIntoView({ block: 'nearest' });
   }
@@ -203,7 +203,7 @@ export function createSettings(prefs) {
   return {
     id: 'settings',
     title: 'Settings',
-    color: '#8A94A6',
+    color: '#697386',
     icon: ICON,
     minPlayers: 1,
     maxPlayers: 1, // only the menu driver (P1) changes settings

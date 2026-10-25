@@ -53,7 +53,7 @@ test('welcome card, player and guest tabs, joined notes, folders', { skip: !pw &
     await ana.waitForSelector('#start:not([hidden])');
     assert.deepEqual(await tabs(ana), ['remote', 'photos', 'music', 'present', 'activity'], 'a player has the remote and the four tabs');
     assert.equal(await ana.textContent('#badge'), 'P1');
-    await tv.waitForFunction(() => document.querySelector('.toast')?.textContent.includes('Ana joined'), null, { timeout: 8000 });
+    await tv.waitForFunction(() => document.querySelector('.ui-toast')?.textContent.includes('Ana joined'), null, { timeout: 8000 });
 
     // A guest has no remote
     const ben = await phone();
@@ -78,7 +78,7 @@ test('welcome card, player and guest tabs, joined notes, folders', { skip: !pw &
 
     // The TV's home: the D-pad on phone 1 walks to the Arcade tile, A opens it as its own screen, B comes back
     await tv.waitForSelector('.tile:not(.empty)');
-    const titles = () => tv.$$eval('.menu [data-focus] .tile-title', (t) => t.map((x) => x.textContent));
+    const titles = () => tv.$$eval('.menu [data-focus]  .name', (t) => t.map((x) => x.textContent));
     assert.ok((await titles()).includes('Arcade') && (await titles()).includes('Turbo Karts'));
     await ana.tap('#start-btn');
     const press = (btn) => ana.evaluate((b) => { const el = document.querySelector(`#controller [data-button="${b}"]`); el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); }, btn).then(() => tv.waitForTimeout(350));

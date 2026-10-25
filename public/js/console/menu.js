@@ -1,4 +1,4 @@
-// Home menu (Phase 55): ONE grid of big glossy tiles: Turbo Karts as the large hero, then the folders that
+// Home menu: ONE grid of big tiles: Turbo Karts as the large hero, then the folders that
 // have games (Arcade, Channels...), the hubs (Photos, Music, Present) and Settings. A folder opens as its own
 // screen (B = back). Every item is reachable exactly one way.
 // Everything focusable carries data-focus; the D-pad moves between them by position (spatial navigation),
@@ -31,12 +31,12 @@ export function createMenu({ grid, clock, date, crumb, apps, folders = {}, icons
   };
   const tile = (it, key, cls = '') => {
     const el = document.createElement('div');
-    el.className = `tile gloss ${cls}`;
+    el.className = `tile ui-tile ui-focus ${cls}`;
     el.dataset.focus = key;
     el.dataset.tile = '';
     el._entry = it;
     el.style.setProperty('--tile', it.color);
-    el.innerHTML = `<div class="tile-icon">${iconOf(it)}</div><div class="tile-title">${esc(it.title)}</div>`;
+    el.innerHTML = `<div class="plate">${iconOf(it)}</div><div class="name">${esc(it.title)}</div>`;
     return el;
   };
   const folderEntry = (id) => ({ isFolder: true, id, title: folders[id].title, color: folders[id].color, icon: folders[id].icon });
@@ -69,6 +69,7 @@ export function createMenu({ grid, clock, date, crumb, apps, folders = {}, icons
     focusEl?.classList.remove('focused', 'is-focus');
     focusEl = el;
     el.classList.add('focused', 'is-focus');
+    el.scrollIntoView?.({ block: 'nearest', behavior: 'instant' }); // (a long folder scrolls to the focused tile)
     if (!silent) onFocusChange?.(Math.max(0, visible().indexOf(el)) % 4); // the column: each one sounds a bit different
   }
   const center = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });

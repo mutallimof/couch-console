@@ -29,5 +29,8 @@
     "socket.io": "^4.8.4",
     "three": "0.186.1",
     "three.quarks": "0.17.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
   }
 }

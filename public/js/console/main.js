@@ -198,7 +198,7 @@ function renderSlots() {
     </div>`).join('');
   $('slots').innerHTML = html;
   $('bar-players').innerHTML = players.slots().map((s) => `
-    <span class="chip ${s.connected ? 'on' : ''}" style="--player:${s.color}">P${s.playerId}</span>`).join('');
+    <span class="ui-chip ${s.connected ? 'on' : 'off'}" style="--player:${s.color}">P${s.playerId}</span>`).join('');
 }
 
 players.onChange(() => {
@@ -206,7 +206,7 @@ players.onChange(() => {
   setPairing();
   // The focus ring shows who's driving the menu
   const id = driverId();
-  document.documentElement.style.setProperty('--ring', Number.isFinite(id) ? colorFor(id) : '#2F80ED');
+  document.documentElement.style.setProperty('--ring', Number.isFinite(id) ? colorFor(id) : 'var(--c-focus)');
 });
 
 // ---------- Opening and closing apps (tile zoom) ----------
@@ -333,7 +333,7 @@ function showPicker(modes) {
   $('picker').hidden = false;
   $('picker-title').textContent = current.app.title;
   $('picker-modes').innerHTML = modes.map((m, i) =>
-    `<div class="mode" data-mode="${i}">${MODE_LABELS[m] || m}</div>`).join('');
+    `<div class="mode ui-focus" data-mode="${i}">${MODE_LABELS[m] || m}</div>`).join('');
   renderPicker();
 }
 function renderPicker() {
