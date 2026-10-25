@@ -52,11 +52,11 @@ npm start
 ```
 Leave it running. (While developing, `npm run dev` restarts the server automatically whenever you save a file.)
 
-**Terminal 2: start the https tunnel** (skip this if you did the *Local setup* below)
+**Terminal 2: start the https tunnel** (skip this if you did the *Local setup* below). The easy way, which starts the console and the tunnel together (use it *instead of* Terminal 1):
 ```
-cloudflared tunnel --url http://localhost:3000
+npm run tunnel
 ```
-After a few seconds it prints a link like `https://something-random.trycloudflare.com`.
+After a few seconds it prints a link like `https://something-random.trycloudflare.com`, and the QR code on the console screen sends phones there. (By hand it is `cloudflared tunnel --url http://localhost:3000`.)
 
 **Then:**
 1. Open that `https://…trycloudflare.com` link **on your laptop**.
@@ -90,7 +90,7 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 | **B** | go back |
 | **HOME** | return to the menu from anywhere |
 
-- **Turbo Karts:** a 3D kart race (3 laps, 8 racers) on a close port of OpenWii's kart engine (MIT): tight handling, **three drift boost levels**, a rocket start, item boxes, coins and computer drivers. First each player picks one of 8 animated **characters** (free CC0 KayKit models) and a **kart** (D-pad, A = confirm, B = back) in a little 3D showroom, then P1 picks one of 8 **tracks** (Sunny Park, Dune Canyon, Frosty Peaks, Neon City, Neon Avenue, Pirate Cove, Cloud Gardens and the night-time Grand Stadium). Kart stats (speed, acceleration, handling) change the driving a little. 2 players play on a **split screen**. Items: *Turbo*, *Slick*, *Orb*, *Seeker*, *Star* and *Comet*; **coins** raise your top speed. Your phone turns into a **kart controller**: hold it sideways, ◀ LEFT / ▶ RIGHT to steer (or tilt), GAS, DRIFT, ITEM, BRAKE.
+- **Turbo Karts:** a bright toy-box kart race (3 laps, 8 racers) on a close port of OpenWii's kart engine (MIT): tight handling, **three drift boost levels**, a rocket start, item boxes, coins and computer drivers. The first menu offers a **Single Race** or a **cup** (Sun Cup: Sunny Park, Dune Canyon, Frosty Peaks, Pirate Cove; Star Cup: Block City, Sunset Avenue, Cloud Gardens, Grand Stadium; four races, points for every place, a trophy at the end). Then each player picks one of 8 **helmeted pilots** and one of 4 **toy karts** (D-pad or pointer, A = confirm, B = back) in a little 3D showroom, and P1 picks a **track**. Kart stats (speed, acceleration, handling) change the driving a little. **2, 3 or 4 players** play on a **split screen** (each on their own phone; the picture gets a little smaller with more players to keep it smooth). Items: *Turbo*, *Slick*, *Orb*, *Seeker*, *Star* and *Comet*; **coins** raise your top speed. Your phone turns into a **kart controller**: hold it sideways, ◀ LEFT / ▶ RIGHT to steer (or tilt), GAS, DRIFT, ITEM, BRAKE. If the game stutters: F3 shows the speed; Settings → Cartoon look / Soft shadows off; the game also lowers its own quality step by step when it cannot keep up.
   - **Left thumb, ◀ LEFT and ▶ RIGHT:** two big buttons. Hold one and the kart turns, smoothly building up to a full turn; a quick tap is a small correction. Let go and it drives straight. You can slide your thumb from one to the other without lifting it.
   - **Rotation lock on?** No problem: if the page stays upright while you hold the phone sideways, the pad turns itself sideways. If it's upside down for you, press **Flip ↻**.
   - **Right thumb, four buttons:** **GAS** (bottom right), **DRIFT** next to it, **ITEM** and **BRAKE** above. Slide your thumb from one to the next without lifting it. Holding **DRIFT** or **ITEM** keeps accelerating, so you can move off GAS.
@@ -123,7 +123,8 @@ After a few seconds it prints a link like `https://something-random.trycloudflar
 - **Weather:** today's weather and the next days (needs internet). ◀ ▶ changes the city. "My location" asks the laptop's browser for permission once. + / − switches between °C and °F, and A refreshes.
 - **Video:** plays YouTube videos (needs internet). The list comes from `videos.txt` in the `couch-console` folder. Copy `videos.example.txt` to `videos.txt` and put one `Title | YouTube link` per line. While watching: A = play/pause, ◀ ▶ = back/forward 10 s, + / − = volume, ▲ ▼ = previous/next video, B = back to the list. If a video doesn't start, click the laptop page once (browsers block autoplay with sound) and press A.
 - **Timer:** works without internet. ◀ ▶ switches between a big **Clock**, a **Timer** and a **Stopwatch**. Timer: ▲ ▼ = ±1 minute, + / − = ±10 seconds, A = start/pause, − = reset once started. When time is up the screen flashes, it chimes and every phone buzzes (A stops it). Stopwatch: A = start/pause, + = lap, − = reset. The timer keeps running if you go back to the menu.
-- **On This Day:** what happened on today's date in history, from Wikipedia (needs internet, no account). ◀ ▶ = Highlights / Events / Born today / Holidays, ▲ ▼ = browse, A = a random one, + / − = next/previous day.
+- **News:** a little TV news channel with live headlines and photos from free public feeds (BBC News, DW, Tagesschau; needs internet, no account). The big photo, headline and a short summary change every few seconds, a ticker runs along the bottom, and a **QR code** opens the full story on your phone. ◀ ▶ = previous / next story, ▲ = the tabs (Top, World, Business, Tech, Science, Health, Sport, Culture, Today in History; then ◀ ▶ change the tab), A = pause. **Settings → News** chooses the sources and the language (English / Deutsch). Offline it says so calmly and shows the last headlines it kept. **Today in History** (the last tab) is what happened on today's date, from Wikipedia: ▲ ▼ = browse, ◀ ▶ = previous / next day, + / − = Highlights / Events / Born today / Holidays, A = a random one.
+- **Mirror Match and Party Workout** (Camera folder): the laptop's webcam sees up to 4 people (body tracking runs in the browser; nothing is recorded or sent; the camera is off when you leave). *Mirror Match*: the TV shows a pose, everybody copies it, 5 rounds, a score each and a leaderboard. *Party Workout*: squats, jumping jacks, arm circles and high knees, 25 seconds each; the camera counts every person's moves. Stand back so the camera sees you from the head to the knees. A = start, B = back.
 - **Settings:** theme (Light / Dark / Auto, the phones follow), pointer speed (1 to 10), sound on/off, phone sounds on/off, **Steady cursor** (turn it On if the cursor wanders or shakes: it then follows only the phone's own orientation and ignores the gyro. You can also press **G** on the laptop to flip it while testing), and **Show QR code** to connect a phone again.
 
 If the phone can't use motion sensors, or you tapped "Don't Allow", it shows a **touchpad** instead. Drag on it to move the cursor.
@@ -174,10 +175,10 @@ The **Video** channel always plays the links in `videos.txt`. To also **search Y
 3. Open the menu ☰ → **APIs & Services** → **Library**, search for **YouTube Data API v3**, open it and click **Enable**.
 4. Go to **APIs & Services** → **Credentials** → **+ Create credentials** → **API key**, and copy the key.
 5. (Recommended) Click the key → under **API restrictions** choose **Restrict key** → tick **YouTube Data API v3** → **Save**.
-6. In the `couch-console` folder, copy `config.example.json` to a new file `config.json`, open it in Notepad and paste your key where it says `PASTE-YOUR-KEY-HERE`. Save, then restart `npm start`.
+6. In the `couch-console` folder, copy `.env.example` to a new file `.env`, open it in a text editor and paste your key after `YOUTUBE_API_KEY=`. Save, then restart `npm start`. (The older `config.json` with `youtubeApiKey` still works too.)
 
 Now open **Video** → **Search YouTube**: your phone shows a text box. Type, press **Send**, and pick a result.
-`config.json` is **never** uploaded to GitHub (it's in `.gitignore`). Keep your key private.
+`.env` (and `config.json`) are **never** uploaded to GitHub (they are in `.gitignore`). Keep your key private. Without a key everything still works; only the search box is off (pasting links works).
 The free key allows about 100 searches per day.
 
 ---

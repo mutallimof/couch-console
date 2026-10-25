@@ -6,8 +6,8 @@ still in the project (unused files were removed in the final cleanup).
 ## Kenney: Toy Car Kit and Racing Kit
 
 - Source: https://kenney.nl (Kenney)
-- Used in: `public/assets/car-kit/` (the karts, the item box, the coin, two trees: 8 models and their
-  colour texture) and `public/assets/racing-kit/` (11 trackside models: grandstand, tents, flags, banners,
+- Used in: `public/assets/car-kit/` (the item box, the coin, two trees: 4 models and their
+  colour texture; the karts themselves are modelled in code now) and `public/assets/racing-kit/` (11 trackside models: grandstand, tents, flags, banners,
   light post, pylon, billboard). Each kit's `License.txt` is kept next to its models.
 - License: CC0 1.0 Universal (public domain dedication). Credit is not required but given with thanks.
 
@@ -90,10 +90,18 @@ Texture: concrete_pavement_03 (the Grand Stadium's road), `public/assets/polyhav
 gsap (GreenSock Standard License, free for this use), howler (MIT), pixi.js and pixi-filters (MIT), postprocessing (Zlib), three.quarks (MIT).
 
 ## KayKit character packs (CC0)
-The eight racers are KayKit "Adventurers Character Pack 1.0" (Knight, Barbarian, Mage, Rogue, Rogue Hooded) and "Skeletons Character Pack 1.0" (Skeleton Warrior, Skeleton Mage, Skeleton Rogue) by Kay Lousberg, https://kaylousberg.com, CC0. Sources: https://github.com/KayKit-Game-Assets. We only ship the optimized files in `public/assets/cast/` (held weapons removed, only the clips we play kept, made by `scripts/build-cast.mjs`); the pack's license text is in `public/assets/cast/LICENSE.txt`. The names and colors of the racers are ours.
+Only one model is left from the KayKit "Adventurers Character Pack 1.0" by Kay Lousberg (https://kaylousberg.com, CC0; source: https://github.com/KayKit-Game-Assets): the Knight in `public/assets/cast/knight.glb`, used to draw the home screen's hero icon (`public/tools/icon-scenes.js`). The pack's license text is in `public/assets/cast/LICENSE.txt`.
+
+## The racers and karts of Turbo Karts
+The eight helmeted pilots and the four toy karts are original: modelled in code (`public/games/turbo-karts/karts-pilot.js`, `karts-toykart.js`), no outside assets.
+
+## News channel (online feeds, nothing bundled)
+Headlines, short summaries, links and photos come from the free public feeds of BBC News (feeds.bbci.co.uk), Deutsche Welle (rss.dw.com) and Tagesschau (tagesschau.de/api2u). The server fetches and keeps them for 10 minutes; only the headline, a short teaser, the photo and the link are shown (never the full article), and every story names its source and links to it. "Today in History" uses Wikipedia's "On this day" feed (CC BY-SA 4.0).
 
 ## Developer tools (npm devDependencies, not shipped to players)
-playwright (Apache-2.0: headless screenshots and the end-to-end tests), @gltf-transform/core, /functions and /extensions (MIT) and meshoptimizer (MIT): used by `scripts/build-cast.mjs` to optimize the character models. lil-gui (MIT) comes inside three (`three/addons/libs/lil-gui.module.min.js`) and powers the F4 tuning panel.
+playwright (Apache-2.0: headless screenshots and the end-to-end tests), @gltf-transform/core, /functions and /extensions (MIT) and meshoptimizer (MIT): kept for optimizing 3D models when needed (nothing in the app uses them at run time). lil-gui (MIT) comes inside three (`three/addons/libs/lil-gui.module.min.js`) and powers the F4 tuning panel.
 
 ## MediaPipe (Apache-2.0)
 Photo Booth's face stickers use @mediapipe/tasks-vision (Google, Apache-2.0; served from node_modules under /vendor/mediapipe) and the Face Landmarker model `public/assets/models/face_landmarker.task` (Google, Apache-2.0, from https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task). Everything runs in the browser on the laptop; no picture is sent anywhere.
+
+Mirror Match and Party Workout use the same library with the Pose Landmarker (lite) model `public/assets/models/pose_landmarker_lite.task` (Google, Apache-2.0, from https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task). Same rules: it runs in the browser on the laptop, the camera is off when you leave, nothing is recorded or sent.

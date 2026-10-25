@@ -9,7 +9,8 @@
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "certs": "node scripts/make-certs.js",
-    "test": "node --test --test-concurrency=2 \"tests/*.test.mjs\""
+    "tunnel": "node scripts/tunnel.js",
+    "test": "node scripts/run-tests.mjs"
   },
   "engines": {
     "node": ">=20"

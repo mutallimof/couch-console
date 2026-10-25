@@ -131,7 +131,7 @@ function renderList() {
   const head = searchTerm ? `Results for “${esc(searchTerm)}”` : 'Video';
   const help = searchTerm ? 'A = play · B = back to your list' : 'A = play · B = menu';
   const searchTile = `<div class="video-tile search-tile" data-index="0"><div class="thumb"><span>🔍</span></div>
-    <b>${canSearch ? (searchTerm ? 'Search again' : 'Search YouTube') : 'Search (needs a key)'}</b></div>`;
+    <b>${canSearch ? (searchTerm ? 'Search again' : 'Search YouTube') : 'Search (off: no key)'}</b></div>`;
   root.innerHTML = `<div class="channel-head"><h1>${head}</h1><span>${help}</span></div>
     <div class="video-grid">${searchTile}${videos.map((v, i) => `<div class="video-tile" data-index="${i + 1}">
       <div class="thumb"><span style="grid-area:1/1">▶</span><img src="${v.thumb || `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`}" alt="" loading="lazy"
@@ -143,7 +143,7 @@ function renderList() {
 
 function startSearch() {
   if (!canSearch) {
-    osdBox('<h1>YouTube search needs a key</h1><p>Make a free <b>YouTube Data API key</b> and put it in <b>config.json</b><br>in the couch-console folder. See “YouTube search” in README.md.</p><p class="muted">B = back</p>');
+    osdBox('<h1>YouTube search is off</h1><p>You can still play any video: <b>paste its link</b> into the videos list (see README.md).<br>To turn the search on, add a free <b>YOUTUBE_API_KEY</b> to the <b>.env</b> file in the couch-console folder (see “Optional config” in README.md).</p><p class="muted">B = back</p>');
     return;
   }
   typing = true;

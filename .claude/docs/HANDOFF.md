@@ -42,7 +42,7 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Part 4 Juicy Slash Easy/Normal/Hard, hearts, grace; Alien Strike softer: done
 - Part 5 Turbo Karts (warm-up before the countdown, lighter split screen, bright toy tracks, helmeted pilots + toy karts, cups, 2-4 players): done
 - Part 6 News channel (server/news.js feeds + cache, apps/news.js, Settings -> News, Today in History tab): done
-- Part 7 runs anywhere + README: todo
+- Part 7 runs anywhere (.env, npm run tunnel, engines, run-tests.mjs, README, fresh-clone check): done
 - Part 8 camera games: todo
 - Part 9 final QA + secret check: todo
 
