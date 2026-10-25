@@ -40,12 +40,12 @@ export function flightFrame(racer) {
 
 /** The chase camera: low and close behind the kart, looking at a point above it, between straight
  *  ahead and the road ahead (so the kart sits low in the picture and the next corner is visible). */
-export function chasePose(T, racer) {
+export function chasePose(T, racer, opts = {}) {
   const frame = racer.gliding
     ? flightFrame(racer)
     : roadFrame(T, racer.s, racer.lateral, racer.heading);
   const { up: n, forward: f } = frame;
-  const back = racer.gliding ? 8.8 : 9.6, height = racer.gliding ? 3.8 : 3.65;
+  const back = (opts.back ?? 9.6) - (racer.gliding ? 0.8 : 0), height = (opts.height ?? 3.65) + (racer.gliding ? 0.15 : 0);
   const eye = cameraClearance(T, {
     x: racer.x - f.x * back + n.x * height,
     y: racer.y - f.y * back + n.y * height,

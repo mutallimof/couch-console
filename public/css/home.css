@@ -41,7 +41,3 @@ html, body { font-family: var(--font); }
 .confetti-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
 .confetti-layer i { position: absolute; top: 0; border-radius: 2px; display: block; }
 
-.kart-card { max-height: 96vh; overflow: hidden; }
-.kart-card td { padding-top: min(5px, 0.6vh) !important; padding-bottom: min(5px, 0.6vh) !important; font-size: max(15px, 2.4vh); }
-.kart-card h1 { padding: min(22px, 2.6vh) 32px !important; font-size: max(26px, 4.4vh) !important; }
-.kart-card p { margin: 1vh 0 !important; font-size: max(14px, 2.2vh) !important; }

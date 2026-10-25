@@ -39,6 +39,8 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 
 ## Progress (overnight run, 9 parts; one commit per part)
 - Part 1 design system: done (tokens in theme.css, components in components.css)
+- Part 2 Turbo Karts race look: done (karts-sky/terrain/props/skids/items/tuning.js, karts.css HUD, F4 lil-gui panel, shots in docs/screenshots/tracks/)
+- Part 5 phone remote v2: code done (haptics.js, wheel smoothing, kart pad v2), committed with Part 5
 
 ## Phases (from `docs/REBUILD-PLAN.md`)
 | # | What | Status |

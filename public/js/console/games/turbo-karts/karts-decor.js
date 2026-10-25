@@ -67,7 +67,7 @@ export function scatter(THREE, gltf, path, places) {
 // Decorate a built track. `assets` = Map path -> glTF; missing models are just skipped.
 // Returns the decor group and the animation mixers to update every frame.
 export function decorate(THREE, track, assets, spots) {
-  const { pts, tan, nor, SAMPLES, def, island } = track;
+  const { pts, tan, nor, SAMPLES, def, island, heightAt = () => 0 } = track;
   const group = new THREE.Group(), mixers = [];
   const get = (p) => assets.get(p);
   const at = (i) => ((i % SAMPLES) + SAMPLES) % SAMPLES;
@@ -75,7 +75,8 @@ export function decorate(THREE, track, assets, spots) {
   const beside = (i, side, s = 1) => {
     const k = at(i), p = pts[k], n = nor[k], t = tan[k];
     const facing = Math.atan2(t.x, t.z) + (side > 0 ? -Math.PI / 2 : Math.PI / 2);
-    return { x: p.x + n.x * side, y: 0, z: p.z + n.z * side, rot: facing, s };
+    const x = p.x + n.x * side, z = p.z + n.z * side;
+    return { x, y: Math.min(p.y - 0.3, heightAt(x, z)), z, rot: facing, s };
   };
   // Never put anything on the road (on the figure-8, "beside" one part can be on the other part)
   const offRoad = (q) => {
@@ -109,19 +110,13 @@ export function decorate(THREE, track, assets, spots) {
   add(RACE('pylon'), cones);
 
   // Theme scenery at the free spots ([x, z, scale])
-  const sp = (s, i) => ({ x: s[0], y: 0, z: s[1], rot: (i * 2.39) % 6.28, s: s[2] });
+  const sp = (s, i) => ({ x: s[0], y: heightAt(s[0], s[1]), z: s[1], rot: (i * 2.39) % 6.28, s: s[2] });
   if (def.theme === 'park') {
-    add(CAR('tree'), spots.filter((_, i) => i % 9).map(sp));
     add(RACE('tentLong'), [beside(160, 22), beside(520, -22)]);
     add(RACE('tent'), [beside(170, 24), beside(530, -25), beside(780, 24)]);
   } else if (def.theme === 'sky') {
-    add(CAR('tree'), spots.filter((_, i) => i % 3 === 0).map(sp));
     add(RACE('tent'), [beside(150, 22), beside(560, -24)]);
-  } else if (def.theme === 'snow') {
-    add(CAR('tree-pine'), spots.map(sp));
   } else if (def.theme === 'desert') {
-    const rocks = [PIRATE('Environment_Rock_1'), PIRATE('Environment_Rock_2'), PIRATE('Environment_Rock_3')];
-    rocks.forEach((r, n) => add(r, spots.filter((_, i) => i % 3 === n && i % 2).map(sp)));
     add(RACE('tent'), [beside(200, 22), beside(640, -22)]);
   } else if (def.theme === 'pirate') {
     const palms = [PIRATE('Environment_PalmTree_1'), PIRATE('Environment_PalmTree_2'), PIRATE('Environment_PalmTree_3')];

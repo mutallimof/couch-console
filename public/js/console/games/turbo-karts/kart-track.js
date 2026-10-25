@@ -6,6 +6,9 @@ import { decorate } from './karts-decor.js';
 import { roadMaterial } from './karts-materials.js';
 import { ROAD_HALF as ROAD_HALF0, WALL as WALL0, SAMPLES } from './kart-path.js';
 import { buildAvenue } from './karts-avenue.js';
+import { buildTerrain } from './karts-terrain.js';
+import { buildSky } from './karts-sky.js';
+import { buildProps } from './karts-props.js';
 
 // Track data and the center line live in kart-path.js (no graphics, testable)
 export { ROAD_HALF, WALL, TRACKS } from './kart-path.js';
@@ -13,30 +16,6 @@ export { ROAD_HALF, WALL, TRACKS } from './kart-path.js';
 // Where the sun is (a direction): the sky draws its disc here and turbo-karts.js puts the
 // shadow-casting light here, so shadows always point away from the sun you can see.
 export const SUN_DIR = [0.62, 0.42, 0.66];
-
-// A tiling grey noise texture (multiplied with the surface color): asphalt grit or grass
-// clumps, so big surfaces aren't flat color. size = pixels, specks = how many dots.
-function noiseTexture(THREE, { size = 256, base = 225, spread = 30, specks = 2500, speckSize = 2, repeat = [1, 1] }) {
-  const c = document.createElement('canvas'); c.width = c.height = size;
-  const x = c.getContext('2d');
-  const img = x.createImageData(size, size);
-  for (let i = 0; i < size * size; i++) {
-    const v = base + (Math.random() - 0.5) * spread;
-    img.data.set([v, v, v, 255], i * 4);
-  }
-  x.putImageData(img, 0, 0);
-  for (let i = 0; i < specks; i++) {
-    const v = base + (Math.random() - 0.5) * spread * 3;
-    x.fillStyle = `rgb(${v},${v},${v})`;
-    x.fillRect(Math.random() * size, Math.random() * size, speckSize * (0.5 + Math.random()), speckSize * (0.5 + Math.random()));
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(...repeat);
-  t.anisotropy = 8;
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
 
 // assets (optional): loaded models (Map path -> glTF) for item boxes, coins and trackside decor
 // opts.path: the center line of the kart rules' track model (see ow-kart/render-path.js), which also sets the road
@@ -72,69 +51,28 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
     return m;
   }
 
-  // Sky dome: a vertical gradient with the sun (a disc and a soft halo; a moon-like glow at
-  // night) and stars at night. The two #includes give it the same color handling as
-  // everything else, with or without the screen effects.
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 32, 16), new THREE.ShaderMaterial({
-    side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: {
-      top: { value: C(def.sky[0]) }, bottom: { value: C(def.sky[1]) },
-      sunDir: { value: new THREE.Vector3(...SUN_DIR).normalize() },
-      sunColor: { value: C(def.night ? '#9FB4FF' : '#FFF1C9') }, sunSize: { value: def.night ? 3000 : 900 },
-    },
-    vertexShader: 'varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-    fragmentShader: `uniform vec3 top, bottom, sunDir, sunColor; uniform float sunSize; varying vec3 vDir;
-      void main(){
-        vec3 col = mix(bottom, top, smoothstep(-0.05, 0.5, vDir.y));
-        float d = max(dot(normalize(vDir), sunDir), 0.0);
-        col += sunColor * (pow(d, sunSize) * 4.0 + pow(d, 12.0) * 0.35);
-        gl_FragColor = vec4(col, 1.0);
-        #include <tonemapping_fragment>
-        #include <colorspace_fragment>
-      }`,
-  }));
-  sky.userData.isSky = true; // (hidden when a real HDRI sky is available, see karts-polyhaven.js)
-  group.add(sky);
-  if (def.night) {
-    const stars = new THREE.BufferGeometry(), sp = [];
-    for (let i = 0; i < 600; i++) { const a = Math.random() * Math.PI * 2, e = Math.random() * 1.2 + 0.15; sp.push(Math.cos(a) * Math.cos(e) * 800, Math.sin(e) * 800, Math.sin(a) * Math.cos(e) * 800); }
-    stars.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3));
-    group.add(new THREE.Points(stars, new THREE.PointsMaterial({ color: '#ffffff', size: 2.2, fog: false })));
-  }
-
-  // Ground. Water tracks get a round sandy island in the middle of the sea.
+  // World: a stylized sky, real terrain under and around the road, and themed props (karts-sky/terrain/props.js)
   let island = null;
   if (def.water) {
     const cx = pts.reduce((a, p) => a + p.x, 0) / SAMPLES, cz = pts.reduce((a, p) => a + p.z, 0) / SAMPLES;
     island = { x: cx, z: cz, r: Math.max(...pts.map((p) => Math.hypot(p.x - cx, p.z - cz))) + 45 };
-    const sea = new THREE.Mesh(new THREE.CircleGeometry(900, 64), new THREE.MeshStandardMaterial({ color: def.water, roughness: 0.15, metalness: 0.2 }));
-    sea.rotation.x = -Math.PI / 2; sea.position.y = -0.6; sea.receiveShadow = true;
+    const sea = new THREE.Mesh(new THREE.CircleGeometry(1400, 64), new THREE.MeshStandardMaterial({ color: def.water, roughness: 0.55, metalness: 0, flatShading: true }));
+    sea.rotation.x = -Math.PI / 2; sea.position.set(island.x, -0.6, island.z); sea.receiveShadow = true;
     group.add(sea);
   }
-  const groundR = island ? island.r : 800;
-  // A real ground picture (Poly Haven, see karts-polyhaven.js) if given, tiled about every 5 m; otherwise generated grit
-  const gm = opts.groundMaps;
-  if (gm) for (const t of [gm.map, gm.normalMap, gm.roughnessMap]) t?.repeat.set(groundR / 2.5, groundR / 2.5);
-  const groundTex = gm ? gm.map : noiseTexture(THREE, { base: 222, spread: 16, specks: 1800, speckSize: 2, repeat: [groundR / 6, groundR / 6] });
-  const groundMat = new THREE.MeshStandardMaterial({ color: gm ? (def.night ? '#4E5584' : '#ffffff') : def.ground, map: groundTex, roughness: 1, ...(gm?.normalMap ? { normalMap: gm.normalMap } : {}) });
-  // Mowed stripes: wide bands of lighter and darker grass, like a groomed race venue
-  groundMat.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vGround;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGround = (modelMatrix * vec4(position, 1.0)).xz;');
-    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vGround;')
-      .replace('#include <map_fragment>', `#include <map_fragment>
-        float band = smoothstep(-0.15, 0.15, sin((vGround.x * 0.72 + vGround.y * 0.69) * 0.32));
-        diffuseColor.rgb *= ${def.theme === 'city' || def.theme === 'avenue' ? '1.0' : 'mix(0.86, 1.08, band)'};`);
-  };
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(groundR, 64), groundMat);
-  ground.rotation.x = -Math.PI / 2; ground.position.set(island?.x ?? 0, -0.05, island?.z ?? 0); ground.receiveShadow = true;
-  group.add(ground);
+  const terrain = buildTerrain(THREE, def, path, { fogFar: def.fog[1] * 1.3 });
+  group.add(terrain.mesh);
+  const sky = buildSky(THREE, def, group, { sunDir: SUN_DIR, bounds: terrain.bounds });
+  const props = buildProps(THREE, def, path, terrain);
+  group.add(props.group);
+  const groundTone = C(terrain.params.colors[0]).offsetHSL(0, 0, -0.04);
 
   // Road, center dashes, curbs, side slab (thickness) and barriers
+  let roadMat = null;
   const roadCol = C(def.road);
   // Asphalt: little stones with bumps and tyre-worn lanes (karts-materials.js)
   strip(ROAD_HALF, -ROAD_HALF, 0.02, 0.02, (i) => roadCol.clone().offsetHSL(0, 0, (i % 40 < 20 ? 0.01 : -0.01)),
-    { material: roadMaterial(THREE, { night: def.night }) });
+    { material: (roadMat = roadMaterial(THREE, { night: def.night })) });
   strip(0.3, -0.3, 0.03, 0.03, (i) => (Math.floor(i / 8) % 2 ? roadCol : C('#F4F7FB')));
   for (const s of [1, -1]) {
     strip(s * ROAD_HALF, s * (ROAD_HALF + 1.6), 0.05, 0.05, (i) => C(def.curb[Math.floor(i / 5) % 2]),
@@ -142,12 +80,13 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
     strip(s * (ROAD_HALF + 1.6), s * (ROAD_HALF + 1.6), 0.05, -0.8, () => C('#3B3F4A'));       // slab edge
     strip(s * WALL, s * WALL, 0, 1.2, (i) => C(def.wall[Math.floor(i / 10) % 2]),
       { mat: def.night ? { emissive: def.wall[0], emissiveIntensity: 3.5 } : {} });       // barrier (glows at night)
-    strip(s * (ROAD_HALF + 1.6), s * WALL, 0.04, 0.04, () => C(def.ground).offsetHSL(0, 0, -0.06)); // shoulder
+    strip(s * (ROAD_HALF + 1.6), s * WALL, 0.04, 0.04, () => groundTone); // shoulder (the terrain's own color)
+    strip(s * (ROAD_HALF - 0.95), s * (ROAD_HALF - 0.6), 0.045, 0.045, () => C('#F6F8FC'), { rough: 1, mat: def.night ? { emissive: '#ffffff', emissiveIntensity: 0.18 } : {} }); // edge line
   }
 
   // Pillars under raised road
   const pillars = [];
-  for (let i = 0; i < SAMPLES; i += 14) if (pts[i].y > 1.2) pillars.push(i);
+  for (let i = 0; i < SAMPLES; i += 14) if (pts[i].y - terrain.heightAt(pts[i].x, pts[i].z) > 3.2) pillars.push(i);
   if (pillars.length) {
     const inst = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.9, 1.1, 1, 10), new THREE.MeshStandardMaterial({ color: def.night ? '#3B3F5C' : '#ADB5BD', roughness: 0.8 }), pillars.length * 2);
     const m4 = new THREE.Matrix4();
@@ -280,11 +219,11 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
   // The city keeps its glowing code-built towers and Cloud Gardens its clouds either way.
   let mixers = [];
   if (assets && !avenue) {
-    const decor = decorate(THREE, { pts, tan, nor, SAMPLES, def, island }, assets, spots);
+    const decor = decorate(THREE, { pts, tan, nor, SAMPLES, def, island, heightAt: terrain.heightAt }, assets, spots);
     group.add(decor.group);
     mixers = decor.mixers;
   }
-  if (!avenue && (!assets || def.theme === 'city' || def.theme === 'sky')) group.add(makeScenery(def.theme === 'pirate' ? 'park' : def.theme, spots));
+  if (def.theme === 'city') group.add(makeScenery('city', spots));
 
-  return { ...path, group, boxes, coins, mixers, update: avenue?.update };
+  return { ...path, group, boxes, coins, mixers, terrain, sky, roadMat, update(t, camPos) { avenue?.update?.(t); sky.update(t, camPos); props.update(t); } };
 }

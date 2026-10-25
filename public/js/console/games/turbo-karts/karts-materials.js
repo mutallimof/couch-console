@@ -63,8 +63,8 @@ export function pavementMaps(THREE) {
 export function roadMaterial(THREE, { night = false } = {}) {
   const maps = pavementMaps(THREE);
   const mat = new THREE.MeshStandardMaterial({
-    vertexColors: true, side: THREE.DoubleSide, ...maps,
-    normalScale: new THREE.Vector2(0.5, 0.5), roughness: 0.68, metalness: 0.06,
+    vertexColors: true, side: THREE.DoubleSide, map: maps.map, normalMap: maps.normalMap, // (no roughness map: the road stays matte)
+    normalScale: new THREE.Vector2(0.3, 0.3), roughness: 0.9, metalness: 0, envMapIntensity: 0.35,
     ...(night ? { emissive: '#14182c' } : {}),
     ...(override ? { color: new THREE.Color(2.4, 2.4, 2.4) } : {}), // (a real photo of asphalt is much darker than the generated one)
   });

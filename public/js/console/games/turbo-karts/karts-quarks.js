@@ -67,12 +67,14 @@ export async function createQuarks(THREE, scene) {
       return { exhaust, flame, sparks, dust, tier: -1, dustUntil: 0 };
     },
     // Set what a kart is doing right now (every frame). speed: m/s · boost: seconds left · drift: charge tier 0..3 or -1 · air: gliding or jumping · offroad: on the grass
-    state(rig, { speed, boost, drift, air, offroad, color }, now) {
+    state(rig, { speed, boost, drift, air, offroad, color, dustColor, dustScale = 1, sparkScale = 1 }, now) {
       rig.exhaust.emissionOverTime = new ConstantValue(!air && speed > 6 && boost <= 0 ? 16 : 0);
       rig.flame.emissionOverTime = new ConstantValue(boost > 0 ? 60 : 0);
-      rig.sparks.emissionOverTime = new ConstantValue(drift >= 0 && !air && speed > 10 ? (drift ? 130 : 55) : 0);
+      rig.sparks.emissionOverTime = new ConstantValue(drift >= 0 && !air && speed > 10 ? (drift ? 130 : 55) * sparkScale : 0);
       if (drift >= 0 && drift !== rig.tier) { rig.tier = drift; rig.sparks.startColor = new ConstantColor(color(drift)); }
-      rig.dust.emissionOverTime = new ConstantValue(((offroad && speed > 8) || now < rig.dustUntil) ? 45 : 0);
+      const kicking = (offroad && speed > 8) || now < rig.dustUntil || (drift >= 0 && !air && speed > 12); // grass, a landing, or a drift
+      rig.dust.emissionOverTime = new ConstantValue(kicking ? (offroad ? 55 : 32) * dustScale : 0);
+      if (dustColor && rig.dustKey !== dustColor) { rig.dustKey = dustColor; rig.dust.startColor = new ConstantColor(dustColor); }
     },
     // A puff of dust for a moment (landing after a jump, bumping a wall)
     puffDust(rig, now, seconds = 0.25) { rig.dustUntil = now + seconds; },

@@ -3,6 +3,7 @@
 
 import { CAR, cloneOf } from './karts-assets.js';
 import { addRimTo } from './karts-style.js';
+import { itemMesh } from './karts-items.js';
 
 let THREE;
 export function setThree(t) { THREE = t; }
@@ -268,22 +269,7 @@ export function makeCoin() {
   return g;
 }
 
-export function makeItemMesh(kind) {
-  if (kind === 'orb') {
-    const g = new THREE.Group();
-    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.55, 20, 14), std('#E64980', 0.2, 0, { emissive: '#E64980', emissiveIntensity: 0.9 })));
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.06, 8, 24), new THREE.MeshBasicMaterial({ color: '#F783AC' }));
-    g.add(ring);
-    return g;
-  }
-  if (kind === 'slick') {
-    const m = new THREE.Mesh(new THREE.CircleGeometry(1.4, 20), new THREE.MeshStandardMaterial({ color: '#4DABF7', roughness: 0.05, transparent: true, opacity: 0.85 }));
-    m.rotation.x = -Math.PI / 2;
-    const g = new THREE.Group(); g.add(m); g.scale.set(1, 1, 0.75);
-    return g;
-  }
-  return new THREE.Group();
-}
+export function makeItemMesh(kind) { return itemMesh(THREE, kind); }
 
 // ---------- Scenery per theme (instanced where possible) ----------
 
