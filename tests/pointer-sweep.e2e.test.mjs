@@ -50,7 +50,7 @@ test('hover highlights and click works on every screen', { skip: !pw && 'Playwri
 
     // The apps that are plain screens: settings, photos, music, present, weather, timer
     const swept = [];
-    for (const id of ['settings', 'photos', 'music', 'present', 'weather', 'timer']) {
+    for (const id of ['settings', 'photos', 'music', 'present', 'news', 'weather', 'timer']) {
       // (weather and timer live in the Channels / Party folders; the others are on the home screen)
       let tile = (await visible('.menu [data-focus]')).find((t) => t.sig === id);
       let folder = null;
@@ -78,7 +78,13 @@ test('hover highlights and click works on every screen', { skip: !pw && 'Playwri
       assert.ok(hero, 'karts tile');
       await moveTo(hero); await tv.mouse.click(hero.x, hero.y); await tv.waitForTimeout(1500);
       if (await tv.$('.picker:not([hidden])')) { await hoverAll('.picker', 'karts picker'); const m = (await visible('.picker [data-mode]'))[0]; await moveTo(m); await tv.mouse.click(m.x, m.y); }
-      await tv.waitForSelector('.kart-select .ks-seat', { timeout: 120000 });
+      await tv.waitForSelector('.kart-menu .km-card', { timeout: 120000 });
+      await tv.waitForTimeout(600);
+      const menuList = await hoverAll('.kart-menu', 'kart menu');
+      swept.push('kart-menu');
+      const single = menuList.find((p) => p.sig === '0');
+      await moveTo(single); await tv.mouse.click(single.x, single.y);                    // Single Race
+      await tv.waitForSelector('.kart-select .ks-seat', { timeout: 60000 });
       await tv.waitForTimeout(800);
       const list = await hoverAll('.kart-select', 'kart select');
       swept.push('kart-select');

@@ -18,7 +18,7 @@ const add = (root, ...objs) => root.add(...objs);
 const TOP = {
   'turbo-karts': '#7ED957', 'table-tennis': '#FFD3D3', 'juicy-slash': '#FFE8B8', 'target-range': '#C7E8A0', 'air-hockey': '#BDE3FF', 'alien-strike': '#D9C8FF',
   dungeon: '#CFC6EE', 'balloon-pop': '#FFD6EA', draw: '#E4D9FF', 'paddle-duel': '#BFEFCB', bowling: '#FFD9A8', photos: '#BFEBDD', music: '#FFD9B8', present: '#C9D6FF',
-  weather: '#CDEBFF', video: '#FFC9C9', timer: '#FFE0B0', 'on-this-day': '#E1D6FF', 'folder-party': '#FFD9B8', 'folder-arcade': '#D9C8FF', 'folder-camera': '#FFC9DC', 'photo-booth': '#FFC9DC', 'quick-draw': '#FFD9B8', 'hot-potato': '#FFC9C9', 'steady-hands': '#C9F0D2', 'folder-channels': '#BDE6EE',
+  weather: '#CDEBFF', video: '#FFC9C9', timer: '#FFE0B0', news: '#FFD0D0', 'folder-party': '#FFD9B8', 'folder-arcade': '#D9C8FF', 'folder-camera': '#FFC9DC', 'photo-booth': '#FFC9DC', 'quick-draw': '#FFD9B8', 'hot-potato': '#FFC9C9', 'steady-hands': '#C9F0D2', 'folder-channels': '#BDE6EE',
 };
 export function makeBase(T, id) {
   const g = new THREE.Group();
@@ -183,12 +183,11 @@ export const SCENES = {
     for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; add(r, box(0.08, i % 3 ? 0.14 : 0.26, 0.05, '#25304A', Math.sin(a) * 1.05, 2.5 + Math.cos(a) * 1.05, 0.46, 0.02)).children.at(-1).rotation.z = -a; }
     add(r, box(0.1, 0.9, 0.06, '#FF5C5C', 0.3, 2.55, 0.5).rotateZ(-0.5), box(0.12, 0.65, 0.06, '#25304A', 0, 2.5, 0.52), ball(0.12, '#25304A', 0, 2.38, 0.52));
   },
-  'on-this-day'(T, r) {
-    add(r, box(3.0, 2.8, 0.5, '#fff', 0, 0.4, -0.2, 0.12), box(3.0, 0.7, 0.54, '#FF5C5C', 0, 2.5, -0.2, 0.12));
-    for (const x of [-0.8, 0.8]) add(r, cyl(0.1, 0.1, 0.6, '#8E99B3', x, 2.9, -0.2).rotateX(Math.PI / 2));
-    r.children.slice(-2).forEach((o) => { o.position.y += 0.1; });
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) add(r, box(0.5, 0.4, 0.06, (i + j * 3) === 4 ? '#FF5C5C' : '#E6EEF9', -0.8 + i * 0.8, 0.8 + j * 0.55, 0.12, 0.05));
-    add(r, ball(0.14, '#FFC93C', 1.9, 0, 1.5), ball(0.12, '#3FA9FF', -1.9, 0, 1.4));
+  news(T, r) { // a little TV set with a headline banner and a news ticker
+    add(r, box(3.4, 2.4, 0.9, '#C92A2A', 0, 0.5, -0.1, 0.18), box(2.9, 1.9, 0.1, '#BFE6FF', 0, 0.75, 0.38, 0.06), box(1.35, 1.0, 0.06, '#3FA9FF', -0.65, 1.15, 0.45, 0.04), ball(0.18, '#FFC93C', -1.0, 1.4, 0.5), box(1.1, 0.12, 0.05, '#25304A', 0.8, 1.55, 0.46), box(1.1, 0.12, 0.05, '#8E99B3', 0.8, 1.25, 0.46), box(1.1, 0.12, 0.05, '#8E99B3', 0.8, 0.98, 0.46));
+    add(r, box(2.9, 0.4, 0.08, '#FF5C5C', 0, 0.55, 0.46, 0.02), box(0.9, 0.18, 0.06, '#fff', -0.9, 0.55, 0.52), box(1.2, 0.18, 0.06, '#FFE066', 0.5, 0.55, 0.52));
+    for (const x of [-0.5, 0.5]) add(r, rot(cyl(0.04, 0.04, 1.2, '#8E99B3', x, 3.05, -0.1), 0, 0, x * 0.9));
+    add(r, box(3.0, 0.3, 0.55, '#172033', 0, -0.2, 0.75, 0.1), box(0.7, 0.1, 0.06, '#FFD43B', -0.9, -0.2, 1.05), box(1.1, 0.1, 0.06, '#fff', 0.2, -0.2, 1.05), ball(0.5, '#3FA9FF', 2.1, 0.1, 0.9), ring(0.5, 0.05, '#fff', 2.1, 0.1, 0.9));
   },
   'folder-party'(T, r) {
     add(r, cone(0.9, 2.2, '#FF5C8A', 0, 0.0, 0.0), ring(0.85, 0.07, '#FFC93C', 0, 0.45, 0).rotateX(Math.PI / 2), ring(0.55, 0.07, '#3FA9FF', 0, 1.1, 0).rotateX(Math.PI / 2), ball(0.22, '#FFC93C', 0, 2.1, 0));

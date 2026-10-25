@@ -1,0 +1,8 @@
+{
+  "title": "News",
+  "color": "#C92A2A",
+  "order": 10,
+  "players": 1,
+  "hidden": false,
+  "folder": "channels"
+}

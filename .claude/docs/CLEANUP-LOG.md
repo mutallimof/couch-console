@@ -37,3 +37,6 @@ Deleted (the racers and karts are modelled in code now; each name was searched i
 - `public/assets/cast/{barbarian,mage,rogue,rogue-hooded,skeleton-mage,skeleton-rogue,skeleton-warrior}.glb` (only `knight.glb` stays: the home hero icon)
 - `public/assets/car-kit/Models/GLB format/vehicle-{speedster,vintage-racer,drag-racer,racer}.glb`
 - `scripts/build-cast.mjs` (it only built the cast files above)
+
+## Part 6 of the fix-and-finish run (News replaces On This Day)
+Deleted: `public/apps/on-this-day.game.json` (the old tile; the code lives on as the "Today in History" tab inside News) and `public/assets/icons/on-this-day.png` (the old tile icon, replaced by `news.png`). Nothing else referenced either.

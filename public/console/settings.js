@@ -7,6 +7,7 @@ import { graphics } from './graphics-prefs.js';
 import { party } from './party.js';
 import { PHOTO_LIMITS_GB } from '../shared/protocol.js';
 import { nextChoice } from '../shared/theme.js';
+import { getNewsPrefs, setNewsPrefs, NEWS_SOURCES } from './news-prefs.js';
 
 const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round">
   <path d="M8 14h32M8 24h32M8 34h32"/>
@@ -14,7 +15,8 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 </svg>`;
 
 // prefs: { getSensitivity(), setSensitivity(n), getPhoneSounds(), setPhoneSounds(on), showQR() } from main.js
-const MAIN_ACTIONS = ['theme', 'sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'debug', 'party', 'qr'];
+const MAIN_ACTIONS = ['theme', 'sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'debug', 'news', 'party', 'qr'];
+const NEWS_ACTIONS = ['news-lang', ...NEWS_SOURCES.map(([id]) => `news-src:${id}`), 'back'];
 const PARTY_ACTIONS = ['rename', 'new-party', 'approve', 'limit-up', 'music-pause', 'download', 'end-party', 'back'];
 const THEME_LABELS = { light: 'Light', dark: 'Dark', auto: 'Auto' };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -23,7 +25,7 @@ export function createSettings(prefs) {
   let root, api, row = 0, page = 'main';
   let endStep = 0; // "End party": 0 = not asked, 1-2 = asked, the third A deletes
   let message = '';
-  const actions = () => (page === 'main' ? MAIN_ACTIONS : PARTY_ACTIONS);
+  const actions = () => (page === 'main' ? MAIN_ACTIONS : page === 'news' ? NEWS_ACTIONS : PARTY_ACTIONS);
 
   function renderMain() {
     const level = prefs.getSensitivity();
@@ -51,11 +53,27 @@ export function createSettings(prefs) {
           <button class="set-btn ui-btn wide" data-action="ao">${on(graphics.ao)}</button></div>
         <div class="set-row ui-row ui-focus" data-ui data-row="7"><span class="set-label label">Debug readout (fps, ping)</span>
           <button class="set-btn ui-btn wide" data-action="debug">${on(prefs.getDebug())}</button></div>
-        <div class="set-row ui-row ui-focus" data-ui data-row="8"><span class="set-label label">Party</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="8"><span class="set-label label">News (sources, language)</span>
+          <button class="set-btn ui-btn wide" data-action="news">Open ›</button></div>
+        <div class="set-row ui-row ui-focus" data-ui data-row="9"><span class="set-label label">Party</span>
           <button class="set-btn ui-btn wide" data-action="party">Open ›</button></div>
-        <div class="set-row ui-row ui-focus" data-ui data-row="9"><span class="set-label label">Add a phone</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="10"><span class="set-label label">Add a phone</span>
           <button class="set-btn ui-btn wide" data-action="qr">Show QR code</button></div>
         <p class="set-hint">Theme: Light, Dark or Auto (follows this laptop); the phones follow it too. Steady cursor: turn it On if the cursor wanders or shakes. Cartoon look and soft shadows make Turbo Karts prettier; turn them Off if it runs slowly. D-pad to choose · A to press · B to go back</p>`;
+  }
+
+  function renderNews() {
+    const p = getNewsPrefs();
+    const rows = NEWS_SOURCES.map(([id, name, langs], i) => `
+        <div class="set-row ui-row ui-focus" data-ui data-row="${i + 1}"><span class="set-label label">${name} <small>(${langs})</small></span>
+          <button class="set-btn ui-btn wide" data-action="news-src:${id}">${p.sources.includes(id) ? 'On' : 'Off'}</button></div>`).join('');
+    return `
+        <h1>News</h1>
+        <div class="set-row ui-row ui-focus" data-ui data-row="0"><span class="set-label label">Language</span>
+          <button class="set-btn ui-btn wide" data-action="news-lang">${p.lang === 'de' ? 'Deutsch' : 'English'}</button></div>${rows}
+        <div class="set-row ui-row ui-focus" data-ui data-row="${NEWS_SOURCES.length + 1}"><span class="set-label label"> </span>
+          <button class="set-btn ui-btn wide" data-action="back">‹ Back</button></div>
+        <p class="set-hint">Headlines and photos come from free public news feeds, kept on this laptop for 10 minutes. English: BBC News, DW. Deutsch: DW, Tagesschau. Turn a source Off to hide it. B = back</p>`;
   }
 
   function renderParty() {
@@ -84,7 +102,7 @@ export function createSettings(prefs) {
   }
 
   function render() {
-    root.innerHTML = `<div class="settings theme-bg">${page === 'main' ? renderMain() : renderParty()}</div>`;
+    root.innerHTML = `<div class="settings theme-bg">${page === 'main' ? renderMain() : page === 'news' ? renderNews() : renderParty()}</div>`;
     root.querySelectorAll('.set-row').forEach((r, i) => r.classList.toggle('focused', i === row));
     root.querySelector('.set-row.focused')?.scrollIntoView({ block: 'nearest' });
   }
@@ -121,7 +139,7 @@ export function createSettings(prefs) {
           message = 'Everything was deleted. A new, empty party has started.';
         }
       } else if (action === 'back') {
-        page = 'main'; row = 7; endStep = 0; message = '';
+        page = 'main'; row = 9; endStep = 0; message = '';
       }
     } catch (err) {
       message = 'That did not work. Is the laptop server still running?';
@@ -132,6 +150,14 @@ export function createSettings(prefs) {
 
   function act(action) {
     if (page === 'party') { api.sound.play('select'); return partyAction(action); }
+    if (page === 'news') {
+      api.sound.play('select');
+      const p = getNewsPrefs();
+      if (action === 'news-lang') { p.lang = p.lang === 'en' ? 'de' : 'en'; setNewsPrefs(p); }
+      else if (action.startsWith('news-src:')) { const id = action.slice(9); p.sources = p.sources.includes(id) ? p.sources.filter((s) => s !== id) : [...p.sources, id]; setNewsPrefs(p); }
+      else if (action === 'back') { page = 'main'; row = 8; }
+      return render();
+    }
     if (action === 'theme') {
       prefs.setTheme(nextChoice(prefs.getTheme()));
       api.sound.play('select');
@@ -155,6 +181,9 @@ export function createSettings(prefs) {
     } else if (action === 'debug') {
       prefs.setDebug(!prefs.getDebug());
       api.sound.play('select');
+    } else if (action === 'news') {
+      page = 'news'; row = 0;
+      api.sound.play('select');
     } else if (action === 'party') {
       page = 'party'; row = 0; message = '';
       api.sound.play('select');
@@ -169,7 +198,8 @@ export function createSettings(prefs) {
   function onButton({ playerId, button, state }) {
     if (state !== 'down') return;
     if (button === 'B') {
-      if (page === 'party') { page = 'main'; row = 7; endStep = 0; message = ''; return render(); }
+      if (page === 'news') { page = 'main'; row = 8; return render(); }
+      if (page === 'party') { page = 'main'; row = 9; endStep = 0; message = ''; return render(); }
       return api.exit();
     }
     const rows = actions().length;
@@ -180,7 +210,8 @@ export function createSettings(prefs) {
       return render();
     }
     if (button === 'LEFT' || button === 'RIGHT') {
-      if (page === 'main' && row === 0) act('theme');
+      if (page === 'news' && row === 0) act('news-lang');
+      else if (page === 'main' && row === 0) act('theme');
       else if (page === 'main' && row === 1) act(button === 'RIGHT' ? 'sens-up' : 'sens-down');
       return;
     }

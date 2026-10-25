@@ -1,5 +1,6 @@
 // Couch Console server: serves the web pages and relays input between
 // phones (remotes) and the laptop (console). All game logic runs in the browser.
+import './env.js'; // (first: reads the optional .env file before any setting is used)
 import { createServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -13,6 +14,7 @@ import { createActivity } from './activity.js';
 import { createPhotos } from './photos.js';
 import { createMusic } from './music.js';
 import { createPresent } from './present.js';
+import { createNews, SOURCES as NEWS_SOURCES, CATEGORIES as NEWS_CATEGORIES } from './news.js';
 import { randomBytes } from 'node:crypto';
 import { upsertPerson, colorOf, freeSlot, roster, canAddGuest, cleanName } from './people.js';
 import {
@@ -227,12 +229,44 @@ function deleteRoom(code) {
   rooms.delete(code);
 }
 
+// ---------- News (the News channel) ----------
+// GET /api/news?sources=bbc,dw&lang=en&category=world -> { items, errors, categories }; headlines come from free public feeds, fetched and kept
+// by this server (see server/news.js). GET /api/news/image?u=<https url> -> a photo from one of those sources (kept, so it works offline too).
+const news = createNews();
+app.get('/api/news', async (req, res) => {
+  const sources = String(req.query.sources || Object.keys(NEWS_SOURCES).join(',')).split(',').map((s) => s.trim()).filter((s) => NEWS_SOURCES[s]);
+  const lang = req.query.lang === 'de' ? 'de' : 'en';
+  const category = NEWS_CATEGORIES.some(([c]) => c === req.query.category) ? req.query.category : 'top';
+  res.set('Cache-Control', 'no-store').json(await news.headlines({ sources, lang, category }));
+});
+app.get('/api/news/image', async (req, res) => {
+  try {
+    const hit = await news.image(String(req.query.u || ''));
+    if (!hit) return res.status(404).end();
+    res.set({ 'Content-Type': hit.type, 'Cache-Control': 'public, max-age=3600' }).send(hit.buf);
+  } catch { res.status(502).end(); }
+});
+
 // ---------- QR code ----------
+// GET /api/qr.svg?text=<http(s) link> -> a QR code picture (the News channel shows one per story, to read it on the phone).
+app.get('/api/qr.svg', async (req, res) => {
+  const text = String(req.query.text || '');
+  if (!/^https?:\/\//i.test(text) || text.length > 600) return res.status(400).end();
+  res.set({ 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' }).send(await QRCode.toString(text, { type: 'svg', margin: 1, width: 240 }));
+});
+
+// ---------- QR code for joining ----------
 // GET /qr?room=ABCD -> { url, dataUrl } where url is the phone's join link.
 app.get('/qr', async (req, res) => {
   const room = String(req.query.room || '');
   if (!new RegExp(`^[${ROOM_LETTERS}]{${ROOM_CODE_LENGTH}}$`).test(room)) {
     return res.status(400).json({ error: 'bad room' });
+  }
+  // PUBLIC_URL (set by `npm run tunnel` or in .env): a public https link that reaches this console; phones are sent there.
+  const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
+  if (/^https:\/\/[^\s/]+$/i.test(publicUrl) && !req.get('x-forwarded-host')) {
+    const url = `${publicUrl}/remote.html?room=${room}`;
+    return res.json({ url, dataUrl: await QRCode.toDataURL(url, { margin: 1, width: 512 }) });
   }
   // Behind the cloudflared tunnel the public host is in x-forwarded-host.
   const forwarded = req.get('x-forwarded-host');
@@ -478,10 +512,11 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log(`Couch Console running at http://localhost:${PORT}`);
-  if (httpsServer) return;
-  console.log(`For phones, start the tunnel in a second terminal:`);
-  console.log(`  cloudflared tunnel --url http://localhost:${PORT}`);
-  console.log(`(Or set up the faster local mode once: see "Local setup" in README.md)`);
+  if (process.env.PUBLIC_URL) console.log(`Phones are sent to ${process.env.PUBLIC_URL} (the QR code on the screen).`);
+  if (httpsServer || process.env.PUBLIC_URL) return;
+  console.log(`Phones need a secure (https) link for motion and the camera. Either:`);
+  console.log(`  npm run tunnel      (a free tunnel with cloudflared: one command, works anywhere)`);
+  console.log(`  npm run certs       (a certificate for your own Wi-Fi: one-time setup, see "Joining with phones" in README.md)`);
 });
 httpsServer?.listen(HTTPS_PORT, () => {
   const ip = lanIp();
