@@ -45,6 +45,7 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 - Part 7 runs anywhere (.env, npm run tunnel, engines, run-tests.mjs, README, fresh-clone check): done
 - Part 8 camera games (Mirror Match + Party Workout, MediaPipe pose, up to 4 people, ?posetest=1): done
 - Part 9 final QA (60 screens x light/dark, no page errors), secret check (clean), docs, TEST-TOMORROW: done
+- Guest add (photos + songs): TV corner QR in Photos, QR in Music, upload-only guest.html (phone/guest.js, /qr?for=photos|music), tests/guest.e2e: done
 
 ## Phases (from `.claude/docs/REBUILD-PLAN.md`)
 | # | What | Status |

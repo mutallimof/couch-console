@@ -8,6 +8,7 @@ import { party } from '../console/party.js';
 import { avatarSvg } from '../shared/avatar.js';
 import { createViewer } from '../shared/viewer.js';
 import { smartCover } from '../shared/smart-crop.js';
+import { mountGuestQr } from '../console/guest-qr.js';
 
 const SLIDE_SECONDS = 7, NEW_SECONDS = 6;
 
@@ -70,10 +71,9 @@ function showWall(i = index, fresh = false) {
 function showEmpty() {
   mode = 'empty';
   root.querySelector('.photo-view')?.remove();
-  const qr = document.querySelector('#qr')?.src || '';
   const el = document.createElement('div');
   el.className = 'photo-view empty';
-  el.innerHTML = `<div class="photo-empty"><h1>No photos yet</h1><p>Scan the code and add the first one!</p>${qr ? `<img src="${qr}" alt="QR code to join">` : ''}<p class="muted"><b>Already joined?</b> Open the Photos tab on your phone.</p><p class="muted">Room ${esc(party.room)} · B = menu</p></div>`;
+  el.innerHTML = `<div class="photo-empty"><h1>No photos yet</h1><p>Scan the code in the corner and add the first one!</p><p class="muted"><b>Already joined?</b> Open the Photos tab on your phone.</p><p class="muted">Room ${esc(party.room)} · B = menu</p></div>`;
   root.append(el);
 }
 
@@ -216,6 +216,7 @@ export default {
     root.className = 'channel photos';
     root.innerHTML = '<div class="channel-head" hidden></div><p class="photo-note" hidden></p><div class="channel-empty"><p>Loading…</p></div>';
     container.append(root);
+    mountGuestQr(root, 'photos', 'Scan to add photos');
     photos = []; grid = null; mode = 'wall'; index = 0; confirmHide = null;
     party.photosOpen = true;
     unlisten = party.onPhoto(onPhoto);

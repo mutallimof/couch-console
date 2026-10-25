@@ -256,33 +256,28 @@ app.get('/api/qr.svg', async (req, res) => {
 });
 
 // ---------- QR code for joining ----------
-// GET /qr?room=ABCD -> { url, dataUrl } where url is the phone's join link.
+// GET /qr?room=ABCD[&for=photos|music] -> { url, dataUrl }. url is the phone's join link, or (with `for`) the upload-only guest page
+// for photos or songs (no player slot). Always the https address phones can reach (tunnel, local https) as the join QR.
+const GUEST_PAGES = { photos: 'photos', music: 'music' };
 app.get('/qr', async (req, res) => {
   const room = String(req.query.room || '');
   if (!new RegExp(`^[${ROOM_LETTERS}]{${ROOM_CODE_LENGTH}}$`).test(room)) {
     return res.status(400).json({ error: 'bad room' });
   }
+  const guest = req.query.for === undefined ? '' : GUEST_PAGES[String(req.query.for)];
+  if (req.query.for !== undefined && !guest) return res.status(400).json({ error: 'bad target' });
+  const page = guest ? `/guest.html?room=${room}&for=${guest}` : `/remote.html?room=${room}`;
+  const send = async (origin) => { const url = `${origin}${page}`; res.json({ url, dataUrl: await QRCode.toDataURL(url, { margin: 1, width: guest ? 384 : 512 }) }); };
   // PUBLIC_URL (set by `npm run tunnel` or in .env): a public https link that reaches this console; phones are sent there.
   const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
-  if (/^https:\/\/[^\s/]+$/i.test(publicUrl) && !req.get('x-forwarded-host')) {
-    const url = `${publicUrl}/remote.html?room=${room}`;
-    return res.json({ url, dataUrl: await QRCode.toDataURL(url, { margin: 1, width: 512 }) });
-  }
+  if (/^https:\/\/[^\s/]+$/i.test(publicUrl) && !req.get('x-forwarded-host')) return send(publicUrl);
   // Behind the cloudflared tunnel the public host is in x-forwarded-host.
   const forwarded = req.get('x-forwarded-host');
   const host = (forwarded || req.get('host')).split(',')[0].trim();
   const isLocal = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
   const isLan = /^(\d+\.){3}\d+(:\d+)?$/.test(host);
-  let url;
-  if (!forwarded && httpsReady && (isLocal || isLan) && lanIp()) {
-    // Local setup: send phones straight to this laptop's https address on the Wi-Fi
-    url = `https://${lanIp()}:${HTTPS_PORT}/remote.html?room=${room}`;
-  } else {
-    // Phones need https for motion sensors; only plain localhost uses http.
-    url = `${isLocal ? 'http' : 'https'}://${host}/remote.html?room=${room}`;
-  }
-  const dataUrl = await QRCode.toDataURL(url, { margin: 1, width: 512 });
-  res.json({ url, dataUrl });
+  if (!forwarded && httpsReady && (isLocal || isLan) && lanIp()) return send(`https://${lanIp()}:${HTTPS_PORT}`); // local setup: straight to this laptop's https address
+  return send(`${isLocal ? 'http' : 'https'}://${host}`); // phones need https for the camera; only plain localhost uses http
 });
 
 // ---------- Sockets ----------

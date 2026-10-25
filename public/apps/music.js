@@ -3,6 +3,7 @@
 //   A = pause / play · PLUS = skip · UP / DOWN = choose a waiting song · MINUS = remove it · LEFT / RIGHT = move it up / down · B = back
 import { party } from '../console/party.js';
 import { musicPlayer } from '../console/music-hub.js';
+import { guestQrNow, loadGuestQr } from '../console/guest-qr.js';
 
 const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
   <path d="M18 34V10l22-4v24"/><circle cx="12" cy="34" r="6" fill="#fff"/><circle cx="34" cy="30" r="6" fill="#fff"/>
@@ -15,7 +16,7 @@ function render() {
   if (!root) return;
   const { now, queue, paused, skips, skipNeeded } = musicPlayer.state;
   sel = Math.max(0, Math.min(sel, queue.length - 1));
-  const qr = document.querySelector('#qr')?.src || '';
+  const qr = guestQrNow('music');
   root.querySelector('.mu-side').innerHTML = `
     <div class="mu-now">${now ? `<p class="mu-label">${paused ? 'Paused' : 'Now playing'}</p>
         <h2>${esc(now.title)}</h2>
@@ -27,7 +28,7 @@ function render() {
         <span class="mu-who" style="background:${q.byColor}">${esc(q.byEmoji)} ${esc(q.byName)}</span>${q.votes.length ? `<span class="mu-votes">👍 ${q.votes.length}</span>` : ''}</li>`).join('')
       : '<li class="mu-none">The queue is empty</li>'}</ol>
     ${queue.length > 6 ? `<p class="muted">…and ${queue.length - 6} more</p>` : ''}
-    <div class="mu-join">${qr ? `<img src="${qr}" alt="">` : ''}<span>Scan to add songs<br><b>${esc(party.room)}</b><br><small>Already joined? Open the Music tab on your phone.</small></span></div>
+    <div class="mu-join">${qr ? `<img src="${qr}" alt="">` : ''}<span>Scan to add a song<br><small>No controller needed. Already joined? Open the Music tab on your phone.</small></span></div>
     <p class="mu-help">${esc(note) || 'A = pause · PLUS = skip · ▲▼ choose · MINUS = remove · ◀ ▶ move · B = back'}</p>`;
 }
 
@@ -70,6 +71,7 @@ export default {
     api.onButton(onButton);
     api.actions([{ key: 'B', label: '‹ Back' }, { key: 'A', label: 'Play / Pause' }, { key: 'PLUS', label: 'Skip' }, { key: 'MINUS', label: 'Remove' }, { key: 'LEFT', label: 'Move up' }, { key: 'RIGHT', label: 'Move down' }]); // (on-screen keys, so the pointer can do everything the D-pad can)
     render();
+    loadGuestQr('music').then((u) => { if (u && root) render(); });
     requestAnimationFrame(() => musicPlayer.setFull(root.querySelector('.mu-player'))); // the player card moves onto this screen
   },
   unmount() {

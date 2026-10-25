@@ -504,3 +504,10 @@ img.qr-img:not([src]) { visibility: hidden; }
 .juicy .jz-level.on { background: #ffcf4d; color: #3a220c; box-shadow: 0 6px 22px #ffcf4d55; }
 .juicy .jz-go { margin-top: 20px; min-width: 14rem; min-height: 3.25rem; font-size: 1.4rem; }
 .juicy .jz-lives .x.hurt { opacity: 0.6; transform: scale(0.94); }
+
+/* The small "Scan to add ..." QR for guests (Photos, Music): a corner badge that follows the theme and stays out of the pictures' way */
+.guest-qr { position: absolute; right: var(--sp-4); bottom: var(--sp-4); z-index: 5; display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-2); border-radius: var(--r-lg, 16px); background: var(--c-surface); color: var(--c-text); box-shadow: var(--sh-2, 0 4px 16px #0003); font-size: var(--fs-hint); font-weight: 800; line-height: 1.2; pointer-events: none; opacity: 0.94; }
+.guest-qr img { width: 76px; height: 76px; background: #fff; padding: 4px; border-radius: 8px; image-rendering: pixelated; }
+.guest-qr.loading img { visibility: hidden; }
+.guest-qr small { display: block; font-weight: 700; color: var(--c-muted); }
+.photos .photo-grid { padding-bottom: 120px; } /* (room for the QR badge) */
