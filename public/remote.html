@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/remote.css">
+  <link rel="stylesheet" href="/css/viewer.css">
 </head>
 <body>
   <header class="top">
@@ -20,6 +21,13 @@
     <button id="me-btn" class="me-btn" type="button" aria-label="Me" hidden><span id="me-emoji">🙂</span><span id="me-name"></span></button>
     <button id="recenter" class="recenter" type="button">Recenter</button>
   </header>
+
+  <!-- Zoom keys, shown while the TV has a photo or slide open (shared viewer) -->
+  <div id="viewer-bar" class="viewer-bar" hidden>
+    <button type="button" data-vop="out" aria-label="Zoom out">−</button><button type="button" data-vop="in" aria-label="Zoom in">+</button>
+    <button type="button" data-vop="fit" aria-label="Fit page or width">⤢</button><button type="button" data-vop="fs" aria-label="Full screen on the TV">⛶</button>
+    <button type="button" data-vop="reset" aria-label="Reset">⟲</button>
+  </div>
 
   <!-- The controller, shown once joined -->
   <main id="controller" class="controller" hidden>

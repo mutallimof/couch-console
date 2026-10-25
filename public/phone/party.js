@@ -18,7 +18,7 @@ function saveProfile(p) {
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-export function createParty({ socket, getRoom, getClientId, onRoleRequest, onTab, laser }) {
+export function createParty({ socket, getRoom, getClientId, onRoleRequest, onTab, laser, getViewer = () => ({ active: false }) }) {
   let profile = loadProfile();
   let role = 'guest', slotsFree = 0, tab = 'remote', mode = 'pointer', roster = { people: [] }, me = null;
   const panes = []; // { id, label, icon, mod, mounted }
@@ -148,6 +148,7 @@ export function createParty({ socket, getRoom, getClientId, onRoleRequest, onTab
     me: () => me,
     roster: () => roster,
     role: () => role,
+    viewer: () => getViewer(), // the TV viewer's state: { active, zoom, fit }
     laser, // { start(): Promise<{ ok, reason? }>, emit(on) }: the presenter's laser pointer (Present tab)
     // Extra headers for the party's HTTP calls: who we are and which room
     headers: () => ({ 'x-couch-room': getRoom(), 'x-couch-client': getClientId() }),

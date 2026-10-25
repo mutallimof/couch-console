@@ -116,10 +116,31 @@ function startTimer() {
 function bindRemote() {
   // Prev / Next fire on pointerdown (fast, and two quick taps both count)
   el.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('pointerdown', (e) => { e.preventDefault(); api('/present/goto', 'POST', { delta: Number(b.dataset.nav) }); navigator.vibrate?.(8); }));
-  // Swipe left/right anywhere on the big area
-  const area = el.querySelector('#pr-swipe'); let sx = null;
-  area.addEventListener('pointerdown', (e) => { if (!e.target.closest('button')) sx = e.clientX; });
-  area.addEventListener('pointerup', (e) => { if (sx !== null && Math.abs(e.clientX - sx) > 50) api('/present/goto', 'POST', { delta: e.clientX < sx ? 1 : -1 }); sx = null; });
+  // Swipe left/right anywhere on the big area turns the page; two fingers pinch to zoom the TV's slide (and one finger then pans it)
+  const area = el.querySelector('#pr-swipe'); let sx = null; const fingers = new Map(); let pinchD = 0, zoomedNow = false, lastPan = null;
+  const vcmd = (cmd) => ctx.socket.emit(EV.VIEWER_CMD, cmd);
+  area.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    fingers.set(e.pointerId, { x: e.clientX, y: e.clientY }); area.setPointerCapture?.(e.pointerId);
+    sx = fingers.size === 1 ? e.clientX : null; lastPan = { x: e.clientX, y: e.clientY }; pinchD = 0;
+  });
+  area.addEventListener('pointermove', (e) => {
+    const f = fingers.get(e.pointerId); if (!f) return;
+    f.x = e.clientX; f.y = e.clientY;
+    if (fingers.size === 2) {
+      const [a, b] = [...fingers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinchD && Math.abs(d / pinchD - 1) > 0.03) { vcmd({ op: 'zoom', f: d / pinchD }); zoomedNow = true; pinchD = d; } else if (!pinchD) pinchD = d;
+    } else if (fingers.size === 1 && (ctx.viewer?.().zoom > 1.05 || zoomedNow)) {
+      const r = area.getBoundingClientRect(); // zoomed in: dragging moves the slide
+      vcmd({ op: 'pan', dx: (e.clientX - lastPan.x) / r.width, dy: (e.clientY - lastPan.y) / r.height }); lastPan = { x: e.clientX, y: e.clientY }; sx = null;
+    }
+  });
+  const lift = (e) => {
+    if (!fingers.delete(e.pointerId)) return;
+    if (sx !== null && !zoomedNow && ctx.viewer?.().zoom <= 1.05 && Math.abs(e.clientX - sx) > 50) api('/present/goto', 'POST', { delta: e.clientX < sx ? 1 : -1 });
+    sx = null; if (!fingers.size) zoomedNow = false;
+  };
+  area.addEventListener('pointerup', lift); area.addEventListener('pointercancel', lift);
   // The laser: hold to show, let go to hide. The first press asks for motion permission (guests too).
   const laser = el.querySelector('#pr-laser');
   const on = async (e) => {

@@ -6,6 +6,8 @@
 import { createFocusGrid } from './focus-grid.js';
 import { party } from '../console/party.js';
 import { avatarSvg } from '../shared/avatar.js';
+import { createViewer } from '../shared/viewer.js';
+import { smartCover } from '../shared/smart-crop.js';
 
 const SLIDE_SECONDS = 7, NEW_SECONDS = 6;
 
@@ -16,6 +18,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 
 let api, root, photos = [], grid, mode = 'wall', index = 0, timer, frame, unlisten, confirmHide = null;
 let jumpUntil = 0;
+let viewer = null, offViewer = null; // the shared viewer showing the current photo (fit, zoom, pan: shared/viewer.js)
 
 // The uploader's face: their avatar, or their emoji if they have none
 const face = (p) => (p.byAvatar ? avatarSvg(p.byAvatar, 28) : esc(p.byEmoji));
@@ -28,6 +31,20 @@ const waiting = () => photos.filter((p) => p.pending);
 function say(text) { // a short message on the TV (e.g. "Hidden")
   const el = root?.querySelector('.photo-note');
   if (el) { el.textContent = text; el.hidden = !text; }
+}
+
+// The picture goes into the shared viewer: always the whole photo (fit), a soft backdrop, zoom and pan from the phone
+function openIn(el, p) {
+  viewer?.destroy();
+  viewer = createViewer(el, { controls: 'auto', onChange: () => api?.viewerHub.changed() });
+  viewer.onFullscreen = () => api.viewerHub.fullscreen(true);
+  const img = new Image();
+  img.src = src(p, 'full');
+  img.alt = '';
+  viewer.setContent(img, 1600, 1067); // (a placeholder shape until the file arrives)
+  const v = viewer;
+  img.decode().catch(() => {}).then(() => { if (viewer === v && img.naturalWidth) v.setContent(img, img.naturalWidth, img.naturalHeight); api.viewerHub.changed(); });
+  api.viewerHub.changed();
 }
 
 // ---------- Wall ----------
@@ -43,12 +60,12 @@ function showWall(i = index, fresh = false) {
   const p = list[index];
   const el = document.createElement('div');
   el.className = `photo-view wall${fresh ? ' fresh' : ''}`;
-  el.innerHTML = `<div class="photo-bg" style="background-image:url('${src(p, 'thumb').replace(/'/g, '%27')}')"></div>
-    <img class="photo-full" src="${src(p, 'full')}" alt="">
-    <div class="photo-by" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : face(p)} ${esc(p.byName || 'Laptop')}</div>
-    <div class="photo-help">PLUS = all photos · B = menu</div>`;
+  openIn(el, p);
+  el.insertAdjacentHTML('beforeend', `<div class="photo-by" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : face(p)} ${esc(p.byName || 'Laptop')}</div>
+    <div class="photo-help">PLUS = all photos · B = menu</div>`);
   root.append(el);
-  timer = setTimeout(() => showWall(index + 1), (fresh ? NEW_SECONDS : SLIDE_SECONDS) * 1000);
+  const next = () => (viewer?.zoomed ? (timer = setTimeout(next, 3000)) : showWall(index + 1)); // (not while someone is looking closely)
+  timer = setTimeout(next, (fresh ? NEW_SECONDS : SLIDE_SECONDS) * 1000);
 }
 function showEmpty() {
   mode = 'empty';
@@ -73,8 +90,9 @@ function showGrid() {
   head.hidden = false;
   head.innerHTML = `<h1>Photos</h1><span>${shown().length} photos${queue.length ? ` · <b>${queue.length} waiting for you</b>` : ''} · A = full screen · MINUS = hide · PLUS = wall · B = back</span>`;
   el.innerHTML = list.map((p, i) => `<div class="photo-tile${p.pending ? ' pending' : ''}" data-index="${i}">
-      <img src="${src(p, 'thumb')}" alt="" loading="lazy"><span class="photo-by sm" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : face(p)} ${esc(p.byName || 'Laptop')}</span>
+      <img src="${src(p, 'thumb')}" alt="" loading="lazy" data-smart><span class="photo-by sm" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : face(p)} ${esc(p.byName || 'Laptop')}</span>
       ${p.pending ? '<span class="photo-pending">Waiting: A = show</span>' : ''}</div>`).join('');
+  smartCover(el);
   grid = list.length ? createFocusGrid({ items: [...el.querySelectorAll('.photo-tile')], columns: 5, onChange: () => api.sound.play('hover') }) : null;
   grid?.setIndex(Math.min(index, list.length - 1), true);
   gridList = list;
@@ -87,10 +105,9 @@ function showFull(p) {
   root.querySelector('.photo-view')?.remove();
   const el = document.createElement('div');
   el.className = 'photo-view';
-  el.innerHTML = `<div class="photo-bg" style="background-image:url('${src(p, 'thumb').replace(/'/g, '%27')}')"></div>
-    <img class="photo-full" src="${src(p, 'full')}" alt="">
-    <div class="photo-by" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : face(p)} ${esc(p.byName || 'Laptop')}</div>
-    <div class="photo-help">◀ ▶ browse · MINUS hide · B back</div>`;
+  openIn(el, p);
+  el.insertAdjacentHTML('beforeend', `<div class="photo-by" style="background:${p.byColor || '#5B6577'}">${p.local ? '🖼️' : face(p)} ${esc(p.byName || 'Laptop')}</div>
+    <div class="photo-help">◀ ▶ browse · MINUS hide · B back</div>`);
   root.append(el);
 }
 
@@ -116,6 +133,11 @@ function currentPhoto() {
 
 function onButton({ playerId, button, state }) {
   if (state !== 'down') return;
+  if (viewer?.zoomed && viewer.root.isConnected) { // zoomed in: the D-pad moves around the photo, A / B zoom back out
+    const d = { LEFT: [0.15, 0], RIGHT: [-0.15, 0], UP: [0, 0.15], DOWN: [0, -0.15] }[button];
+    if (d) return viewer.panBy(...d);
+    if (button === 'A' || button === 'B') return viewer.reset();
+  }
   if (button !== 'MINUS') confirmHide = null;
   if (button === 'B') {
     if (mode === 'grid' || mode === 'full') { mode === 'full' ? showGrid() : showWall(); api.sound.play('back'); return; }
@@ -197,6 +219,7 @@ export default {
     photos = []; grid = null; mode = 'wall'; index = 0; confirmHide = null;
     party.photosOpen = true;
     unlisten = party.onPhoto(onPhoto);
+    offViewer = api.viewerHub.add(() => (viewer && viewer.root.isConnected ? viewer : null));
     api.onButton(onButton);
     api.actions([{ key: 'B', label: '‹ Back' }, { key: 'LEFT', label: '◀' }, { key: 'RIGHT', label: '▶' }, { key: 'PLUS', label: 'Grid / Wall' }, { key: 'MINUS', label: 'Hide' }]); // (on-screen keys, so the pointer can do everything the D-pad can)
     load().then(() => root?.querySelector('.channel-empty')?.remove());
@@ -205,6 +228,7 @@ export default {
   unmount() {
     party.photosOpen = false;
     unlisten?.();
+    offViewer?.(); viewer?.destroy(); viewer = offViewer = null;
     clearTimeout(timer);
     cancelAnimationFrame(frame);
     root?.remove();

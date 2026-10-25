@@ -61,6 +61,8 @@ export const EV = {
   PRESENT_MOTION: 'present:motion', // presenter's phone -> server -> TV: raw sensors for the laser dot (only while the laser is on)
   BOOTH_CMD: 'booth:cmd',           // phone -> server -> TV (Photo Booth): { cmd: 'shoot' | 'frame' | 'sticker', dir?: 1 | -1, id?: string }
   BOOTH_STATE: 'booth:state',       // TV -> server -> phones: { frames: [{ id, name }], stickers: [{ id, name }], frame, sticker, status: 'idle' | 'counting' | 'saving' | 'saved', count?, camera }
+  VIEWER_CMD: 'viewer:cmd',         // phone -> server -> TV (the shared viewer): { op: 'zoom', f } | { op: 'pan', dx, dy } | { op: 'fit' } | { op: 'reset' } | { op: 'fs' }
+  VIEWER_STATE: 'viewer:state',     // TV -> server -> phones: { active, zoom, fit, fs } (the phone shows its zoom keys while a viewer is open)
   PG_UP: 'pg:up',                   // phone -> server -> TV (Party Games): any small message { t: 'ready' | 'holster' | 'fire' | ... }, stamped with playerId / name by the server
   PG_DOWN: 'pg:down',               // TV -> server -> phones (Party Games): { to?: playerId, view: 'lobby' | 'duel' | ... , ... } (no `to` = every phone)
   PG_TIME: 'pg:time',               // anyone -> server, with ack: returns the server's clock in ms (the phones and the TV sync to it)

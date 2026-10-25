@@ -5,6 +5,7 @@ import { party } from './party.js';
 import { socket } from './socket.js';
 import { musicPlayer } from './music-hub.js';
 import { createSlides } from './slides.js';
+import { createViewerHub } from './viewer-hub.js';
 import { createPointers } from './pointer.js';
 import { createUiPointer, actionBar } from './ui-pointer.js';
 import { createGyroPointers } from './pointer/engine.js';
@@ -24,7 +25,9 @@ const boot = new URLSearchParams(location.search).has('noboot') ? null : playBoo
 // Games and channels, from their .game.json files (each loads on its own; see apps.js).
 // Loaded before connecting, so no server message can arrive before we're listening.
 const gameApps = await loadApps();
-const slides = createSlides({ socket, party });
+const viewerHub = createViewerHub({ socket, notify: (t) => party.toast(t) });
+const slides = createSlides({ socket, party, hub: viewerHub });
+viewerHub.add(() => (slides.active && !slides.el.hidden ? slides.viewer : null));
 const folders = await fetch('/console/folders.json').then((r) => r.json()).catch(() => ({}));
 const icons = await fetch('/api/icons').then((r) => r.json()).catch(() => []);
 const pointers = createPointers($('cursors'));
@@ -346,6 +349,7 @@ function makeApi(cur, mode) {
     reportWin: (playerId) => socket.emit(EV.ACTIVITY_GAME, { playerId, game: cur.app.title, what: 'won' }),
     // On-screen buttons for this app's phone keys (so the pointer can use them): api.actions([{ key: 'PLUS', label: 'Skip', hint: '+' }])
     actions: (list) => actionBar($('stage-content'), list),
+    viewerHub, // shared viewer: viewerHub.add(() => viewer) so phones can zoom it; .fullscreen(true) from a click
     exit: closeApp,
   };
 }
@@ -479,6 +483,7 @@ function onInputButton(e) {
   // While slides are on screen the remote turns pages: A / RIGHT next, LEFT back, B black screen, HOME ends the show
   if (slides.active && !slides.el.hidden) {
     if (down) {
+      if (slides.handleKey(button)) return;
       if (button === 'HOME') slides.end();
       else if (button === 'A' || button === 'RIGHT' || button === 'DOWN') slides.next();
       else if (button === 'LEFT' || button === 'UP') slides.prev();

@@ -1,0 +1,11 @@
+/* The shared viewer (shared/viewer.js): fit by default, soft blurred backdrop, zoom and pan, never cropped. */
+.vw { position: absolute; inset: 0; overflow: hidden; background: #0c0f16; color: #fff; contain: strict; }
+.vw-bg { position: absolute; left: -10%; top: -10%; width: 120%; height: 120%; filter: blur(26px) brightness(0.55) saturate(1.25); pointer-events: none; }
+.vw-stage { position: absolute; inset: 0; }
+.vw-content { position: absolute; left: 50%; top: 50%; margin: 0; max-width: none; max-height: none; transform-origin: 50% 50%; will-change: transform; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; pointer-events: none; background: #fff; box-shadow: 0 0.6rem 2.2rem rgba(0, 0, 0, 0.45); }
+img.vw-content { background: transparent; }
+.vw-controls { position: absolute; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 2; display: flex; gap: 8px; }
+.vw-controls button { width: 46px; height: 46px; border: 0; border-radius: 50%; background: rgba(20, 24, 36, 0.62); color: #fff; font: 700 22px system-ui, sans-serif; backdrop-filter: blur(6px); touch-action: manipulation; }
+.vw-controls button:active { transform: scale(0.94); }
+.vw-auto .vw-controls { opacity: 0; visibility: hidden; transition: opacity 160ms ease; }
+body.pointer-live .vw-auto .vw-controls { opacity: 1; visibility: visible; }

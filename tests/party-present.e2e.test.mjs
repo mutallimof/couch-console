@@ -57,16 +57,16 @@ test('a PDF from a phone is presented on the TV, with page turns, black screen, 
     // Present it: the TV shows slide 1 (drawn by pdf.js on a canvas)
     await ph.tap('[data-present]');
     await ph.waitForSelector('.pr-remote');
-    await tv.waitForSelector('#slides:not([hidden]) .sl-layer.on canvas', { timeout: 30000 });
+    await tv.waitForSelector('#slides:not([hidden]) .sl-layer.on canvas.vw-content', { timeout: 30000 });
     assert.match(await ph.textContent('.pr-top'), /Slide 1 \/ 4/);
-    const pixel = () => tv.$eval('#slides .sl-layer.on canvas', (c) => { const d = c.getContext('2d').getImageData(c.width / 2, 10, 1, 1).data; return [...d].slice(0, 3); });
+    const pixel = () => tv.$eval('#slides .sl-layer.on canvas.vw-content', (c) => { const d = c.getContext('2d').getImageData(c.width / 2, 10, 1, 1).data; return [...d].slice(0, 3); });
     const red = await pixel();
     assert.ok(red[0] > 200 && red[1] < 100, `page 1 is the red page (${red})`);
 
     // Next on the phone (pointerdown), then the TV keyboard
     await ph.evaluate(() => document.querySelector('[data-nav="1"]').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })));
     await ph.waitForFunction(() => /Slide 2/.test(document.querySelector('.pr-top')?.textContent || ''));
-    await tv.waitForFunction(() => { const c = document.querySelector('#slides .sl-layer.on canvas'); if (!c) return false; const d = c.getContext('2d').getImageData(c.width / 2, 10, 1, 1).data; return d[2] > 200 && d[0] < 100; }, null, { timeout: 15000 });
+    await tv.waitForFunction(() => { const c = document.querySelector('#slides .sl-layer.on canvas.vw-content'); if (!c) return false; const d = c.getContext('2d').getImageData(c.width / 2, 10, 1, 1).data; return d[2] > 200 && d[0] < 100; }, null, { timeout: 15000 });
     await tv.keyboard.press('PageDown');
     await ph.waitForFunction(() => /Slide 3/.test(document.querySelector('.pr-top')?.textContent || ''));
     await tv.keyboard.press('ArrowLeft');

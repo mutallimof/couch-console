@@ -20,3 +20,26 @@ export function makePdf(labels) {
   out += `trailer\n<< /Size ${objs.length + 1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
   return Buffer.from(out, 'latin1');
 }
+
+// Like makePdf, but each page has its own shape: sizes = [[width, height], ...] (in points), e.g. a very wide page and a tall one
+export function makePdfSized(sizes) {
+  const objs = [];
+  const add = (body) => { objs.push(body); return objs.length; };
+  const catalog = add('<< /Type /Catalog /Pages 2 0 R >>');
+  const pagesRef = add('PAGES');
+  const font = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const kids = [];
+  sizes.forEach(([w, h], i) => {
+    // a red page with a blue border strip on all four edges, so a cut-off edge is easy to see
+    const content = `0.9 0.3 0.3 rg 0 0 ${w} ${h} re f 0.1 0.2 0.9 rg 0 0 ${w} 20 re f 0 ${h - 20} ${w} 20 re f 0 0 20 ${h} re f ${w - 20} 0 20 ${h} re f 1 1 1 rg BT /F1 48 Tf 60 ${h / 2} Td (P${i + 1}) Tj ET`;
+    const c = add(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    kids.push(add(`<< /Type /Page /Parent ${pagesRef} 0 R /MediaBox [0 0 ${w} ${h}] /Contents ${c} 0 R /Resources << /Font << /F1 ${font} 0 R >> >> >>`));
+  });
+  objs[pagesRef - 1] = `<< /Type /Pages /Kids [${kids.map((k) => `${k} 0 R`).join(' ')}] /Count ${kids.length} >>`;
+  let out = '%PDF-1.4\n'; const offsets = [];
+  objs.forEach((body, i) => { offsets.push(out.length); out += `${i + 1} 0 obj\n${body}\nendobj\n`; });
+  const xref = out.length;
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}`;
+  out += `trailer\n<< /Size ${objs.length + 1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(out, 'latin1');
+}

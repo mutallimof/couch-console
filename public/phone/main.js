@@ -46,6 +46,7 @@ const party = createParty({
   socket,
   getRoom: () => room,
   getClientId: () => clientId,
+  getViewer: () => viewerState,
   onRoleRequest: (info) => {
     if (info.changedTo) return afterRoleChange(info.res); // changed from the "me" sheet
     join(); // from the welcome card
@@ -140,6 +141,7 @@ function join() {
     followTheme(res.theme);
     setLayout(res.layout, 'join'); // the layout the console wants right now (e.g. the kart pad mid-race)
     if (res.booth) booth.update(res.booth); // (the Photo Booth may already be running)
+    showViewerBar(res.viewer);
     party.onJoined(res);
     applyMode();
     if (!started && role === 'player') $('start').hidden = false;
@@ -276,6 +278,18 @@ const sendSteer = (steer) => {
 const haptics = createHaptics();
 const booth = createBoothPad({ root: $('booth-pad'), send: (cmd) => socket.emit(EV.BOOTH_CMD, cmd), onHome: () => emit(EV.INPUT_BUTTON, { button: 'HOME', state: 'down' }), haptics });
 socket.on(EV.BOOTH_STATE, (st) => booth.update(st));
+
+// The TV has a photo or slide open in the shared viewer: show the zoom keys (they act on the TV's viewer)
+let viewerState = { active: false };
+function showViewerBar(st) { viewerState = st || { active: false }; $('viewer-bar').hidden = !(joined && viewerState.active); }
+socket.on(EV.VIEWER_STATE, showViewerBar);
+$('viewer-bar').addEventListener('pointerdown', (e) => { // (pointerdown: quick repeated taps on + / - all count)
+  const b = e.target.closest('[data-vop]'); if (!b) return;
+  e.preventDefault();
+  const op = b.dataset.vop;
+  emit(EV.VIEWER_CMD, op === 'in' ? { op: 'zoom', f: 1.4 } : op === 'out' ? { op: 'zoom', f: 1 / 1.4 } : { op });
+  haptics?.play('tap');
+});
 const clock = createClock(socket, EV.PG_TIME);
 const partyPad = createPartyPad({ root: $('party-pad'), send: (m) => socket.emit(EV.PG_UP, m), clock, haptics, getPlayerId: () => myPlayerId, onHome: () => emit(EV.INPUT_BUTTON, { button: 'HOME', state: 'down' }) });
 socket.on(EV.PG_DOWN, (m) => { if (!m.to || m.to === myPlayerId) partyPad.update(m); });

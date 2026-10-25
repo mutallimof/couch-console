@@ -305,6 +305,23 @@ io.on('connection', (socket) => {
     io.to(remotesChannel(socket.data.room)).emit(EV.BOOTH_STATE, state);
   });
 
+  // The shared viewer (slides, photos, pictures): a phone zooms, pans, switches fit page / width or asks for full screen; the TV says what it shows.
+  const VIEWER_OPS = new Set(['zoom', 'pan', 'fit', 'reset', 'fs']);
+  const num = (v, lim) => (Number.isFinite(v) ? Math.max(-lim, Math.min(lim, v)) : 0);
+  socket.on(EV.VIEWER_CMD, (c) => {
+    if (socket.data.role !== 'remote') return;
+    const room = rooms.get(socket.data.room);
+    if (!room || !VIEWER_OPS.has(c?.op)) return;
+    io.to(room.consoleId).emit(EV.VIEWER_CMD, { op: c.op, f: num(c.f, 8), dx: num(c.dx, 2), dy: num(c.dy, 2) });
+  });
+  socket.on(EV.VIEWER_STATE, (s) => {
+    if (socket.data.role !== 'console') return;
+    const room = rooms.get(socket.data.room);
+    if (!room || !s || typeof s !== 'object') return;
+    room.viewer = s.active ? { active: true, zoom: num(s.zoom, 8) || 1, fit: s.fit === 'width' ? 'width' : 'page' } : null;
+    io.to(remotesChannel(socket.data.room)).emit(EV.VIEWER_STATE, room.viewer || { active: false });
+  });
+
   // Party Games: a small message bus. Phones send to the TV (stamped with who they are), the TV sends to one phone or to all.
   // The server keeps no game state. PG_TIME gives everyone the same clock, so "DRAW at T" lands at the same moment on every phone.
   socket.on(EV.PG_TIME, (_, ack) => { if (typeof ack === 'function') ack(Date.now()); });
@@ -364,7 +381,7 @@ io.on('connection', (socket) => {
     socket.join(remotesChannel(code));
     const color = colorOf(person);
     if (playerId) io.to(room.consoleId).emit(EV.PLAYER_JOINED, { playerId, color });
-    ack({ ok: true, role: playerId ? 'player' : 'guest', playerId: playerId || null, color, layout: room.layout, theme: room.theme, booth: room.booth || null,
+    ack({ ok: true, role: playerId ? 'player' : 'guest', playerId: playerId || null, color, layout: room.layout, theme: room.theme, booth: room.booth || null, viewer: room.viewer || null,
       person: { id: person.id, name: person.name, emoji: person.emoji, avatar: person.avatar }, full, ...roster(room) });
     broadcastRoster(room, code);
     console.log(`Room ${code}: ${playerId ? `P${playerId}` : `guest ${person.name}`} joined`);

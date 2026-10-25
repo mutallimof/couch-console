@@ -203,8 +203,7 @@ body.kart-mode .tabs, body.kart-mode .panes { display: none; }
 .ph-tick { position: absolute; right: 4px; top: 4px; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); border: 2px solid var(--player); color: var(--player); font-weight: 900; display: grid; place-items: center; }
 .ph.sel { outline: 4px solid var(--player); outline-offset: -4px; }
 .ph-viewer { position: fixed; inset: 0; z-index: 25; background: #000; display: flex; flex-direction: column; touch-action: none; }
-.ph-vstage { flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; touch-action: none; }
-.ph-vstage img { max-width: 100%; max-height: 100%; transform-origin: center; user-select: none; -webkit-user-drag: none; }
+.ph-vstage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; }
 .ph-vbar { position: absolute; top: env(safe-area-inset-top); left: 0; right: 0; display: flex; align-items: center; gap: 12px; padding: 12px; color: #fff; font-weight: 800; background: linear-gradient(#0009, transparent); }
 .ph-vbar button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.2); color: #fff; font-size: 20px; }
 .ph-vact { display: flex; gap: 8px; padding: 12px 12px calc(env(safe-area-inset-bottom) + 12px); background: #000; }
@@ -340,3 +339,9 @@ body.kart-mode .tabs, body.kart-mode .panes { display: none; }
 .pg-egg::before { content: ""; position: absolute; left: 0; right: 0; bottom: 1.2rem; height: 1.2rem; border-radius: var(--r-pill); background: var(--c-surface-3); transform: rotate(calc(var(--tilt) * 14deg)); }
 .pg-egg i { position: absolute; left: 50%; bottom: 2.2rem; width: 4.5rem; height: 5.8rem; margin-left: -2.25rem; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: #FFF4E0; box-shadow: inset -0.5rem -0.6rem 0 rgba(0, 0, 0, 0.08), var(--sh-1); transform: translateX(calc(var(--tilt) * 2rem)) rotate(calc(var(--tilt) * 24deg)); transition: transform 80ms linear; }
 .pg-egg.dropped i { background: #F2C94C; border-radius: 50% 50% 50% 50% / 25% 25% 75% 75%; height: 2.6rem; width: 5.5rem; margin-left: -2.75rem; bottom: 0.4rem; transform: none; }
+
+/* Zoom keys for the TV's viewer (photo or slide open on the TV) */
+.viewer-bar { flex: none; align-self: center; display: flex; gap: var(--sp-2); padding: var(--sp-1) var(--sp-2); margin-bottom: var(--sp-2); border-radius: var(--r-pill); background: var(--c-surface); box-shadow: var(--sh-1); }
+.viewer-bar[hidden] { display: none; }
+.viewer-bar button { width: 2.5rem; height: 2.5rem; border: 0; border-radius: 50%; background: var(--c-surface-3); color: var(--c-text); font: 700 1.25rem var(--display); touch-action: manipulation; }
+.viewer-bar button:active { transform: scale(0.92); }

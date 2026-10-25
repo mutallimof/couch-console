@@ -1,6 +1,8 @@
 // Photos tab on the phone (Phase 44): add photos (made smaller and stripped of location data before they leave
 // the phone), watch the upload queue, browse the shared album live, and save photos to the phone.
 import { EV } from '../shared/protocol.js';
+import { createViewer } from '../shared/viewer.js';
+import { smartCover } from '../shared/smart-crop.js';
 
 const MAX_SIDE = 3000, THUMB_SIDE = 480, CONCURRENT = 2;
 const ERRORS = {
@@ -164,11 +166,12 @@ function renderGrid() {
   ui.empty.textContent = filter === 'mine' ? 'You have not added any photos yet.' : 'No photos yet. Add the first one!';
   ui.grid.innerHTML = list.map((p, i) => `
     <button class="ph ${selected.has(p.id) ? 'sel' : ''}" type="button" data-i="${i}" aria-label="Photo by ${ctx.esc(p.byName)}">
-      ${p.noPreview ? '<span class="ph-none">📷<br>No preview</span>' : `<img src="${previews.get(p.id) || url(p, 'thumb')}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph-none',textContent:'⏳ waiting'}))">`}
+      ${p.noPreview ? '<span class="ph-none">📷<br>No preview</span>' : `<img src="${previews.get(p.id) || url(p, 'thumb')}" alt="" loading="lazy" data-smart onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph-none',textContent:'⏳ waiting'}))">`}
       <span class="ph-by" style="background:${p.byColor}">${ctx.esc(p.byEmoji)}</span>
       ${p.pending ? '<span class="ph-wait">Waiting for OK</span>' : ''}
       ${selecting ? `<span class="ph-tick">${selected.has(p.id) ? '✓' : ''}</span>` : ''}
     </button>`).join('');
+  smartCover(ui.grid, { faces: false }); // (portraits keep their heads; the phone skips face finding to save battery)
   ui.saveSel.hidden = !selecting;
   ui.saveSel.disabled = !selected.size;
   ui.saveSel.textContent = selected.size ? `Save ${selected.size} selected` : 'Tick photos to save';
@@ -220,62 +223,38 @@ async function downloadZip() {
   document.body.append(a); a.click(); a.remove();
 }
 
-// ---------- Full-screen viewer (swipe, pinch to zoom) ----------
+// ---------- Full-screen viewer: the shared viewer (fit, pinch, drag, + / - buttons, full screen), swipe to change photo ----------
 
-let zoom = { s: 1, x: 0, y: 0 }, pointers = new Map(), swipeStart = null, pinchStart = null;
+let pv = null, swipeStart = null;
 function openViewer(i) {
   viewerIndex = i;
-  renderViewer();
+  pv ??= createViewer(ui.vstage, { touch: true, controls: true });
   ui.viewer.hidden = false;
+  renderViewer();
 }
-function closeViewer() { viewerIndex = -1; ui.viewer.hidden = true; ui.vimg.removeAttribute('src'); }
+function closeViewer() { viewerIndex = -1; ui.viewer.hidden = true; if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); }
 function renderViewer() {
   const p = shown()[viewerIndex];
   if (!p) return closeViewer();
-  zoom = { s: 1, x: 0, y: 0 }; applyZoom();
-  ui.vimg.src = p.noPreview ? '' : url(p, 'full');
-  ui.vimg.alt = `Photo by ${p.byName}`;
+  const img = new Image();
+  img.alt = `Photo by ${p.byName}`;
+  if (!p.noPreview) img.src = url(p, 'full');
+  pv.setContent(img, 1600, 1067); // (until the file arrives)
+  img.decode().catch(() => {}).then(() => { if (img.naturalWidth && pv.root.contains(img)) pv.setContent(img, img.naturalWidth, img.naturalHeight); });
   ui.vcap.innerHTML = `${ctx.esc(p.byEmoji)} ${ctx.esc(p.byName)} · ${viewerIndex + 1}/${shown().length}`;
   ui.vdel.hidden = !mine(p);
   ui.vsave.disabled = false;
 }
-const applyZoom = () => { ui.vimg.style.transform = `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.s})`; };
 function step(d) { const n = shown().length; if (n) { viewerIndex = (viewerIndex + d + n) % n; renderViewer(); } }
 
 function viewerPointers() {
   const stage = ui.vstage;
-  stage.addEventListener('pointerdown', (e) => {
-    stage.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.size === 1) swipeStart = { x: e.clientX, y: e.clientY, t: Date.now(), zx: zoom.x, zy: zoom.y };
-    if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinchStart = { d: Math.hypot(a.x - b.x, a.y - b.y), s: zoom.s }; swipeStart = null; }
+  stage.addEventListener('pointerdown', (e) => { swipeStart = e.isPrimary ? { x: e.clientX, y: e.clientY } : null; });
+  stage.addEventListener('pointerup', (e) => {
+    if (!swipeStart || !pv || pv.zoomed) { swipeStart = null; return; }
+    const dx = e.clientX - swipeStart.x, dy = e.clientY - swipeStart.y; swipeStart = null;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
   });
-  stage.addEventListener('pointermove', (e) => {
-    if (!pointers.has(e.pointerId)) return;
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.size === 2 && pinchStart) {
-      const [a, b] = [...pointers.values()];
-      zoom.s = Math.min(5, Math.max(1, pinchStart.s * (Math.hypot(a.x - b.x, a.y - b.y) / pinchStart.d)));
-      applyZoom();
-    } else if (pointers.size === 1 && swipeStart && zoom.s > 1.05) { // zoomed in: dragging moves the picture
-      zoom.x = swipeStart.zx + (e.clientX - swipeStart.x); zoom.y = swipeStart.zy + (e.clientY - swipeStart.y);
-      applyZoom();
-    }
-  });
-  const end = (e) => {
-    if (!pointers.has(e.pointerId)) return;
-    const was = pointers.get(e.pointerId);
-    pointers.delete(e.pointerId);
-    if (swipeStart && zoom.s <= 1.05 && pointers.size === 0) {
-      const dx = was.x - swipeStart.x, dy = was.y - swipeStart.y;
-      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
-    }
-    if (pointers.size < 2) pinchStart = null;
-    if (!pointers.size) swipeStart = null;
-    if (zoom.s <= 1.05) { zoom = { s: 1, x: 0, y: 0 }; applyZoom(); }
-  };
-  stage.addEventListener('pointerup', end);
-  stage.addEventListener('pointercancel', end);
 }
 
 // ---------- The tab ----------
@@ -298,13 +277,13 @@ export function mount(root, context) {
     <div id="ph-grid" class="ph-grid"></div>
     <button id="ph-zip" class="join-btn ghost" type="button">⬇ Download all photos (ZIP)</button>
     <div id="ph-viewer" class="ph-viewer" hidden>
-      <div id="ph-vstage" class="ph-vstage"><img id="ph-vimg" alt=""></div>
+      <div id="ph-vstage" class="ph-vstage"></div>
       <div class="ph-vbar"><button id="ph-vclose" type="button" aria-label="Close">✕</button><span id="ph-vcap"></span></div>
       <div class="ph-vact"><button id="ph-vprev" type="button" aria-label="Previous">◀</button><button id="ph-vsave" type="button">⬇ Save</button><button id="ph-vdel" type="button">🗑 Delete</button><button id="ph-vnext" type="button" aria-label="Next">▶</button></div>
     </div>`;
   const $ = (id) => el.querySelector(`#${id}`);
   ui = { file: $('ph-file'), queue: $('ph-queue'), keep: $('ph-keep'), error: $('ph-error'), grid: $('ph-grid'), count: $('ph-count'), empty: $('ph-empty'),
-    select: $('ph-select'), saveSel: $('ph-save-sel'), viewer: $('ph-viewer'), vimg: $('ph-vimg'), vcap: $('ph-vcap'), vstage: $('ph-vstage'), vdel: $('ph-vdel'), vsave: $('ph-vsave') };
+    select: $('ph-select'), saveSel: $('ph-save-sel'), viewer: $('ph-viewer'), vcap: $('ph-vcap'), vstage: $('ph-vstage'), vdel: $('ph-vdel'), vsave: $('ph-vsave') };
 
   ui.file.addEventListener('change', () => { enqueue([...ui.file.files]); ui.file.value = ''; });
   ui.queue.addEventListener('click', (e) => {
