@@ -9,12 +9,15 @@ let THREE;
 export function setThree(t) { THREE = t; }
 
 const CAR_SCALE = 3.2;      // Toy Car Kit cars are tiny; this makes them kart-sized (~2.8 m long)
-const DRIVER_HEIGHT = 1.45;  // drivers are scaled to this height (m) to fit the cars
-// A character's glTF file: its own `path` (the Quaternius pack)
+const DRIVER_HEIGHT = 1.6;  // drivers are scaled to this standing height (m) to fit the cars
+// A character's glTF file: its own `path` (the KayKit cast, public/assets/cast/)
 const modelPath = (c) => c.path;
-// The clips of the Quaternius characters are called Idle, Victory, RecieveHit...; the game asks for Wave, Yes, HitReact: the same moments, mapped
-const MODEL_HEIGHT = 1.8; // how tall the Quaternius characters are in their own units (measured in the browser)
-const ANIM_ALIASES = { Wave: 'Victory', Yes: 'Victory', HitReact: 'RecieveHit' };
+// The cast's clips are idle, sit, cheer, defeat, hit, wave. The game asks for older names: the same moments, mapped
+const ANIM_ALIASES = { Wave: 'wave', Yes: 'cheer', Cheer: 'cheer', Defeat: 'defeat', HitReact: 'hit', Idle: 'idle', Sit: 'sit' };
+const heightOf = (gltf) => { // how tall a loaded character is in its own units (measured once)
+  if (!gltf.userData.height) { gltf.scene.updateMatrixWorld(true); gltf.userData.height = new THREE.Box3().setFromObject(gltf.scene, true).getSize(new THREE.Vector3()).y || 2; }
+  return gltf.userData.height;
+};
 
 const std = (color, rough = 0.55, metal = 0, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
 const mesh = (geo, mat, x = 0, y = 0, z = 0, cast = true) => {
@@ -155,51 +158,59 @@ function assetKart(gltf, kart) {
 }
 
 // An animated driver, or null if the model isn't loaded
-// opts.skin: repaint the "Skin" material (the pack's is almost black) · opts.sit: hold the seated pose
-function assetDriver(gltf, { skin, sit = false } = {}) {
+// opts.sit: sit in the kart (the "sit" loop) instead of standing (the "idle" loop)
+function assetDriver(gltf, { sit = false } = {}) {
   const c = cloneOf(gltf);
   if (!c) return null;
   const obj = c.object;
-  // Own copies of the materials (clones share them), so a repaint never leaks to another racer
+  // Own copies of the materials (clones share them), so nothing leaks to another racer; a little less shiny
   obj.traverse((o) => {
     if (!o.isMesh) return;
     o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone();
-    for (const m of [].concat(o.material)) {
-      if (skin && m.name === 'Skin') m.color.set(skin);
-      m.roughness = Math.min(m.roughness, 0.6);
-    }
+    for (const m of [].concat(o.material)) { m.roughness = Math.max(m.roughness ?? 0.6, 0.55); m.metalness = 0; }
   });
-  obj.scale.setScalar(DRIVER_HEIGHT / MODEL_HEIGHT);
+  const unit = DRIVER_HEIGHT / heightOf(gltf);
+  obj.scale.setScalar(unit);
   const mixer = new THREE.AnimationMixer(obj);
   const actions = Object.fromEntries(c.animations.map((a) => [a.name, mixer.clipAction(a)]));
   for (const [alias, real] of Object.entries(ANIM_ALIASES)) if (!actions[alias] && actions[real]) actions[alias] = actions[real];
-  // Seated: the last frame of SitDown, held (the pack has no sitting loop)
-  const rest = sit && actions.SitDown ? 'SitDown' : 'Idle';
-  const hold = (a) => { a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.play(); a.time = a.getClip().duration; };
-  let current = actions[rest];
-  if (rest === 'SitDown') { hold(current); mixer.update(0); } else { current?.play(); mixer.update(Math.random() * 2); } // (don't all bob in sync)
-  // Switch to another animation (smoothly). One-shot animations go back to Idle when done.
-  const play = (name, loop = false) => {
+  const rest = actions[sit ? 'sit' : 'idle'];
+  rest?.play();
+  mixer.update(Math.random() * 2); // (don't all bob in sync)
+  let current = rest, holding = false;
+  // Switch to another animation (smoothly). One-shot animations go back to the rest loop when done; hold = stay in the last frame (defeat)
+  const play = (name, loop = false, hold = false) => {
     const next = actions[name];
-    if (!next || next === current) return;
-    current?.fadeOut(0.15);
-    if (next === actions[rest] && rest === 'SitDown') { hold(next); next.fadeIn(0.15); } else {
-      next.reset();
-      next.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
-      next.clampWhenFinished = !loop;
-      next.fadeIn(0.15).play();
-    }
-    current = next;
+    if (!next || (next === current && !hold)) return;
+    current?.fadeOut(0.18);
+    next.reset();
+    next.setLoop(loop || next === rest ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+    next.clampWhenFinished = !loop;
+    next.fadeIn(0.18).play();
+    current = next; holding = hold;
   };
-  mixer.addEventListener('finished', (e) => { if (e.action === current && current !== actions[rest]) play(rest, true); });
-  return { object: obj, mixer, actions, play };
+  mixer.addEventListener('finished', (e) => { if (e.action === current && !holding && current !== rest) play(sit ? 'sit' : 'idle', true); });
+  // Steering lean (applied after the mixer, every frame): the body leans into the turn and the arms reach for the wheel
+  const bone = (n) => obj.getObjectByName(n);
+  const bones = { chest: bone('chest'), head: bone('head'), armL: bone('upperarm.l'), armR: bone('upperarm.r'), foreL: bone('lowerarm.l'), foreR: bone('lowerarm.r') };
+  const lean = (steer = 0, speed = 0) => {
+    if (!sit) return;
+    if (bones.chest) { bones.chest.rotation.z += -steer * 0.16; bones.chest.rotation.y += -steer * 0.1; }
+    if (bones.head) { bones.head.rotation.y += -steer * 0.35; bones.head.rotation.x += -Math.min(1, speed / 40) * 0.06; }
+    if (bones.armL) { bones.armL.rotation.x += HOLD_ARM[0]; bones.armL.rotation.z += steer * 0.12; }
+    if (bones.armR) { bones.armR.rotation.x += HOLD_ARM[0]; bones.armR.rotation.z += steer * 0.12; }
+    if (bones.foreL) bones.foreL.rotation.x += HOLD_ARM[1];
+    if (bones.foreR) bones.foreR.rotation.x += HOLD_ARM[1];
+  };
+  return { object: obj, mixer, actions, play, lean, unit };
 }
+const HOLD_ARM = [-0.9, -0.5]; // radians added to the upper and lower arm so the hands reach the wheel
 
 // A character standing on its own (select-screen showroom): a character with its animations,
 // or a code-built animal. Returns { object, anim } (anim = null for the animals).
 export function makeStandingCharacter(character, assets) {
   const gltf = assets?.get(modelPath(character));
-  const anim = gltf ? assetDriver(gltf, { skin: character.skin }) : null;
+  const anim = gltf ? assetDriver(gltf) : null;
   return { object: anim ? anim.object : makeCharacter(character), anim };
 }
 
@@ -208,7 +219,7 @@ export function makeRacer(character, kart, color, assets) {
   const carModel = kart.model && assets?.get(CAR(kart.model));
   const k = carModel ? assetKart(carModel, kart) : makeKart(kart, color);
   const gltf = assets?.get(modelPath(character));
-  const anim = gltf ? assetDriver(gltf, { skin: character.skin, sit: true }) : null;
+  const anim = gltf ? assetDriver(gltf, { sit: true }) : null;
   const driver = anim ? anim.object : makeCharacter(character);
   driver.position.set(0, k.seatY, k.seatZ);
   if (!anim) driver.scale.setScalar(carModel ? 0.85 : 0.95);
@@ -349,7 +360,7 @@ export function makePortraits(renderer, characters, assets) {
   const out = {};
   for (const c of characters) {
     const gltf = assets?.get(modelPath(c));
-    const anim = gltf ? assetDriver(gltf, { skin: c.skin }) : null;
+    const anim = gltf ? assetDriver(gltf) : null;
     const ch = anim ? anim.object : makeCharacter(c);
     if (anim) {
       // frame the character's head: find its top in the idle pose

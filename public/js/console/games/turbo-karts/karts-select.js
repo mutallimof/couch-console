@@ -6,9 +6,11 @@
 import { KARTS } from './karts-data.js';
 import { GP_CHARACTERS } from './ow-kart/characters.js';
 import { TRACKS } from './kart-track.js';
+import { createTrackModel } from './ow-kart/track-model.js';
+import { worldOf } from './karts-themes.js';
 
 const STATS = [['speed', 'Speed'], ['accel', 'Acceleration'], ['handling', 'Handling'], ['weight', 'Weight']];
-const HINTS = { char: 'D-pad: character · A = pick', kart: '◀ ▶ kart · A = ready · B = back', ready: 'Ready! · B = change' };
+const HINTS = { char: 'D-pad: choose a racer · A = pick', kart: '◀ ▶ choose a kart · A = ready · B = back', ready: 'Ready! · B = change' };
 
 // onCelebrate(playerId, 'pick' | 'ready'): a character was picked / a player is ready
 export function createSelect({ root, players, portraits, previous, sound, onDone, onExit, onCelebrate = () => {}, tracks = TRACKS, characters: CHARACTERS = GP_CHARACTERS }) {
@@ -26,15 +28,19 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
   root.append(el);
 
   function buildPick() {
-    el.innerHTML = `<h1>Choose your racer</h1><div class="ks-seats">${seats.map((s) => `
+    const taken = new Set(seats.filter((s) => s.step !== 'char').map((s) => s.char));
+    el.innerHTML = `<h1 class="ks-title">Choose your racer</h1><div class="ks-seats n${seats.length}">${seats.map((s) => `
       <section class="ks-seat" data-player="${s.playerId}" style="--c:${s.color}">
-        <header class="ks-top"><span class="ks-tag">P${s.playerId}</span><b class="ks-name"></b><span class="ks-kart-name"></span></header>
+        <header class="ks-top"><span class="ks-tag">P${s.playerId}</span><div class="ks-who"><b class="ks-name"></b><small class="ks-tagline"></small></div><span class="ks-kart-name"></span></header>
         <div class="ks-stage"></div>
-        <div class="ks-chars">${CHARACTERS.map((ch) => `<img src="${portraits[ch.id]}" alt="${ch.name}">`).join('')}</div>
-        <div class="ks-karts">${KARTS.map((kk) => `<div class="ks-kart"><b>${kk.name}</b></div>`).join('')}</div>
-        <div class="ks-stats">${STATS.map(([, label]) => `<span>${label}</span><div class="ks-bar"><i></i></div>`).join('')}</div>
+        <div class="ks-choices">
+          <div class="ks-chars">${CHARACTERS.map((ch, i) => `<figure title="${ch.name}"><img src="${portraits[ch.id]}" alt="${ch.name}"></figure>`).join('')}</div>
+          <div class="ks-karts">${KARTS.map((kk) => `<div class="ks-kart">${kk.name}</div>`).join('')}</div>
+          <div class="ks-stats">${STATS.map(([, label]) => `<span>${label}</span><div class="ks-bar"><i></i></div>`).join('')}</div>
+        </div>
         <p class="ks-hint"></p>
       </section>`).join('')}</div>`;
+    void taken;
     update();
   }
 
@@ -45,8 +51,10 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
       const c = CHARACTERS[s.char], k = KARTS[s.kart];
       p.className = `ks-seat is-${s.step}`; // (prefixed: a bare "kart" class would clash with the game screen's .kart)
       p.querySelector('.ks-name').textContent = c.name;
-      p.querySelector('.ks-kart-name').textContent = k.name;
-      p.querySelectorAll('.ks-chars img').forEach((img, i) => img.classList.toggle('focused', i === s.char));
+      p.querySelector('.ks-tagline').textContent = c.tag || '';
+      p.querySelector('.ks-kart-name').textContent = `${k.name} kart`;
+      p.style.setProperty('--char', c.color);
+      p.querySelectorAll('.ks-chars figure').forEach((fig, i) => fig.classList.toggle('focused', i === s.char));
       p.querySelectorAll('.ks-kart').forEach((d, i) => d.classList.toggle('focused', i === s.kart));
       p.querySelector('.ks-chars').classList.toggle('active', s.step === 'char');
       p.querySelector('.ks-karts').classList.toggle('active', s.step === 'kart');
@@ -56,10 +64,10 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
   }
 
   function buildTrack() {
-    el.innerHTML = `<h1>Choose a track</h1><div class="ks-tracks">${tracks.map((t, i) => `
-      <div class="ks-track ${i === track ? 'focused' : ''}" style="--a:${t.sky[0]};--b:${t.ground}">
-        <b>${t.name}</b><span>${t.blurb}</span></div>`).join('')}</div>
-      <p class="ks-hint">P${seats[0].playerId}: ◀ ▶ choose · A = race! · B = back</p>`;
+    el.innerHTML = `<h1 class="ks-title">Choose a track</h1><div class="ks-tracks">${tracks.map((t, i) => `
+      <div class="ks-track ${i === track ? 'focused' : ''}"><canvas width="520" height="300"></canvas><div class="ks-info"><b>${t.name}</b><span>${t.blurb}</span></div></div>`).join('')}</div>
+      <p class="ks-hint">P${seats[0].playerId}: ◀ ▶ ▲ ▼ choose · A = race! · B = back</p>`;
+    el.querySelectorAll('.ks-track canvas').forEach((c, i) => drawTrackCard(c, tracks[i]));
   }
 
   function onButton({ playerId, button, state }) {
@@ -67,8 +75,9 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
     if (stage === 'track') {
       if (playerId !== seats[0].playerId) return;
       const n = tracks.length;
-      if (button === 'LEFT' || button === 'UP') { track = (track + n - 1) % n; sound.play('hover'); }
-      else if (button === 'RIGHT' || button === 'DOWN') { track = (track + 1) % n; sound.play('hover'); }
+      if (button === 'LEFT') { track = (track + n - 1) % n; sound.play('hover'); }
+      else if (button === 'RIGHT') { track = (track + 1) % n; sound.play('hover'); }
+      else if (button === 'UP' || button === 'DOWN') { track = (track + (button === 'DOWN' ? 4 : n - 4)) % n; sound.play('hover'); }
       else if (button === 'A') { sound.play('start'); return finish(); }
       else if (button === 'B') { stage = 'pick'; seats.forEach((s) => { s.step = 'kart'; }); sound.play('back'); return buildPick(); }
       el.querySelectorAll('.ks-track').forEach((t, i) => t.classList.toggle('focused', i === track));
@@ -107,4 +116,27 @@ export function createSelect({ root, players, portraits, previous, sound, onDone
     seats: () => seats.map((s) => ({ ...s, character: CHARACTERS[s.char], kartDef: KARTS[s.kart],
       stage: stage === 'pick' ? el.querySelector(`.ks-seat[data-player="${s.playerId}"] .ks-stage`) : null })),
   };
+}
+
+// A track's card picture: its sky and ground colors, a little sun, and the road drawn from above
+const outlines = new Map();
+function drawTrackCard(canvas, def) {
+  const W = canvas.width, H = canvas.height, x = canvas.getContext('2d'), w = worldOf(def).sky;
+  const sky = x.createLinearGradient(0, 0, 0, H * 0.55);
+  sky.addColorStop(0, w.zenith); sky.addColorStop(1, w.horizon);
+  x.fillStyle = sky; x.fillRect(0, 0, W, H);
+  const ground = x.createLinearGradient(0, H * 0.4, 0, H);
+  ground.addColorStop(0, def.ground); ground.addColorStop(1, def.night ? '#0E1230' : '#FFFFFF33');
+  x.fillStyle = def.night ? '#161A34' : def.ground; x.fillRect(0, H * 0.42, W, H);
+  x.fillStyle = ground; x.globalAlpha = 0.5; x.fillRect(0, H * 0.42, W, H); x.globalAlpha = 1;
+  if (!outlines.has(def.id)) outlines.set(def.id, createTrackModel(def).samples.filter((_, i) => i % 6 === 0).map((p) => [p.x, p.z]));
+  const pts = outlines.get(def.id), xs = pts.map((p) => p[0]), zs = pts.map((p) => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minZ = Math.min(...zs), maxZ = Math.max(...zs);
+  const k = Math.min((W * 0.78) / (maxX - minX), (H * 0.72) / (maxZ - minZ)), ox = (W - (maxX - minX) * k) / 2 - minX * k, oz = (H * 0.5 - (maxZ - minZ) * k / 2) + H * 0.1 - minZ * k;
+  const trace = () => { x.beginPath(); pts.forEach(([px, pz], i) => (i ? x.lineTo(px * k + ox, pz * k + oz) : x.moveTo(px * k + ox, pz * k + oz))); x.closePath(); x.stroke(); };
+  x.lineJoin = 'round'; x.lineCap = 'round';
+  x.strokeStyle = 'rgba(10,14,30,0.55)'; x.lineWidth = 17; trace();
+  x.strokeStyle = def.curb?.[0] || '#fff'; x.lineWidth = 13; trace();
+  x.strokeStyle = def.road; x.lineWidth = 9; trace();
+  x.fillStyle = '#fff'; x.fillRect(pts[0][0] * k + ox - 8, pts[0][1] * k + oz - 3, 16, 6); // the start line
 }

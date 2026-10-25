@@ -94,3 +94,9 @@ HDRIs: kloofendal_48d_partly_cloudy, snowy_field, cloud_layers, solitude_night, 
 
 ## Libraries added in Phase 55 (npm, served from node_modules under /vendor)
 gsap (GreenSock Standard License, free for this use), howler (MIT), lottie-web (MIT), pixi.js and pixi-filters (MIT), postprocessing (Zlib), three.quarks (MIT).
+
+## KayKit character packs (CC0)
+The eight racers are KayKit "Adventurers Character Pack 1.0" (Knight, Barbarian, Mage, Rogue, Rogue Hooded) and "Skeletons Character Pack 1.0" (Skeleton Warrior, Skeleton Mage, Skeleton Rogue) by Kay Lousberg, https://kaylousberg.com, CC0. Sources: https://github.com/KayKit-Game-Assets. We only ship the optimized files in `public/assets/cast/` (held weapons removed, only the clips we play kept, made by `scripts/build-cast.mjs`); the pack's license text is in `public/assets/cast/LICENSE.txt`. The names and colors of the racers are ours.
+
+## Developer tools (npm devDependencies, not shipped to players)
+playwright (Apache-2.0: headless screenshots and the end-to-end tests), @gltf-transform/core, /functions and /extensions (MIT) and meshoptimizer (MIT): used by `scripts/build-cast.mjs` to optimize the character models. lil-gui (MIT) comes inside three (`three/addons/libs/lil-gui.module.min.js`) and powers the F4 tuning panel.

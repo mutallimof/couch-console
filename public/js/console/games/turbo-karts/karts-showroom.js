@@ -39,6 +39,8 @@ export function createShowroom(assets) {
 
   return {
     scene, camera,
+    // Tall, narrow preview boxes need the camera further back to keep the kart in the picture
+    fit(aspect) { camera.aspect = aspect; camera.position.z = 10.2 * Math.min(2.4, Math.max(1, 0.85 / aspect)); camera.lookAt(0, 1.45, 0); camera.updateProjectionMatrix(); },
     // Show this character in this kart (rebuilt only when they change)
     set(character, kart, color) {
       const k = `${character.id}/${kart.id}/${color}`;

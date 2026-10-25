@@ -28,7 +28,8 @@ import { createShowroom, setShowroomThree } from './turbo-karts/karts-showroom.j
 import { kartInput } from './turbo-karts/ow-kart/input.js';
 import { createRaceFx, makeExhaust, updateExhaust, TIER_COLORS } from './turbo-karts/karts-fx.js';
 import { createQuarks } from './turbo-karts/karts-quarks.js';
-import { podiumHtml, playPodium } from '../results.js';
+import { confetti } from '../results.js';
+import { createPodium } from './turbo-karts/karts-podium.js';
 import { CAR, loadAll } from './turbo-karts/karts-assets.js';
 import { THEME_MODELS } from './turbo-karts/karts-decor.js';
 import { Race, ITEMS, ordinal, formatTime } from './turbo-karts/ow-kart/rules.js';
@@ -58,7 +59,7 @@ let objectMeshes = new Map(); // item projectiles/slicks on the road: race objec
 let boxMeshes = [], coinMeshes = [];
 let stopGraphics = null;
 let state, shown, overAt, paused = false, alive = 0, lastCount = 0;
-let portraits, select, selection, look, fx, qfx, skids; // qfx: the three.quarks particles (null if the library can't load)
+let portraits, select, selection, look, fx, qfx, skids, podium = null; // qfx: the three.quarks particles (null if the library can't load)
 const showrooms = new Map(); // playerId -> 3D preview on the select screen (karts-showroom.js)
 const assets = new Map();    // loaded 3D models: path -> glTF (missing = use the code-built ones)
 const input = new Map();     // playerId -> { steer, gas, brake, left, right, drift, item }
@@ -91,6 +92,7 @@ function showSelect() {
 // ---------- Race setup ----------
 
 function clearRace() {
+  podium?.dispose(); podium = null;
   for (const v of views) { scene.remove(v.mesh.root, v.mesh.shadow); if (v.mesh.q) qfx?.detach(v.mesh.q); }
   for (const m of objectMeshes.values()) scene.remove(m);
   objectMeshes.clear();
@@ -259,7 +261,7 @@ function onRaceEvent(e) {
     case 'itemReady': break;
     case 'finalLap': v.finalLapAt = race.raceTime; sfx('start'); break;
     case 'finish':
-      v.mesh.anim?.play(race.position(v.racer) <= 3 ? 'Wave' : 'Yes', true);
+      v.mesh.anim?.play(race.position(v.racer) <= 3 ? 'cheer' : 'wave');
       sfx(race.position(v.racer) === 1 ? 'strike' : 'end'); rumble(250);
       if (mine && qfx) qfx.confetti(v.racer.x, v.racer.y + 1.2, v.racer.z); // confetti where a human crosses the line
       break;
@@ -304,6 +306,7 @@ function syncMeshes(t, dt) {
   for (const [vi, v] of views.entries()) {
     const r = v.racer, m = v.mesh, B = TUNE.body;
     if (!paused) m.anim?.mixer.update(dt);
+    m.anim?.lean(r.steer, r.speed);
     m.root.position.set(r.x, r.y, r.z);
     // a hit makes a kart spin; otherwise it faces along the road, turned into a drift. The slide angle and the body roll
     // follow springs, so the kart overshoots a little and settles (instead of snapping).
@@ -336,7 +339,7 @@ function syncMeshes(t, dt) {
     m.glider.scale.set(m.glider.userData.open, 1, 0.4 + 0.6 * m.glider.userData.open);
     m.wheels.forEach((w) => { w.rotation.x += (m.flipWheels ? -1 : 1) * r.speed * 0.016; });
     m.marker.position.y = 3.1 + Math.sin(t * 0.005) * 0.15;
-    m.driver.rotation.y = -r.steer * 0.3;
+    m.driver.rotation.y = -r.steer * 0.08;
     // Drift sparks from the rear wheels (blue → orange → purple) and the boost flame (karts-fx.js)
     if (!paused) {
       Object.assign(v.fxKart, { x: r.x, y: r.y, z: r.z, heading: yawOf(r.heading), drifting: !!r.drift, air: r.gliding, v: r.speed });
@@ -404,6 +407,8 @@ function moveCamera(h, dt) {
   h.camera.position.copy(h.cam.eye);
   h.camera.up.copy(h.cam.up);
   h.camera.lookAt(h.cam.aim);
+  const free = window.__kart?.freeCam?.(r);
+  if (free) { h.camera.position.set(...free.eye); h.camera.lookAt(...free.aim); }
   // shake: "trauma" decays; the shake grows with its square (small bumps stay subtle)
   cs.t += dt;
   if (boostK > 0) shakeAt(h, C.shakeBoost * boostK);
@@ -483,8 +488,7 @@ function renderShowrooms() {
     if (resized) gl.setSize(w, h, false);
     // The previews turn slowly, so every second frame is enough (half the work); the canvas keeps the last picture
     if (!resized && previewFrame % 2) continue;
-    room.camera.aspect = w / h;
-    room.camera.updateProjectionMatrix();
+    room.fit(w / h);
     gl.render(room.scene, room.camera);
   }
 }
@@ -581,14 +585,17 @@ function showResults() {
     <td>${v.kart.name}</td><td>${formatTime(v.racer.finishTime)}</td>${api.mode === 'coop' ? `<td>${POINTS[i]} pts</td>` : ''}</tr>`).join('');
   const el = document.createElement('div');
   el.className = 'kart-results';
-  const podium = podiumHtml(order.slice(0, 3).map((v) => ({
-    face: v.playerId && party.personOfPlayer(v.playerId)?.avatar ? avatarSvg(party.personOfPlayer(v.playerId).avatar, 84) : `<img src="${portraits[v.char.id]}" alt="">`,
-    name: v.playerId ? `P${v.playerId} ${party.personOfPlayer(v.playerId)?.name || ''}`.trim() : v.char.name, sub: formatTime(v.racer.finishTime), color: v.playerId ? v.color : '#8E99B3',
-  })));
-  el.innerHTML = `<div class="kart-card"><h1 style="background:${color}">${banner}</h1>${podium}<table>${rows}</table>
+  const top3 = order.slice(0, 3);
+  const names = top3.map((v) => ({ name: v.playerId ? `P${v.playerId} ${party.personOfPlayer(v.playerId)?.name || ''}`.trim() : v.char.name, sub: formatTime(v.racer.finishTime), color: v.playerId ? v.color : v.char.color }));
+  const stage = [1, 0, 2].filter((i) => names[i]).map((i) => `<div class="kp-name" style="--c:${names[i].color}"><b>${names[i].name}</b><small>${names[i].sub}</small></div>`).join('');
+  el.innerHTML = `<div class="kart-card"><h1 style="background:${color}">${banner}</h1><div class="kart-podium"><div class="kp-stage"></div><div class="kp-names">${stage}</div></div><table>${rows}</table>
     <p>A = race again · B = change racers/track · HOME = menu</p></div>`;
   root.append(el);
-  playPodium(el.querySelector('.kart-card')); // the podium rises and confetti falls (GSAP)
+  podium?.dispose();
+  podium = createPodium(THREE, assets, top3.map((v) => ({ character: v.char, color: v.playerId ? v.color : v.char.color })));
+  el.querySelector('.kp-stage').append(podium.canvas);
+  podium.names = [...el.querySelectorAll('.kp-name')];
+  setTimeout(() => { if (el.isConnected) confetti(el); }, 1400); // confetti falls over the card (GSAP)
 }
 
 // The color of kicked-up dust for a track (grass, sand, snow...), for three.quarks
@@ -610,6 +617,7 @@ function personFace(playerId) {
 function loop(t) {
   const dt = Math.min(0.05, (t - (lastT ?? t)) / 1000);
   lastT = t;
+  podium?.update(dt);
   if (!paused) { update(dt); fx?.update(dt); qfx?.update(dt); skids?.update(performance.now() / 1000, TUNE.effects.skidOpacity); }
   if (state === 'select') showrooms.forEach((room) => room.update(dt));
   if (race && views.length) {
@@ -710,6 +718,8 @@ async function init(token) {
     window.__kart = {
       get race() { return race; }, get views() { return views; }, get humans() { return humans; }, get track() { return track; }, get scene() { return scene; }, get fx() { return qfx; },
       // drive the human karts like computer drivers for a while (fixed steps, no rendering)
+      freeCam: null, // (screenshots) a function racer -> { eye: [x, y, z], aim: [x, y, z] } that replaces the chase camera
+      get podium() { return podium; },
       skip(seconds) { for (let t = 0; t < seconds; t += 1 / 60) race.update(1 / 60, humans.map((h) => race.cpuInput(h.racer))); },
     };
   }

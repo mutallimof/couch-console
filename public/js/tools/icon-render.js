@@ -31,7 +31,7 @@ scene.add(kick);
 const root = new THREE.Group();
 scene.add(root);
 root.add(makeBase(THREE, id));
-SCENES[id]?.(THREE, root);
+await SCENES[id]?.(THREE, root); // (a scene may load a model first)
 root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
 
 // Isometric camera, framed on the base

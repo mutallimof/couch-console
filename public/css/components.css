@@ -10,7 +10,7 @@ button { font: inherit; color: inherit; }
 /* ---------- Focus: ONE look. The ring takes the color of whoever drives (--ring, set by main.js) ---------- */
 /* (older class names that follow the same focus look: .ui-focus is the one to use in new markup) */
 .ui-focus, .photo-tile, .video-tile, .deck-tile, .mu-queue li, .mode, .set-row, .ks-track { transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out); }
-.ui-focus.focused, .ui-focus.is-focus, .ui-focus:focus-visible, .photo-tile.focused, .video-tile.focused, .deck-tile.focused, .mu-queue li.focused, .mode.focused, .set-row.focused {
+.ui-focus.focused, .ui-focus.is-focus, .ui-focus:focus-visible, .photo-tile.focused, .video-tile.focused, .deck-tile.focused, .mu-queue li.focused, .mode.focused, .set-row.focused, .ks-track.focused {
   outline: none;
   transform: translateY(-2px) scale(1.03);
   box-shadow: 0 0 0 0.1875rem var(--ring-gap, var(--c-bg)), 0 0 0 0.4375rem var(--ring, var(--c-focus)), var(--sh-3);

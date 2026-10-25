@@ -29,12 +29,24 @@ export function makeBase(T, id) {
 }
 
 export const SCENES = {
-  'turbo-karts'(T, r) {
+  async 'turbo-karts'(T, r) {
     add(r, place(rot(new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.42, 12, 48), mat('#5E6677')), Math.PI / 2), 0, 0.12, 0.2));
     add(r, ring(1.7, 0.05, '#fff', 0, 0.5, 0.2)).children.at(-1).rotation.x = Math.PI / 2;
-    const kart = group(box(1.0, 0.35, 1.5, '#FF5C5C', 0, 0.25, 0), box(0.8, 0.28, 0.5, '#FF8A8A', 0, 0.55, 0.45), box(1.3, 0.1, 0.25, '#FFD43B', 0, 0.45, -0.85),
-      ball(0.3, '#FFD1A0', 0, 0.55, -0.05), cone(0.32, 0.3, '#3FA9FF', 0, 1.0, -0.05));
+    const kart = group(box(1.0, 0.35, 1.5, '#FF5C5C', 0, 0.25, 0), box(0.8, 0.28, 0.5, '#FF8A8A', 0, 0.55, 0.45), box(1.3, 0.1, 0.25, '#FFD43B', 0, 0.45, -0.85));
     for (const [x, z] of [[-0.6, 0.55], [0.6, 0.55], [-0.6, -0.55], [0.6, -0.55]]) kart.add(rot(cyl(0.3, 0.3, 0.28, '#2B3345', x, 0.0, z), 0, 0, Math.PI / 2));
+    // The driver: a KayKit character (CC0) seated in the kart, in its "sit" pose. Falls back to the old ball and cap if the model is missing.
+    try {
+      const [{ GLTFLoader }, { clone }] = await Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/utils/SkeletonUtils.js')]);
+      const gltf = await new GLTFLoader().loadAsync('/assets/cast/knight.glb'), who = clone(gltf.scene);
+      who.updateMatrixWorld(true);
+      const h = new THREE.Box3().setFromObject(who, true).getSize(new THREE.Vector3()).y;
+      who.scale.setScalar(2.05 / h);
+      const mixer = new THREE.AnimationMixer(who);
+      mixer.clipAction(gltf.animations.find((a) => a.name === 'sit')).play();
+      mixer.update(0.6);
+      who.position.set(0, 0.34, -0.2); who.rotation.y = 0;
+      kart.add(who);
+    } catch { kart.add(ball(0.3, '#FFD1A0', 0, 0.55, -0.05), cone(0.32, 0.3, '#3FA9FF', 0, 1.0, -0.05)); }
     kart.position.set(1.7, 0.1, 0.2); kart.rotation.y = -0.3;
     add(r, kart);
     add(r, cyl(0.08, 0.08, 2.1, '#fff', -1.4, 0, -1.7), cyl(0.08, 0.08, 2.1, '#fff', 0.4, 0, -1.7), box(2.1, 0.45, 0.12, '#3FA9FF', -0.5, 1.7, -1.7));
