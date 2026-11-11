@@ -14,6 +14,7 @@ const STICKER_CHOICES = [{ id: 'none', name: 'No sticker' }, ...STICKERS, { id: 
 const COUNT_FROM = 3;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
+let ac; // AbortController: aborting it in unmount removes the root listeners
 let api, root, els, stream, raf, tracker, alive = 0;
 let state; // { frame, sticker, status, count, shot }
 
@@ -206,12 +207,13 @@ export default {
       </div>
       <p class="booth-hints ui-hints"><span><kbd>A</kbd> Photo</span><span><kbd>◀▶</kbd> Frame</span><span><kbd>▲▼</kbd> Sticker</span><span><kbd>B</kbd> Back</span></p>`;
     container.append(root);
+    ac = new AbortController();
     els = {
       stage: root.querySelector('.booth-stage'), video: root.querySelector('video'), canvas: root.querySelector('canvas'), cam: root.querySelector('.booth-cam'), faces: root.querySelector('.booth-faces'),
       count: root.querySelector('.booth-count'), flash: root.querySelector('.booth-flash'), shot: root.querySelector('.booth-shot'), msg: root.querySelector('.booth-msg'),
       frame: root.querySelector('.b-frame'), sticker: root.querySelector('.b-sticker'), shutter: root.querySelector('.booth-shutter'),
     };
-    root.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) act(b.dataset.act); });
+    root.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) act(b.dataset.act); }, { signal: ac.signal });
     api.onButton(onButton);
     api.onBooth?.(applyCommand);
     api.setController('booth');
@@ -221,6 +223,7 @@ export default {
     startCamera(token);
   },
   unmount() {
+    ac?.abort(); ac = null;
     alive++; counting++;
     cancelAnimationFrame(raf);
     stopCamera();

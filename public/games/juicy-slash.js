@@ -1104,11 +1104,12 @@ function syncScene(now = clk()) {
   }
 
   // pointer: hovering a level picks it, a tap / A on a button uses it (shared pointer layer, see console/ui-pointer.js)
-  $('panel').addEventListener('ui-hover', (ev) => { const b = ev.target.closest?.('[data-level]'); if (b && b.dataset.level !== level) pickLevel(b.dataset.level); });
+  const ac = new AbortController(); // aborted in session.stop: removes the two panel listeners
+  $('panel').addEventListener('ui-hover', (ev) => { const b = ev.target.closest?.('[data-level]'); if (b && b.dataset.level !== level) pickLevel(b.dataset.level); }, { signal: ac.signal });
   $('panel').addEventListener('click', (ev) => {
     const b = ev.target.closest?.('[data-level]');
     if (b) { pickLevel(b.dataset.level); startGame(); } else if (ev.target.closest('[data-act="go"]')) startGame();
-  });
+  }, { signal: ac.signal });
   resize();
   syncHud();
   audio.unlock();
@@ -1118,9 +1119,10 @@ function syncScene(now = clk()) {
 
   session.stop = () => {
     cancelAnimationFrame(frame);
+    ac.abort();
     resizer.disconnect();
     clearTimeout(missTimer);
-    audio.ctx?.close?.();
+    audio.dispose();
     scene.traverse((o) => { o.geometry?.dispose(); [].concat(o.material || []).forEach((m) => { m.map?.dispose(); m.dispose(); }); });
     renderer.dispose();
     root.remove();

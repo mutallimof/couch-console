@@ -9,6 +9,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 </svg>`;
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+let ac; // AbortController: aborting it in unmount removes the root listeners
 let api, root, decks = [], grid, frame, off, confirmDel = null, note = '';
 
 function render() {
@@ -83,19 +84,21 @@ export default {
     root.className = 'channel present';
     root.innerHTML = '<div class="channel-head"></div><div class="deck-area"></div>';
     container.append(root);
+    ac = new AbortController();
     decks = []; grid = null; note = ''; confirmDel = null;
     api.onButton(onButton);
     api.actions([{ key: 'B', label: '‹ Back' }, { key: 'A', label: 'Start' }, { key: 'MINUS', label: 'Delete' }]); // (on-screen keys, so the pointer can do everything the D-pad can)
     off = party.onDeck(() => load());
     // drag and drop from the laptop
-    root.addEventListener('dragover', (e) => { e.preventDefault(); root.classList.add('drop'); });
-    root.addEventListener('dragleave', () => root.classList.remove('drop'));
-    root.addEventListener('drop', (e) => { e.preventDefault(); root.classList.remove('drop'); onFiles(e.dataTransfer.files); });
+    root.addEventListener('dragover', (e) => { e.preventDefault(); root.classList.add('drop'); }, { signal: ac.signal });
+    root.addEventListener('dragleave', () => root.classList.remove('drop'), { signal: ac.signal });
+    root.addEventListener('drop', (e) => { e.preventDefault(); root.classList.remove('drop'); onFiles(e.dataTransfer.files); }, { signal: ac.signal });
     load();
     const loop = () => { if (grid && api) grid.hover(api.pointer(api.players[0]?.playerId)); frame = requestAnimationFrame(loop); };
     frame = requestAnimationFrame(loop);
   },
   unmount() {
+    ac?.abort(); ac = null;
     off?.();
     cancelAnimationFrame(frame);
     root?.remove();

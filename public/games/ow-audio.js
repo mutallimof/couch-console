@@ -44,7 +44,7 @@ export class AudioEngine {
     // A hidden tab makes no sound, ever. This is why the global mute existed;
     // suspending at the source kills the background-tab loop for every page.
     if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', () => {
+      this._onVisibility = () => {
         if (this.music && this.music.el) {
           if (document.hidden) this.music.el.pause();
           else this.music.el.play().catch(() => {});
@@ -52,8 +52,17 @@ export class AudioEngine {
         if (!this.ctx) return;
         if (document.hidden) this.ctx.suspend();
         else if (this.ctx.state === 'suspended') this.ctx.resume();
-      });
+      };
+      document.addEventListener('visibilitychange', this._onVisibility);
     }
+  }
+
+  /** Remove the page listener, stop the music and close the audio context (call when the game closes). */
+  dispose() {
+    if (this._onVisibility) document.removeEventListener('visibilitychange', this._onVisibility);
+    this._onVisibility = null;
+    try { this.stopMusic(); } catch { /* nothing playing */ }
+    this.ctx?.close?.();
   }
 
   /**

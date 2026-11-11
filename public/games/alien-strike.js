@@ -648,7 +648,7 @@ function handleEvent(e) {
 
   session.stop = () => {
     cancelAnimationFrame(frame);
-    audio.ctx?.close?.();
+    audio.dispose();
     scene.traverse((o) => { o.geometry?.dispose(); [].concat(o.material || []).forEach((m) => { m.map?.dispose(); m.dispose(); }); });
     renderer.dispose();
     root.remove();

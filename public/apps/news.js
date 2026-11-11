@@ -20,6 +20,7 @@ const ago = (at) => {
 };
 const img = (u) => (u ? `/api/news/image?u=${encodeURIComponent(u)}` : '');
 
+let ac; // AbortController: aborting it in unmount removes the root listeners
 let api, root, tab = 'top', cats = [], items = [], index = 0, paused = false, area = 'content', errors = [], loaded = false, history = null;
 let timer = 0, refresh = 0, fetchToken = 0, started = 0, lang = 'en';
 
@@ -147,7 +148,8 @@ export default {
     root = document.createElement('div');
     root.className = 'channel news';
     container.append(root);
-    root.addEventListener('click', (ev) => { const b = ev.target.closest?.('[data-tab]'); if (b) { area = 'content'; setTab(b.dataset.tab); } });
+    ac = new AbortController();
+    root.addEventListener('click', (ev) => { const b = ev.target.closest?.('[data-tab]'); if (b) { area = 'content'; setTab(b.dataset.tab); } }, { signal: ac.signal });
     api.onButton(onButton);
     api.actions([{ key: 'B', label: '‹ Back' }, { key: 'LEFT', label: '‹ Previous' }, { key: 'RIGHT', label: 'Next ›' }, { key: 'A', label: 'Pause / go on' }]);
     render();
@@ -155,6 +157,7 @@ export default {
     refresh = setInterval(() => { if (tab !== 'history') load(); }, REFRESH_MS);
   },
   unmount() {
+    ac?.abort(); ac = null;
     clearTimeout(timer); clearInterval(refresh); fetchToken++;
     history?.destroy(); history = null;
     root?.remove();

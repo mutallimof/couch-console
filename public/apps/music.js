@@ -10,6 +10,7 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 </svg>`;
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+let ac; // AbortController: aborting it in unmount removes the root listeners
 let api, root, sel = 0, off, note = '';
 
 function render() {
@@ -65,8 +66,9 @@ export default {
     root.className = 'channel music';
     root.innerHTML = '<div class="mu-stage"><div class="mu-player"></div></div><div class="mu-side"></div>';
     container.append(root);
+    ac = new AbortController();
     sel = 0; note = '';
-    root.addEventListener('ui-hover', (ev) => { const li = ev.target.closest?.('[data-i]'); if (li && Number(li.dataset.i) !== sel) { sel = Number(li.dataset.i); render(); } });
+    root.addEventListener('ui-hover', (ev) => { const li = ev.target.closest?.('[data-i]'); if (li && Number(li.dataset.i) !== sel) { sel = Number(li.dataset.i); render(); } }, { signal: ac.signal });
     off = musicPlayer.onChange(render);
     api.onButton(onButton);
     api.actions([{ key: 'B', label: '‹ Back' }, { key: 'A', label: 'Play / Pause' }, { key: 'PLUS', label: 'Skip' }, { key: 'MINUS', label: 'Remove' }, { key: 'LEFT', label: 'Move up' }, { key: 'RIGHT', label: 'Move down' }]); // (on-screen keys, so the pointer can do everything the D-pad can)
@@ -75,6 +77,7 @@ export default {
     requestAnimationFrame(() => musicPlayer.setFull(root.querySelector('.mu-player'))); // the player card moves onto this screen
   },
   unmount() {
+    ac?.abort(); ac = null;
     off?.();
     musicPlayer.setFull(null);
     root?.remove();
