@@ -56,6 +56,7 @@ html, body { margin: 0; height: 100%; background: var(--c-bg); overflow: hidden;
 .size { width: 52px; height: 52px; display: grid; place-items: center; }
 .size-dot { border-radius: 50%; background: var(--c-text); }
 .draw-hint { color: var(--muted); font-weight: 700; font-size: 1.25rem; }
+.draw-hint.warn { color: var(--danger, #E03131); }
 
 /* ---------- Pairing screen ---------- */
 .pairing { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-5); padding: var(--sp-5); }
