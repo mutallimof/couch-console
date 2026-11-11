@@ -42,6 +42,7 @@ function resize() {
 function reset(newState) {
   state = newState;
   balloons = []; particles = []; floaters = [];
+  clouds = Array.from({ length: 5 }, () => ({ x: Math.random(), y: rand(0.08, 0.6), s: rand(0.7, 1.4), v: rand(0.005, 0.02) })); // a fresh sky every round
   score = 0; timeLeft = ROUND_SECONDS; spawnIn = 0.3; shake = 0; lastTick = null;
   scores = new Map(api.players.map((p) => [p.playerId, 0]));
   lastPop = new Map();
@@ -345,7 +346,6 @@ export default {
     resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(canvas);
     resize();
-    clouds = Array.from({ length: 5 }, () => ({ x: Math.random(), y: rand(0.08, 0.6), s: rand(0.7, 1.4), v: rand(0.005, 0.02) }));
     reset('ready');
     lastT = null;
     api.onButton(onButton);
