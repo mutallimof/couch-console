@@ -78,5 +78,7 @@ export default {
     });
     kit.lobby({ onStart: play });
   },
+  pause() { kit?.pause(); },
+  resume() { kit?.resume(); },
   unmount() { clearTimeout(replayTimer); kit?.destroy(); root?.remove(); kit = duel = root = api = null; },
 };

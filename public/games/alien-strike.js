@@ -13,6 +13,8 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
   <circle cx="14" cy="33" r="2" fill="#7048E8"/><circle cx="24" cy="35" r="2" fill="#7048E8"/><circle cx="34" cy="33" r="2" fill="#7048E8"/>
 </svg>`;
 
+let paused = false, shift = 0; // shift: total paused ms, cut out of the game clock
+const clk = () => performance.now() - shift;
 let session = null;
 
 async function start(container, api) {
@@ -389,7 +391,7 @@ audio.register('aa-down', (a) => {
   a.tone({ freq: 70, slideTo: 34, dur: 0.35, type: 'sine', gain: 0.5, delay: 0.75, attack: 0.002 });
 });
 
-  const game = new Patrol({ onEvent: handleEvent, seed: (performance.now() * 997) | 0 });
+  const game = new Patrol({ onEvent: handleEvent, seed: (clk() * 997) | 0 });
 
   // ── Steering: where you point (left of centre = bank left), or the D-pad held ──
   const held = { left: false, right: false };
@@ -405,7 +407,7 @@ audio.register('aa-down', (a) => {
 function startRun() {
   for (const m of saucers.values()) scene.remove(m);
   saucers.clear();
-  game.start(performance.now());
+  game.start(clk());
   for (const s of streaks) respawnStreak(s, game.z - 30);
   for (const d of debris) respawnDebris(d, game.z);
   $('overlay').classList.add('hide');
@@ -416,7 +418,7 @@ let popupUntil = 0;
 function popup(text) {
   $('popup').textContent = text;
   $('popup').classList.add('on');
-  popupUntil = performance.now() + 700;
+  popupUntil = clk() + 700;
 }
 
 
@@ -441,7 +443,7 @@ function handleEvent(e) {
     for (const p of api.players) api.rumble(p.playerId, 300);
     audio.play('aa-hit');
     popup(e.lives > 0 ? `${e.lives} ${e.lives === 1 ? 'life' : 'lives'} left` : '');
-    vignetteUntil = performance.now() + 450;
+    vignetteUntil = clk() + 450;
     $('vignette').classList.add('on');
   } else if (e.type === 'alienFire') {
     audio.play('aa-alien-laser');
@@ -460,7 +462,7 @@ function handleEvent(e) {
 }
 
   function fireNow() {
-    if (game.shoot(performance.now())) { audio.play('aa-laser'); muzzleUntil = performance.now() + 70; }
+    if (game.shoot(clk())) { audio.play('aa-laser'); muzzleUntil = clk() + 70; }
   }
   api.onButton(({ button, state }) => {
     audio.unlock();
@@ -469,7 +471,7 @@ function handleEvent(e) {
     if (button === 'A') aHeld = state === 'down';
     if (state !== 'down') return;
     if (button === 'A') {
-      if (waiting) { waiting = false; startRun(); game.nextSpawnMs = performance.now() + 1200; }
+      if (waiting) { waiting = false; startRun(); game.nextSpawnMs = clk() + 1200; }
       else if (game.state === 'done') startRun();
       else fireNow();
     }
@@ -497,10 +499,12 @@ function handleEvent(e) {
   };
 
   let last = performance.now(), frame = 0;
-  function loop(now) {
+  function loop(raw) {
     frame = requestAnimationFrame(loop);
-    const dt = Math.min((now - last) / 1000, 1 / 20);
-    last = now;
+    if (paused) { shift += raw - last; last = raw; return; } // phone dropped: freeze the game and its clock
+    const now = raw - shift;
+    const dt = Math.min((raw - last) / 1000, 1 / 20);
+    last = raw;
     if (dt <= 0) return;
 
   if (aHeld && !waiting && game.state === 'running') fireNow();
@@ -669,8 +673,11 @@ export default {
   minPlayers: 1,
   maxPlayers: 1,
   mount(container, api) {
+    paused = false; shift = 0;
     session = { api, stop: () => {} };
     start(container, api).catch((err) => { console.error(err); container.textContent = 'Could not start Alien Strike: ' + err.message; });
   },
+  pause() { paused = true; },
+  resume() { paused = false; },
   unmount() { session?.stop(); session = null; },
 };

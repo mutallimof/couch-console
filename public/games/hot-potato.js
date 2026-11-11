@@ -76,8 +76,10 @@ export default {
     kit = createKit({ api, root, id: 'hot-potato', title: 'Hot Potato', blurb: 'Do not be holding it when it goes off.', min: 2,
       rules: ['The bomb has a hidden fuse. Solve the little task on your phone.', 'Then swing the phone to throw the bomb to someone else.', 'Holding it at the bang costs a heart. Last one standing wins.'] });
     kit.onUp((m) => { if (kit.stage === 'play') gameUp?.(m); });
-    api.onButton((b) => { if (b.state === 'down' && b.button === 'A' && kit.stage === 'play') groupAgain?.(); });
+    api.onButton((b) => { if (b.state === 'down' && b.button === 'A' && kit.stage === 'play' && !kit.paused) groupAgain?.(); });
     kit.lobby({ onStart: start, modes: MODES, canStart: true, startText: 'Start now' });
   },
+  pause() { kit?.pause(); },
+  resume() { kit?.resume(); },
   unmount() { kit?.destroy(); root?.remove(); kit = game = root = api = gameUp = groupAgain = null; },
 };

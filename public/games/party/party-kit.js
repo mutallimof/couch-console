@@ -4,11 +4,13 @@
 import { party } from '../../console/party.js';
 
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-export const nowSec = () => performance.now() / 1000;
+// Game clock in seconds. Time spent paused (a phone dropped) is cut out, so fuses and timers don't jump on resume.
+let shiftMs = 0;
+export const nowSec = () => (performance.now() - shiftMs) / 1000;
 
 export function createKit({ api, root, id, title, rules, min = 2, blurb = '' }) {
   const up = new Set();
-  let lobbyHandler = null, view = null, timers = [], repeat = 0, alive = true, stage = 'lobby';
+  let lobbyHandler = null, view = null, timers = [], repeat = 0, alive = true, stage = 'lobby', pausedAt = 0;
   const ready = {};
   const roster = () => api.players.map((p) => ({ id: p.playerId, color: p.color, name: party.personOfPlayer(p.playerId)?.name || `Player ${p.playerId}`, emoji: party.personOfPlayer(p.playerId)?.emoji || '' }));
   const kit = {
@@ -20,8 +22,12 @@ export function createKit({ api, root, id, title, rules, min = 2, blurb = '' }) 
     // TV -> phones (one or all). The last screen is repeated every 1.5 s so a phone that joins or wakes up catches up.
     show(v) { view = { title, ...v }; api.partySend(view); },
     // a steady heartbeat for the game's rules
-    every(ms, fn) { const t = setInterval(() => alive && fn(), ms); timers.push(t); return t; },
+    every(ms, fn) { const t = setInterval(() => alive && !pausedAt && fn(), ms); timers.push(t); return t; },
     stop() { timers.forEach(clearInterval); timers = []; },
+    // pause / resume (the console calls these when a phone drops): ticks stop and the game clock stands still
+    get paused() { return !!pausedAt; },
+    pause() { if (!pausedAt) pausedAt = performance.now(); },
+    resume() { if (pausedAt) { shiftMs += performance.now() - pausedAt; pausedAt = 0; } },
     // ----- lobby -----
     lobby({ onStart, modes, startText = 'Start now', canStart = false }) {
       stage = 'lobby';
@@ -69,7 +75,7 @@ export function createKit({ api, root, id, title, rules, min = 2, blurb = '' }) 
       kit.resultsKey = (button) => { if (stage !== 'results') return false; if (button === 'A') { again(); return true; } return false; };
     },
     // phone messages, the A / B buttons
-    handleUp(m) { lobbyHandler?.(m); up.forEach((fn) => fn(m)); },
+    handleUp(m) { lobbyHandler?.(m); if (!pausedAt) up.forEach((fn) => fn(m)); }, // (phone input is ignored while paused)
     handleButton(b) {
       if (b.state !== 'down') return;
       if (b.button === 'B') return api.exit();

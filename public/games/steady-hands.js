@@ -57,5 +57,7 @@ export default {
     kit.onUp((m) => { if (kit.stage === 'play') eggUp?.(m); });
     kit.lobby({ onStart: start });
   },
+  pause() { kit?.pause(); },
+  resume() { kit?.resume(); },
   unmount() { kit?.destroy(); root?.remove(); kit = eggs = root = api = eggUp = null; },
 };

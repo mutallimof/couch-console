@@ -10,6 +10,7 @@ import { createLabeler, drawBody, tagSpot, leaderboardHtml, esc } from './camera
 const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="10" r="4.5" fill="#fff"/><path d="M24 16v13M10 17l14 3 14-3M24 29l-8 12M24 29l8 12"/></svg>`;
 const INTRO_S = 4.5, COUNT_S = 3, ROUND_S = 25, RECAP_S = 3.5;
 
+let paused = false, shiftMs = 0, lastRaw = 0; // shiftMs: time spent paused, cut out of the game clock
 let api, kit, people, labeler, raf = 0, alive = 0, el, st, lastBodies = [], msgTimer = 0;
 const go = (phase, now) => { st.phase = phase; st.t0 = now; };
 function reset() { st = { phase: 'lobby', round: 0, t0: 0, reps: new Map(), counters: new Map(), cursor: 0 }; }
@@ -27,7 +28,9 @@ function flashMsg(text) { const m = el.querySelector('.cg-flash'); m.textContent
 
 function frame(nowMs) {
   raf = requestAnimationFrame(frame);
-  const now = nowMs / 1000, view = kit.drawMirror();
+  if (paused) { shiftMs += nowMs - lastRaw; lastRaw = nowMs; return; } // a phone dropped: freeze
+  lastRaw = nowMs;
+  const now = (nowMs - shiftMs) / 1000, view = kit.drawMirror();
   if (!view) return;
   const { ctx, W, H } = view, aspect = kit.aspect();
   lastBodies = people.update(kit.bodies(nowMs), nowMs);
@@ -120,8 +123,9 @@ function renderHud(now) {
 function onButton({ button, state }) {
   if (state !== 'down') return;
   if (button === 'B') return api.exit();
+  if (paused) return;
   if (button === 'A') {
-    if (st.phase === 'lobby') startGame(performance.now() / 1000);
+    if (st.phase === 'lobby') startGame((performance.now() - shiftMs) / 1000);
     else if (st.phase === 'final') { reset(); hudKey = ''; people.reset(); }
   }
 }
@@ -146,11 +150,14 @@ export default {
     el.prepend(kit.stage);
     people = createPeopleTracker(); labeler = createLabeler(api, party);
     reset(); hudKey = '';
+    paused = false; shiftMs = 0; lastRaw = performance.now();
     api.onButton(onButton);
     api.actions([{ key: 'B', label: '‹ Back' }, { key: 'A', label: 'Start / again' }]);
     kit.start();
     raf = requestAnimationFrame(frame);
   },
+  pause() { paused = true; },
+  resume() { paused = false; },
   unmount() {
     alive++; cancelAnimationFrame(raf); clearTimeout(msgTimer);
     kit?.destroy(); kit = null;

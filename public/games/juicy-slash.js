@@ -25,6 +25,8 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
   <path d="M6 12 42 36" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/>
 </svg>`;
 
+let paused = false, shift = 0; // shift: total paused ms, cut out of the game clock
+const clk = () => performance.now() - shift;
 let session = null; // the running game (see start), so unmount can clean up
 
 async function start(container, api) {
@@ -934,7 +936,7 @@ function handleEvent(e) {
   } else if (e.type === 'slice') {
     maybeSoundHint();
     audio.play('fn-slice', { size: e.r, combo: e.combo });
-    addSplat(e.x, e.y, e.kind.splat, performance.now());
+    addSplat(e.x, e.y, e.kind.splat, clk());
     if (e.critical) {
       audio.play('fn-critical');
       splash(e.x, e.y, 'CRITICAL', 'crit');
@@ -975,7 +977,7 @@ function handleEvent(e) {
 // ── Overlays / HUD ─────────────────────────────────────────────────────────
 let toastUntil = 0;
 function flash(text) {
-  toastUntil = performance.now() + 2200;
+  toastUntil = clk() + 2200;
   $('toast').textContent = text.toUpperCase();
   $('toast').classList.add('on');
 }
@@ -1002,7 +1004,7 @@ function syncHud() {
   $('score-v').textContent = game.state.score;
   $('best').textContent = `BEST: ${Math.max(loadBest(), game.state.score)}`;
   // Hearts: one per life, and the empty ones stay so you can see how many you could hold
-  const box = $('lives').firstElementChild, max = game.cfg.maxLives, now = performance.now();
+  const box = $('lives').firstElementChild, max = game.cfg.maxLives, now = clk();
   if (box.children.length !== max) box.innerHTML = '<span class="x">♥</span>'.repeat(max);
   [...box.children].forEach((x, i) => {
     x.classList.toggle('lost', !game.infiniteLives && i >= game.state.lives);
@@ -1035,13 +1037,13 @@ function syncHud() {
     hideOverlay();
     chooser = false;
     game.setDifficulty(level);
-    game.start(performance.now());
+    game.start(clk());
     syncHud();
   }
 
 /** Mirror the logic state into the scene graph. Split out so the verification
  *  harness can time a frame's work directly, without depending on rAF cadence. */
-function syncScene(now = performance.now()) {
+function syncScene(now = clk()) {
   syncMeshes(game.fruits, fruitMesh, (m, f) => {
     m.position.set(f.x, f.y, 0);
     m.rotation.set(f.rot * f.spinAxis.x, f.rot * f.spinAxis.y, f.rot * f.spinAxis.z);
@@ -1080,10 +1082,12 @@ function syncScene(now = performance.now()) {
 
   // ── Loop ──
   let last = performance.now(), frame = 0;
-  function loop(now) {
+  function loop(raw) {
     frame = requestAnimationFrame(loop);
-    const dt = Math.min((now - last) / 1000, 1 / 20);
-    last = now;
+    if (paused) { shift += raw - last; last = raw; return; } // phone dropped: freeze the game and its clock
+    const now = raw - shift;
+    const dt = Math.min((raw - last) / 1000, 1 / 20);
+    last = raw;
     if (dt <= 0) return;
     const b = box();
     for (const p of api.players) {
@@ -1145,9 +1149,12 @@ export default {
   maxPlayers: 4,
   modes: ['coop', 'solo'],
   mount(container, api) {
+    paused = false; shift = 0;
     session = { api, stop: () => {} };
     start(container, api).catch((err) => { console.error(err); container.textContent = 'Could not start Juicy Slash: ' + err.message; });
   },
+  pause() { paused = true; },
+  resume() { paused = false; },
   unmount() {
     session?.stop();
     session = null;
