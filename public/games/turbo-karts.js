@@ -21,7 +21,7 @@ import * as stadiumTrack from './turbo-karts/ow-kart/stadium/track.js';
 const ALL_TRACKS = [...TRACKS, STADIUM]; // our six courses plus the Grand Stadium
 import { createLook } from './turbo-karts/karts-look.js';
 import { KARTS, ITEM_ICONS } from './turbo-karts/karts-data.js';
-import { GP_CHARACTERS as CHARACTERS } from './turbo-karts/ow-kart/characters.js';
+import { GP_CHARACTERS as CHARACTERS, finishClip } from './turbo-karts/ow-kart/characters.js';
 import { setThree, makeRacer, makeItemMesh, makePortraits } from './turbo-karts/karts-models.js';
 import { createSelect } from './turbo-karts/karts-select.js';
 import { createKartMenu } from './turbo-karts/karts-menu.js';
@@ -230,6 +230,7 @@ async function startRace() {
     mesh.body.add(mesh.exhaust);
     mesh.q = qfx?.attach(mesh.body, { lite: !k.playerId }) || null;
     scene.add(mesh.root, mesh.shadow);
+    mesh.anim?.play('idle'); // (waiting on the grid)
     return { racer, mesh, kart: k.kart, char: k.char, playerId: k.playerId, color: k.color || color, fxKart: {}, bounce: null };
   });
   humans = views.filter((v) => v.playerId);
@@ -347,13 +348,14 @@ function onRaceEvent(e) {
     case 'wall': sfx('wall'); rumble(120, 'wall'); if (mine) shakeAt(v, TUNE.camera.shakeWall); if (v.mesh.q) qfx.puffDust(v.mesh.q, performance.now() / 1000, 0.2); break;
     case 'land': v.bounce = 0; sfx('wall'); rumble(60, 'land'); if (mine) shakeAt(v, TUNE.camera.shakeLand); if (v.mesh.q) qfx.puffDust(v.mesh.q, performance.now() / 1000, 0.4); break;
     case 'glider': sfx('clear'); rumble(60); break;
-    case 'hazard': if (e.effect === 'bump') { sfx('wall'); rumble(140, 'wall'); if (mine) shakeAt(v, TUNE.camera.shakeWall + 0.15); if (v.mesh.q) qfx.puffDust(v.mesh.q, performance.now() / 1000, 0.3); } break; // (a spin comes with its own 'hit')
+    case 'go': views.forEach((k) => k.mesh.anim?.play('drive')); break; // (on the grid the pilots idle; now they lean in)
+    case 'hazard': if (e.effect === 'bump') { v.mesh.anim?.play('hit'); sfx('wall'); rumble(140, 'wall'); if (mine) shakeAt(v, TUNE.camera.shakeWall + 0.15); if (v.mesh.q) qfx.puffDust(v.mesh.q, performance.now() / 1000, 0.3); } break; // (a spin comes with its own 'hit')
     case 'contact': rumble(40); break;
     case 'useItem': sfx(e.item === 'turbo' || e.item === 'star' ? 'select' : 'shot'); rumble(30, 'item'); break;
     case 'itemReady': break;
     case 'finalLap': v.finalLapAt = race.raceTime; sfx('start'); break;
     case 'finish':
-      v.mesh.anim?.play(race.position(v.racer) <= 3 ? 'cheer' : 'wave');
+      v.mesh.anim?.play(finishClip(race.position(v.racer)));
       sfx(race.position(v.racer) === 1 ? 'strike' : 'end'); rumble(250);
       if (mine && qfx) qfx.confetti(v.racer.x, v.racer.y + 1.2, v.racer.z); // confetti where a human crosses the line
       break;

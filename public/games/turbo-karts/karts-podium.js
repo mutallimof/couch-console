@@ -52,7 +52,7 @@ export function createPodium(THREE, assets, entries) {
         const start = 0.15 + (2 - s.rank) * 0.45, t = (time - start) / 0.55;
         s.g.scale.y = Math.max(0.001, ease(t));
         s.g.visible = t > 0;
-        if (t > 0.9 && !s.started) { s.started = true; if (s.rank === 0) s.who.anim?.play('cheer', true); else s.who.anim?.play('defeat', false, true); }
+        if (t > 0.9 && !s.started) { s.started = true; s.who.anim?.play(s.rank === 0 ? 'cheer' : 'wave'); } // (the winner pumps a fist; 2nd and 3rd wave, then stand and bob)
         s.who.anim?.mixer.update(dt);
         s.who.object.scale.y = s.who.object.scale.x; // (the group's squash must not squash the character)
         s.who.object.scale.y = (s.who.anim?.unit ?? 1) / Math.max(0.001, s.g.scale.y);

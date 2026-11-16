@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GP_CHARACTERS, CLIPS } from '../public/games/turbo-karts/ow-kart/characters.js';
+import { finishClip } from '../public/games/turbo-karts/ow-kart/characters.js';
 import { HELMETS } from '../public/games/turbo-karts/karts-pilot.js';
 import { KARTS } from '../public/games/turbo-karts/karts-data.js';
 
@@ -24,4 +25,10 @@ test('the pilots can drive, idle, wave, cheer, defeat and flinch; four distinct 
   assert.deepEqual(CLIPS, ['drive', 'idle', 'wave', 'cheer', 'defeat', 'hit']);
   assert.equal(new Set(KARTS.map((k) => k.id)).size, 4);
   for (const k of KARTS) for (const s of ['speed', 'accel', 'handling', 'weight']) assert.ok(k[s] >= 1 && k[s] <= 5);
+});
+
+test('finishing on the podium places cheers, lower places slump', () => {
+  assert.deepEqual([1, 2, 3].map(finishClip), ['cheer', 'cheer', 'cheer']);
+  assert.deepEqual([4, 8].map(finishClip), ['defeat', 'defeat']);
+  assert.ok(CLIPS.includes(finishClip(1)) && CLIPS.includes(finishClip(8)));
 });

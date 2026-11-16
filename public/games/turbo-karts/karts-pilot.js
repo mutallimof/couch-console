@@ -2,7 +2,8 @@
 // different helmets (shape, visor, stickers, ears, fins). The suit takes the racer's color. The pilot is "rigged" with a tiny
 // pose system: the body, head and two arms (a two-bone solver puts the hands on the steering wheel, up in a cheer, or down in
 // defeat), blending smoothly between clips:
-//   drive · idle · wave · cheer · defeat · hit      (play(name); 'HitReact' / 'Yes' / 'Wave' / 'Cheer' / 'Defeat' also work)
+//   drive · idle (bob) · wave (one greeting) · cheer (fist pump) · defeat (slump) · hit (wobble)
+//   (play(name); 'HitReact' / 'Yes' / 'Wave' / 'Cheer' / 'Defeat' / 'Slump' also work). The body, torso and head move on springs.
 // Nothing is allocated while it animates.
 import { Parts, roundBox, sphereBand, toyMesh, setOutlines, cached, plasticMaterial, tint, hexOf } from './karts-toykit.js';
 
@@ -237,7 +238,8 @@ function wheelGeometry() {
 
 const V3 = () => new THREE.Vector3(), Q4 = () => new THREE.Quaternion();
 const DOWN = () => new THREE.Vector3(0, -1, 0);
-const ALIAS = { HitReact: 'hit', Hit: 'hit', Yes: 'cheer', Cheer: 'cheer', Wave: 'wave', Defeat: 'defeat', Idle: 'idle', Sit: 'drive', Drive: 'drive' };
+const ALIAS = { HitReact: 'hit', Hit: 'hit', Yes: 'cheer', Cheer: 'cheer', Wave: 'wave', Defeat: 'defeat', Slump: 'defeat', slump: 'defeat', Idle: 'idle', Sit: 'drive', Drive: 'drive' };
+const HIT_TIME = 0.9, WAVE_TIME = 1.7; // seconds: how long a hit wobble and a wave last
 
 // character: { id, name... } (the helmet), suit: the suit color, opts.standing: on its own feet (podium, portraits) instead of seated
 export function makePilot(character, suit, { standing = false, wheel = !standing } = {}) {
@@ -285,7 +287,9 @@ export function makePilot(character, suit, { standing = false, wheel = !standing
     clip: standing ? 'idle' : 'drive', clipT: 0, t: Math.random() * 10, hit: 0, steerIn: 0, speedIn: 0, steer: 0, speed: 0, blink: 1.5 + Math.random() * 2, blinkT: 0,
     hand: [V3(), V3()], handT: [V3(), V3()],
     torsoR: V3(), torsoT: V3(), headR: V3(), headT: V3(), body: 0, bodyT: 0, wave: 0, mouth: 0, eyeOpen: 1, eyeT: 1,
+    torsoV: V3(), headV: V3(), bodyV: 0, back: null, // (spring speeds; `back`: the clip a wave returns to)
   };
+  const SPRUNG = [[S.torsoR, S.torsoV, S.torsoT], [S.headR, S.headV, S.headT]]; // (made once: nothing is allocated while animating)
   const tmp = { a: V3(), b: V3(), d: V3(), e: V3(), f: V3(), pole: V3(), qU: Q4(), qT: Q4(), eul: new THREE.Euler(), down: DOWN(), grip: V3(), tIn: Q4() };
   // initial hand positions = on the wheel / hanging
   const setGrip = (out, side, angle) => { // a point on the wheel's rim, on the left (-1) or right (+1) of the driver
@@ -327,33 +331,48 @@ export function makePilot(character, suit, { standing = false, wheel = !standing
         S.headT.set(-sp * 0.07 + Math.sin(t * 9) * 0.01 * sp, -st * 0.4, -st * 0.06);
         S.bodyT = Math.sin(t * (7 + S.speed * 0.15)) * 0.012 * sp;
         break;
-      case 'idle':
+      case 'idle': {
+        // idle bob: the body rises and sinks like breathing, the head tilts and looks around
         if (standing) { rest(-1, 0); rest(1, 1); } else driveHands();
-        S.torsoT.set(Math.sin(t * 1.7) * 0.02, Math.sin(t * 0.5) * 0.08, 0);
-        S.headT.set(Math.sin(t * 0.9) * 0.05, Math.sin(t * 0.6) * 0.32, Math.sin(t * 0.7) * 0.04);
-        S.bodyT = Math.sin(t * 2.4) * 0.012;
+        const breath = Math.sin(t * 2.2);
+        S.torsoT.set(breath * 0.035, Math.sin(t * 0.5) * 0.1, Math.sin(t * 1.1) * 0.025);
+        S.headT.set(Math.sin(t * 0.9) * 0.06 - breath * 0.03, Math.sin(t * 0.6) * 0.34, Math.sin(t * 0.75) * 0.11);
+        S.bodyT = breath * 0.035;
         break;
-      case 'wave':
+      }
+      case 'wave': {
+        // wave: one arm up, the hand swings, the head turns to whoever is watching (then back to what it was doing)
         if (standing) rest(-1, 0); else setGrip(S.handT[0], -1, 0);
-        S.handT[1].set(0.8 + Math.sin(t * 10) * 0.1, 1.2, 0.1);
-        S.torsoT.set(0, -0.1, -0.1); S.headT.set(-0.08, 0.25, -0.18);
-        S.bodyT = Math.abs(Math.sin(t * 5)) * 0.03; S.mouth = 1;
+        const swing = Math.sin(S.clipT * 11);
+        S.handT[1].set(0.78 + swing * 0.2, 1.28 + Math.abs(swing) * 0.05, 0.14);
+        S.torsoT.set(-0.03, -0.14, -0.12); S.headT.set(-0.1, 0.3, -0.2 + swing * 0.04);
+        S.bodyT = Math.abs(Math.sin(S.clipT * 5.5)) * 0.035; S.mouth = 1;
         break;
-      case 'cheer':
-        S.handT[0].set(-0.5 + Math.sin(t * 7) * 0.05, 1.5, 0.05); S.handT[1].set(0.5 - Math.sin(t * 7) * 0.05, 1.5, 0.05);
-        S.torsoT.set(-0.1, Math.sin(t * 3.5) * 0.18, Math.sin(t * 7) * 0.05); S.headT.set(-0.28, Math.sin(t * 3.5) * 0.2, 0);
-        S.bodyT = Math.abs(Math.sin(t * 7)) * 0.1; S.mouth = 2;
+      }
+      case 'cheer': {
+        // cheer: a fist pump (up on every beat) with a small bounce; the other hand joins in on every second beat
+        const beat = S.clipT * 7.5, pump = Math.max(0, Math.sin(beat)) ** 0.6, both = Math.max(0, Math.sin(beat * 0.5)) > 0.7 ? 1 : 0;
+        S.handT[1].set(0.48, 1.02 + pump * 0.62, 0.12);
+        if (both || standing) S.handT[0].set(-0.5, 0.95 + pump * 0.5 * (both ? 1 : 0.35), 0.1); else setGrip(S.handT[0], -1, 0);
+        S.torsoT.set(-0.12 - pump * 0.05, Math.sin(beat * 0.5) * 0.14, pump * 0.06); S.headT.set(-0.3, Math.sin(beat * 0.5) * 0.18, 0);
+        S.bodyT = pump * 0.11; S.mouth = 2;
         break;
-      case 'defeat':
-        if (standing) { S.handT[0].set(-0.34, 0.0, 0.2); S.handT[1].set(0.34, 0.0, 0.2); } else { S.handT[0].set(-0.3, 0.25, 0.42); S.handT[1].set(0.3, 0.25, 0.42); }
-        S.torsoT.set(0.38, 0, 0.04); S.headT.set(0.6, Math.sin(t * 0.7) * 0.1, 0); S.eyeT = 0.45; S.mouth = 3;
-        S.bodyT = -0.06 + Math.sin(t * 1.3) * 0.008;
+      }
+      case 'defeat': {
+        // slump: the shoulders drop, the head hangs and shakes slowly, the arms hang; now and then a sigh
+        const sigh = Math.max(0, Math.sin(t * 0.9)) ** 6;
+        if (standing) { S.handT[0].set(-0.36, -0.04, 0.16); S.handT[1].set(0.36, -0.04, 0.16); } else { S.handT[0].set(-0.34, 0.14, 0.3); S.handT[1].set(0.34, 0.14, 0.3); }
+        S.torsoT.set(0.4 + sigh * 0.06, 0, 0.04); S.headT.set(0.62, Math.sin(t * 1.4) * 0.16, 0.05); S.eyeT = 0.45; S.mouth = 3;
+        S.bodyT = -0.08 - sigh * 0.03;
         break;
+      }
       case 'hit': {
-        const k = S.hit / 0.55;
+        // hit wobble: thrown back, then the head and body shake and settle (the springs do the settling)
+        const k = S.hit / HIT_TIME, amp = k * k;
         driveHands();
         if (standing) { rest(-1, 0); rest(1, 1); }
-        S.torsoT.set(-0.22 * k, 0, Math.sin(t * 45) * 0.12 * k); S.headT.set(-0.2 * k, Math.sin(t * 52) * 0.35 * k, Math.sin(t * 38) * 0.25 * k); S.eyeT = 1.25; S.mouth = 2;
+        S.torsoT.set(-0.3 * amp, Math.sin(t * 19) * 0.22 * amp, Math.sin(t * 23) * 0.3 * amp); S.headT.set(-0.25 * amp, Math.sin(t * 27) * 0.5 * amp, Math.sin(t * 21) * 0.4 * amp); S.eyeT = 1.25; S.mouth = 2;
+        S.bodyT = Math.sin(t * 25) * 0.05 * amp;
         break;
       }
       default: break;
@@ -363,13 +382,20 @@ export function makePilot(character, suit, { standing = false, wheel = !standing
 
   function update(dt) {
     if (!(dt > 0)) return;
-    S.t += dt;
+    S.t += dt; S.clipT += dt;
     if (S.hit > 0) S.hit = Math.max(0, S.hit - dt);
+    if (S.clip === 'wave' && S.back && S.clipT > WAVE_TIME) { S.clip = S.back; S.back = null; S.clipT = 0; } // (a wave is one greeting, not a loop)
     S.steer += (S.steerIn - S.steer) * (1 - Math.exp(-dt * 14));
     S.speed += (S.speedIn - S.speed) * (1 - Math.exp(-dt * 6));
     targets(dt);
-    const kb = 1 - Math.exp(-dt * 11), kh = 1 - Math.exp(-dt * 16);
-    S.torsoR.lerp(S.torsoT, kb); S.headR.lerp(S.headT, kb); S.body += (S.bodyT - S.body) * kb;
+    const kh = 1 - Math.exp(-dt * 16);
+    // the body, torso and head follow their targets on springs: they overshoot a little and settle (kb is unused for them)
+    const h = Math.min(dt, 1 / 30), K = 150, C = 15;
+    for (const [pos, vel, tgt] of SPRUNG) {
+      vel.x += ((tgt.x - pos.x) * K - vel.x * C) * h; vel.y += ((tgt.y - pos.y) * K - vel.y * C) * h; vel.z += ((tgt.z - pos.z) * K - vel.z * C) * h;
+      pos.x += vel.x * h; pos.y += vel.y * h; pos.z += vel.z * h;
+    }
+    S.bodyV += ((S.bodyT - S.body) * K - S.bodyV * C) * h; S.body += S.bodyV * h;
     for (let i = 0; i < 2; i++) S.hand[i].lerp(S.handT[i], kh);
     rig.position.y = (standing ? 0.7 : 0) + S.body;
     torso.rotation.set(S.torsoR.x, S.torsoR.y, S.torsoR.z);
@@ -399,8 +425,10 @@ export function makePilot(character, suit, { standing = false, wheel = !standing
     lean(steer = 0, speed = 0) { S.steerIn = steer; S.speedIn = speed; },
     play(name) {
       const n = ALIAS[name] || name;
-      if (n === 'hit') { S.hit = 0.55; return; }
-      if (['drive', 'idle', 'wave', 'cheer', 'defeat'].includes(n)) { S.clip = n; S.clipT = 0; }
+      if (n === 'hit') { S.hit = HIT_TIME; return; }
+      if (!['drive', 'idle', 'wave', 'cheer', 'defeat'].includes(n)) return;
+      if (n === 'wave' && S.clip !== 'wave') S.back = S.clip; // (after the wave: back to driving or idling)
+      S.clip = n; S.clipT = 0;
     },
     get clip() { return S.clip; },
   };

@@ -13,3 +13,8 @@ export const GP_CHARACTERS = [
   { id: 'zap', name: 'Zap', color: '#FFD21F', accent: '#5B3FD9', tag: 'Lightning in a helmet', helmet: 'mohawk + bolt' },
 ];
 export const CLIPS = ['drive', 'idle', 'wave', 'cheer', 'defeat', 'hit']; // what every pilot can do
+
+// When each clip plays (turbo-karts.js, karts-showroom.js, karts-podium.js follow this):
+//   idle: select screen, start grid, podium · wave: a player picks the pilot · cheer: finishing 1st to 3rd, a kart is chosen, 1st on the podium (2nd and 3rd wave)
+//   hit: an item or a hazard hits · defeat (slump): finishing 4th or lower
+export const finishClip = (place) => (place <= 3 ? 'cheer' : 'defeat');
