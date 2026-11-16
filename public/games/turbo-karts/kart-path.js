@@ -78,6 +78,9 @@ const RAW_TRACKS = [
     points: [[0, 0, 0], [60, 0, -5], [110, 2, 15], [130, 6, 55], [110, 3, 95], [70, 0, 108], [38, 7, 82], [0, 0, 95],
       [-45, 0, 122], [-95, 4, 102], [-122, 0, 58], [-102, 0, 12], [-55, 0, -8]],
     pads: [0.2, 0.6], boxes: [0.1, 0.4, 0.74], coins: [0.28, 0.52, 0.9], glides: [0.44], tunnel: [0.8, 0.87],
+    landmark: { look: 'shipwreck', at: 0.13, side: -1, off: 38, scale: 1.7, turn: 0.5 },
+    // the sea monster's tail sweeps across the boardwalk: wait for it to pass, or slip by behind it
+    hazards: [{ type: 'mover', look: 'tail', at: 0.66, span: 9, period: 8, radius: 2.2 }],
   },
   {
     id: 'sky', name: 'Cloud Gardens', theme: 'sky', blurb: 'Gardens above the clouds, with three glide ramps over the gaps.',

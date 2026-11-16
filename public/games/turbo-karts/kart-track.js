@@ -77,7 +77,7 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
   // Asphalt: little stones with bumps and tyre-worn lanes (karts-materials.js)
   // (the asphalt picture is mid-grey: the paint is lifted so the road reads as the palette's Slate, not navy)
   const lum = roadCol.r * 0.2126 + roadCol.g * 0.7152 + roadCol.b * 0.0722;
-  const roadPaint = roadCol.clone().lerp(C('#000000').setRGB(lum, lum, lum), 0.4).multiplyScalar(1.75);
+  const roadPaint = roadCol.clone().lerp(C('#000000').setRGB(lum, lum, lum), def.road === PALETTE.slate ? 0.4 : 0).multiplyScalar(def.road === PALETTE.slate ? 1.75 : 1.5); // (the boardwalk keeps its wood color)
   strip(ROAD_HALF, -ROAD_HALF, 0.02, 0.02, (i) => roadPaint.clone().offsetHSL(0, 0, (i % 40 < 20 ? 0.01 : -0.01)),
     { material: (roadMat = roadMaterial(THREE, { night: def.night })) });
   strip(0.3, -0.3, 0.03, 0.03, (i) => (Math.floor(i / 8) % 2 ? roadCol : C(PALETTE.cream)));

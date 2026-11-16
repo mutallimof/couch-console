@@ -6,11 +6,11 @@
 export const STADIUM_BRANDS = [
   "TURBO MOTORS",
   "BOLD OIL",
-  "FUZZ CELL",
+  "ZAP CELL",
   "TKTV",
-  "Lenny’s",
+  "Sunny’s",
   "GOLDEN WHEEL",
-  "ROCKET BILL",
+  "ROCKET POST",
   "GRAND CUP",
 ];
 const cache = new Map();
@@ -76,7 +76,7 @@ export function stadiumBrand(name, canvasTexture) {
         circle(x, 114, 10, "#f5df57");
       }
       text("OIL", 895, 128, 137, "#202319", null, undefined, 200);
-    } else if (name === "FUZZ CELL") {
+    } else if (name === "ZAP CELL") {
       fill("#ac202b");
       c.fillStyle = "#1f2327";
       c.beginPath();
@@ -85,22 +85,13 @@ export function stadiumBrand(name, canvasTexture) {
       c.lineTo(365, 256);
       c.lineTo(0, 256);
       c.fill();
-      // Jagged soot sprite and contrasting battery wordmark.
+      // A plain battery with a bolt (our own drawing) and the wordmark.
       c.fillStyle = "#f2efdc";
-      c.beginPath();
-      for (let i = 0; i < 36; i++) {
-        const a = (i * Math.PI) / 18,
-          r = i % 2 ? 77 : 96;
-        c.lineTo(155 + Math.cos(a) * r, 128 + Math.sin(a) * r);
-      }
-      c.closePath();
-      c.fill();
-      circle(155, 128, 64, "#25272a");
-      circle(135, 116, 18, "#fff");
-      circle(175, 116, 18, "#fff");
-      circle(140, 119, 8, "#161619");
-      circle(172, 119, 8, "#161619");
-      text("FUZZ", 390, 77, 93, "#fff2d1", "#181a22", undefined, 380);
+      c.beginPath(); c.roundRect(70, 78, 170, 100, 18); c.fill();
+      c.fillRect(240, 108, 18, 40);
+      c.fillStyle = "#f5d858";
+      c.beginPath(); c.moveTo(168, 88); c.lineTo(122, 134); c.lineTo(152, 134); c.lineTo(138, 170); c.lineTo(190, 120); c.lineTo(158, 120); c.closePath(); c.fill();
+      text("ZAP", 390, 77, 93, "#fff2d1", "#181a22", undefined, 380);
       text("Battery", 680, 161, 121, "#f2e4cc", "#27252b", "Georgia", 610);
       c.fillStyle = "#f5d858";
       c.fillRect(280, 223, 710, 8);
@@ -155,15 +146,15 @@ export function stadiumBrand(name, canvasTexture) {
       c.fillStyle = "#e8ca6a";
       c.fillRect(20, 15, 984, 4);
       c.fillRect(20, 237, 984, 4);
-    } else if (name === "Lenny’s") {
+    } else if (name === "Sunny’s") {
       fill("#f5f0df");
-      text("Lenny’s", 515, 127, 169, "#283032", "#ffffff", "Georgia", 900);
+      text("Sunny’s", 515, 127, 169, "#283032", "#ffffff", "Georgia", 900);
       // Thin green baseline and wheels make this read as a different sponsor.
       c.fillStyle = "#688949";
       c.fillRect(35, 226, 954, 8);
       circle(137, 213, 17, "#303b30");
       circle(896, 213, 17, "#303b30");
-    } else if (name === "ROCKET BILL") {
+    } else if (name === "ROCKET POST") {
       fill("#e0b949");
       c.fillStyle = "#212d39";
       c.fillRect(0, 49, w, 152);
@@ -171,10 +162,10 @@ export function stadiumBrand(name, canvasTexture) {
       c.beginPath();
       c.roundRect(50, 83, 163, 90, 45);
       c.fill();
-      circle(172, 111, 12, "#212d39");
+      c.beginPath(); c.moveTo(60, 83); c.lineTo(24, 62); c.lineTo(60, 112); c.moveTo(60, 173); c.lineTo(24, 194); c.lineTo(60, 144); c.fill(); // (fins: a plain rocket)
       c.fillStyle = "#faf2d2";
       for (let i = 0; i < 3; i++) c.fillRect(13, 93 + i * 27, 39, 8);
-      text("ROCKET BILL", 623, 116, 115, "#f6e8b8", null, undefined, 730);
+      text("ROCKET POST", 623, 116, 115, "#f6e8b8", null, undefined, 730);
       text("SPEED TRIAL", 675, 184, 30, "#f6e8b8", null, "Arial", 540);
     } else if (name === "GRAND CUP") {
       fill("#26326d");

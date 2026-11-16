@@ -230,7 +230,7 @@ export function buildPitlane(
         1.45,
         [x, 3.1 + i * 1.85, 1.57],
         signTexture(
-          ["TKTV", "GRAND CUP", "TURBO MOTORS", "GOLDEN WHEEL", "Lenny’s"][
+          ["TKTV", "GRAND CUP", "TURBO MOTORS", "GOLDEN WHEEL", "Sunny’s"][
             i
           ],
           i % 2 ? "#f2eacb" : "#253566",

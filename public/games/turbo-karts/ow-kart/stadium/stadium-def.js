@@ -40,6 +40,8 @@ export const STADIUM = {
   lighting: { key: 2.4, keyColor: '#fff1d6', keyOffset: [-30, 60, 25], hemi: 1.0, hemiSky: '#cfe6ff', hemiGround: '#8a9078', fill: 0.5, env: 0.7, fog: ['#dfe9f4', 0.00055], exposure: 1.05 },
   grip: 1, scale: 0.85,
   points: RAW, // [x, height, z]
+  // tyre stacks on the flat parts of the lap; they slide slowly, so they stand somewhere else every lap (they only knock your speed off)
+  hazards: [[0.07, -4, 0], [0.28, 3, 0.35], [0.86, 0, 0.7]].map(([at, lateral, phase]) => ({ type: 'mover', look: 'tyres', effect: 'bump', at, lateral, span: 4, period: 42, phase, radius: 1.3 })),
   // everything below is positioned in control-point numbers, as in OpenWii
   stadium: {
     pads: [[5.05, -7], [5.8, -7], [6.55, -7], [24.2, 7], [25, 7], [25.8, 7]],
