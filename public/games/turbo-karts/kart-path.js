@@ -20,6 +20,9 @@ const RAW_TRACKS = [
     points: [[0, 0, 0], [60, 0, 0], [105, 3, 10], [138, 8, 45], [135, 9, 90], [105, 4, 112], [65, 0, 106], [40, 0, 80], [10, 5, 70],
       [-12, 0, 92], [-50, 0, 110], [-95, 4, 95], [-115, 6, 55], [-100, 2, 15], [-60, 0, 0]],
     pads: [0.18, 0.62], boxes: [0.1, 0.42, 0.75], coins: [0.27, 0.53, 0.88], glides: [0.515], tunnel: null,
+    landmark: { look: 'windmill', at: 0.86, side: -1, off: 42, scale: 1.6 },
+    // two beach balls roll across the road
+    hazards: [{ type: 'mover', look: 'ball', at: 0.3, span: 7.5, period: 5.5, radius: 1.6 }, { type: 'mover', look: 'ball', at: 0.7, span: 7.5, period: 6.5, phase: 0.4, radius: 1.6 }],
   },
   {
     id: 'desert', name: 'Dune Canyon', theme: 'desert', blurb: 'Long sweeping turns between red rocks. Hit the crests for air!',
@@ -28,6 +31,10 @@ const RAW_TRACKS = [
     points: [[0, 0, 0], [70, 0, -5], [120, 6, 20], [130, 12, 70], [95, 5, 100], [60, 12, 90], [30, 2, 120], [-20, 0, 125], [-75, 8, 100],
       [-110, 0, 60], [-95, 10, 20], [-55, 2, -10]],
     pads: [0.08, 0.5], boxes: [0.2, 0.55, 0.82], coins: [0.33, 0.66, 0.92], glides: [0.835], tunnel: [0.36, 0.44],
+    landmark: { look: 'arch', at: 0.03 },
+    // tumbleweeds bounce across: they only knock your speed off
+    hazards: [{ type: 'mover', look: 'tumbleweed', effect: 'bump', at: 0.15, span: 8, period: 7, radius: 1.8 }, { type: 'mover', look: 'tumbleweed', effect: 'bump', at: 0.6, span: 8, period: 6, phase: 0.3, radius: 1.8 },
+      { type: 'mover', look: 'tumbleweed', effect: 'bump', at: 0.71, span: 8, period: 8, phase: 0.7, radius: 1.8 }],
   },
   {
     id: 'snow', name: 'Frosty Peaks', theme: 'snow', blurb: 'Climb the mountain, fly down the other side. The road is icy!',

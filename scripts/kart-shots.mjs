@@ -58,6 +58,21 @@ try {
     await tv.evaluate(() => { window.__kart.skip(Number(window.__KS_SECONDS || 24)); window.__kart.humans.forEach((h) => { h.cam = null; }); }); // (the camera snaps to the new place)
     await tv.waitForTimeout(3500);
     await tv.screenshot({ path: `${outDir}/${track}-${players}p-mid.jpg`, type: 'jpeg', quality: 85, timeout: 120000 });
+    if (process.env.KS_EXTRA) { // also: the track's landmark and its first hazards, from a fixed camera (KS_EXTRA=1)
+      const views = await tv.evaluate(() => {
+        const k = window.__kart, T = k.track.model, out = [];
+        const at = (s, lat, up) => { const p = T.surfaceAt(s, lat); return [p.x, p.y + up, p.z]; };
+        const lm = k.track.landmark?.group.position, lf = k.track.def.landmark?.at;
+        if (lm) out.push({ name: 'landmark', eye: at((lf - 0.07) * T.length, 0, 7), aim: [lm.x, lm.y + 13, lm.z] });
+        k.race.hazards.filter((h, i, all) => all.findIndex((o) => o.look === h.look) === i).forEach((h) => out.push({ name: `hazard-${h.look}`, eye: at(h.s - 30, 0, 6), aim: at(h.s, 0, 1) }));
+        return out;
+      });
+      for (const v of views) {
+        await tv.evaluate((cam) => { window.__kart.freeCam = () => cam; }, v);
+        await tv.waitForTimeout(2500);
+        await tv.screenshot({ path: `${outDir}/${track}-${v.name}.jpg`, type: 'jpeg', quality: 85, timeout: 120000 });
+      }
+    }
     console.log('shot', track);
     await ctx.close(); for (const p of phones) await p.context().close();
   }

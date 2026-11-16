@@ -16,8 +16,8 @@ function ballGeometry(THREE, r) {
 }
 function tumbleweedGeometry(THREE, r) {
   const parts = new Parts();
-  for (let i = 0; i < 7; i++) parts.add(new THREE.TorusGeometry(r * (0.72 + (i % 3) * 0.1), r * 0.07, 5, 14), i % 2 ? '#B98A5A' : '#9C6B3E', [0, 0, 0], [i * 0.9, i * 1.7, i * 0.5]);
-  parts.add(new THREE.IcosahedronGeometry(r * 0.5, 0), '#8A5A32');
+  for (let i = 0; i < 7; i++) parts.add(new THREE.TorusGeometry(r * (0.72 + (i % 3) * 0.1), r * 0.1, 5, 14), i % 2 ? '#E0B070' : '#C99255', [0, 0, 0], [i * 0.9, i * 1.7, i * 0.5]);
+  parts.add(new THREE.IcosahedronGeometry(r * 0.5, 0), '#B07A45');
   return parts.merge();
 }
 function taxiGeometry(THREE) { // a small toy taxi, facing +x (the way it drives across the road)

@@ -10,6 +10,7 @@ import { buildTerrain } from './karts-terrain.js';
 import { buildSky } from './karts-sky.js';
 import { buildProps, toyBlocks } from './karts-props.js';
 import { PALETTE, ROLES } from './karts-tokens.js';
+import { buildLandmark } from './karts-landmarks.js';
 
 // Track data and the center line live in kart-path.js (no graphics, testable)
 export { ROAD_HALF, WALL, TRACKS } from './kart-path.js';
@@ -66,6 +67,8 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
   const sky = buildSky(THREE, def, group, { sunDir: SUN_DIR, bounds: terrain.bounds });
   const props = buildProps(THREE, def, path, terrain);
   group.add(props.group);
+  const landmark = buildLandmark(THREE, def, path, terrain, SAMPLES); // (the track's one big toy: a windmill, an arch...)
+  if (landmark) group.add(landmark.group);
   const groundTone = C(terrain.params.colors[0]).offsetHSL(0, 0, -0.04);
 
   // Road, center dashes, curbs, side slab (thickness) and barriers
@@ -229,5 +232,5 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
   }
   if (def.theme === 'city') group.add(toyBlocks(THREE, spots.filter((_, i) => i % 2 === 0)));
 
-  return { ...path, group, boxes, coins, mixers, terrain, sky, roadMat, update(t, camPos) { avenue?.update?.(t); sky.update(t, camPos); props.update(t); } };
+  return { ...path, group, boxes, coins, mixers, terrain, sky, roadMat, landmark, update(t, camPos) { avenue?.update?.(t); sky.update(t, camPos); props.update(t); landmark?.update?.(t); } };
 }
