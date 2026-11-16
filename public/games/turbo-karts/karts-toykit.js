@@ -4,6 +4,7 @@
 // geometry (the "inverted hull"), in the same mesh: no extra geometry.
 // All original shapes. Nothing here runs per frame.
 
+import { PALETTE, ROLES, PLASTIC_COAT } from './karts-tokens.js';
 let THREE = null;
 export function setToyThree(t) { THREE = t; }
 
@@ -15,7 +16,7 @@ const hullThick = { value: 0.02 };
 // One glossy toy-plastic material for everything with vertex colors
 export function plasticMaterial() {
   if (!plastic) {
-    plastic = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.34, metalness: 0, clearcoat: 0.55, clearcoatRoughness: 0.3, envMapIntensity: 0.9 });
+    plastic = new THREE.MeshPhysicalMaterial({ vertexColors: true, ...ROLES.plastic, ...PLASTIC_COAT });
   }
   return plastic;
 }
@@ -23,7 +24,7 @@ export function plasticMaterial() {
 // The outline: the same shape pushed out a little along its normals and drawn from the inside only
 export function outlineMaterial() {
   if (!hull) {
-    hull = new THREE.MeshBasicMaterial({ color: '#2a1d4a', side: THREE.BackSide });
+    hull = new THREE.MeshBasicMaterial({ color: PALETTE.ink, side: THREE.BackSide });
     hull.onBeforeCompile = (shader) => {
       shader.uniforms.uThick = hullThick;
       shader.vertexShader = shader.vertexShader

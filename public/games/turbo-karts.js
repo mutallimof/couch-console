@@ -42,6 +42,7 @@ import { chasePose } from './turbo-karts/ow-kart/frame.js';
 import { TUNE, toggleTuningPanel } from './turbo-karts/karts-tuning.js';
 import { createSkids } from './turbo-karts/karts-skids.js';
 import { makeGem } from './turbo-karts/karts-items.js';
+import { lightOf } from './turbo-karts/karts-tokens.js';
 
 const RACERS = 8;
 const MAX_HUMANS = 4; // up to four phones, split screen
@@ -153,14 +154,15 @@ async function loadModels(paths) {
   return true;
 }
 
-// The light rig for a track: the stadium takes OpenWii's numbers, the others the daylight/night defaults
+// The light rig for a track: a preset from the art tokens (Day, Dusk, Night); the stadium brings its own numbers
 function applyLighting(def) {
-  const L = def.lighting, hemi = scene.userData.hemi, fill = scene.userData.fill;
-  sun.color.set(L?.keyColor || '#fff4e0');
-  sun.intensity = L ? L.key : def.night ? 0.6 : 2.2;
-  hemi.color.set(L?.hemiSky || '#CFE6FF'); hemi.groundColor.set(L?.hemiGround || '#5A6A4A');
-  hemi.intensity = L ? L.hemi : (def.night ? 0.7 : 1.1) * 0.6;
-  fill.intensity = L ? L.fill : 0.35;
+  const L = def.lighting, P = lightOf(def), hemi = scene.userData.hemi, fill = scene.userData.fill;
+  sun.color.set(L?.keyColor || P.keyColor);
+  sun.intensity = L ? L.key : P.key;
+  hemi.color.set(L?.hemiSky || P.hemiSky); hemi.groundColor.set(L?.hemiGround || P.hemiGround);
+  hemi.intensity = L ? L.hemi : P.hemi;
+  fill.color.set(P.fillColor);
+  fill.intensity = L ? L.fill : P.fill;
 }
 
 async function startRace() {

@@ -2,6 +2,7 @@
 // track objects, scenery and the small face pictures for menus.
 
 import { addRimTo } from './karts-style.js';
+import { PALETTE } from './karts-tokens.js';
 import { itemMesh } from './karts-items.js';
 import { setToyThree, setOutlines } from './karts-toykit.js';
 import { setPilotThree, makePilot } from './karts-pilot.js';
@@ -34,7 +35,7 @@ export function makeRacer(character, kart, color, assets) {
   flame.rotation.x = -Math.PI / 2; flame.position.set(0, 0.75, -2.3); k.group.add(flame);
   const shield = new THREE.Mesh(new THREE.SphereGeometry(2.1, 24, 16), new THREE.MeshStandardMaterial({ color: '#94D82D', transparent: true, opacity: 0.25, emissive: '#94D82D', emissiveIntensity: 0.4 }));
   shield.position.y = 0.9; k.group.add(shield);
-  const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.6, 20), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.28, depthWrite: false }));
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.6, 20), new THREE.MeshBasicMaterial({ color: PALETTE.ink, transparent: true, opacity: 0.32, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; shadow.scale.set(0.8, 1.2, 1);
   addRimTo(THREE, k.group); // (the cartoon look's rim light; does nothing until switched on)
   const root = new THREE.Group();

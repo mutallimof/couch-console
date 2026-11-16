@@ -9,6 +9,7 @@ import { buildAvenue } from './karts-avenue.js';
 import { buildTerrain } from './karts-terrain.js';
 import { buildSky } from './karts-sky.js';
 import { buildProps, toyBlocks } from './karts-props.js';
+import { PALETTE, ROLES } from './karts-tokens.js';
 
 // Track data and the center line live in kart-path.js (no graphics, testable)
 export { ROAD_HALF, WALL, TRACKS } from './kart-path.js';
@@ -45,7 +46,7 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     g.setIndex(idx);
     g.computeVertexNormals();
-    const m = new THREE.Mesh(g, opts.material || new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: opts.rough ?? 0.85, ...opts.mat }));
+    const m = new THREE.Mesh(g, opts.material || new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: opts.rough ?? ROLES.rubber.roughness, ...opts.mat }));
     m.receiveShadow = true;
     group.add(m);
     return m;
@@ -71,17 +72,19 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
   let roadMat = null;
   const roadCol = C(def.road);
   // Asphalt: little stones with bumps and tyre-worn lanes (karts-materials.js)
-  strip(ROAD_HALF, -ROAD_HALF, 0.02, 0.02, (i) => roadCol.clone().offsetHSL(0, 0, (i % 40 < 20 ? 0.01 : -0.01)),
+  // (the asphalt picture is mid-grey: the paint is lifted so the road reads as the palette's Slate, not navy)
+  const roadPaint = roadCol.clone().multiplyScalar(1.65);
+  strip(ROAD_HALF, -ROAD_HALF, 0.02, 0.02, (i) => roadPaint.clone().offsetHSL(0, 0, (i % 40 < 20 ? 0.01 : -0.01)),
     { material: (roadMat = roadMaterial(THREE, { night: def.night })) });
-  strip(0.3, -0.3, 0.03, 0.03, (i) => (Math.floor(i / 8) % 2 ? roadCol : C('#F4F7FB')));
+  strip(0.3, -0.3, 0.03, 0.03, (i) => (Math.floor(i / 8) % 2 ? roadCol : C(PALETTE.cream)));
   for (const s of [1, -1]) {
     strip(s * ROAD_HALF, s * (ROAD_HALF + 1.6), 0.05, 0.05, (i) => C(def.curb[Math.floor(i / 5) % 2]),
-      { mat: def.night ? { emissive: '#ffffff', emissiveIntensity: 0.25 } : {} });
-    strip(s * (ROAD_HALF + 1.6), s * (ROAD_HALF + 1.6), 0.05, -0.8, () => C('#3B3F4A'));       // slab edge
+      { rough: ROLES.plastic.roughness, mat: def.night ? { emissive: '#ffffff', emissiveIntensity: 0.25 } : {} });
+    strip(s * (ROAD_HALF + 1.6), s * (ROAD_HALF + 1.6), 0.05, -0.8, () => C(PALETTE.ink));       // slab edge
     strip(s * WALL, s * WALL, 0, 1.2, (i) => C(def.wall[Math.floor(i / 10) % 2]),
-      { mat: def.night ? { emissive: def.wall[0], emissiveIntensity: 3.5 } : {} });       // barrier (glows at night)
+      { rough: ROLES.plastic.roughness, mat: def.night ? { emissive: def.wall[0], emissiveIntensity: 3.5 } : {} });       // barrier (glows at night)
     strip(s * (ROAD_HALF + 1.6), s * WALL, 0.04, 0.04, () => groundTone); // shoulder (the terrain's own color)
-    strip(s * (ROAD_HALF - 0.95), s * (ROAD_HALF - 0.6), 0.045, 0.045, () => C('#F6F8FC'), { rough: 1, mat: def.night ? { emissive: '#ffffff', emissiveIntensity: 0.18 } : {} }); // edge line
+    strip(s * (ROAD_HALF - 0.95), s * (ROAD_HALF - 0.6), 0.045, 0.045, () => C(PALETTE.cream), { rough: 1, mat: def.night ? { emissive: '#ffffff', emissiveIntensity: 0.18 } : {} }); // edge line
   }
 
   // Pillars under raised road
@@ -110,7 +113,7 @@ export function buildTrack(THREE, def, assets = null, opts = {}) {
   const startG = new THREE.Group();
   const line = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, 2.5), new THREE.MeshStandardMaterial({ map: ctex }));
   line.rotation.x = -Math.PI / 2; line.position.y = 0.07; startG.add(line);
-  const archMat = new THREE.MeshStandardMaterial({ color: def.wall[0], emissive: def.night ? def.wall[0] : '#000', emissiveIntensity: def.night ? 3.5 : 0 });
+  const archMat = new THREE.MeshStandardMaterial({ ...ROLES.plastic, color: def.wall[0], emissive: def.night ? def.wall[0] : '#000', emissiveIntensity: def.night ? 3.5 : 0 });
   for (const s of [-1, 1]) { const post = new THREE.Mesh(new THREE.BoxGeometry(1, 8, 1), archMat); post.position.set(s * (ROAD_HALF + 2), 4, 0); post.castShadow = true; startG.add(post); }
   const beam = new THREE.Mesh(new THREE.BoxGeometry(ROAD_HALF * 2 + 5, 1.8, 1), archMat); beam.position.y = 8.5; startG.add(beam);
   const banner = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2 + 4, 1.4), new THREE.MeshBasicMaterial({ map: ctex }));

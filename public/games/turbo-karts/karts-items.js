@@ -1,8 +1,10 @@
 // Turbo Karts item visuals, all original: the Spark Gem (the box you drive through), the Pulse Orb (a bouncing energy
 // ball), the Goo puddle (a hazard left on the road), the Dart (a homing drone) and the Meteor (a strike on the leader).
 // The rules (ow-kart/rules.js) keep their ids: orb, slick, seeker, comet, turbo, star.
-const std = (THREE, color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0, ...o });
-const glow = (THREE, color, opacity = 0.9) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+import { roleMaterial } from './karts-tokens.js';
+
+const std = (THREE, color, o = {}) => roleMaterial(THREE, 'plastic', color, o);
+const glow = (THREE, color, opacity = 0.9) => roleMaterial(THREE, 'glow', color, { transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false });
 
 // The item box: a faceted gem that spins and bobs, with a ring around it
 export function makeGem(THREE) {

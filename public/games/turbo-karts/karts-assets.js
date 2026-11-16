@@ -4,6 +4,8 @@
 // The loader is imported only when a model is first needed, so a problem with it can never
 // stop the console from starting (the menu imports this file).
 
+import { toyify } from './karts-tokens.js';
+
 const BASE = '/assets/';
 export const CAR = (n) => `car-kit/Models/GLB format/${n}.glb`;
 export const RACE = (n) => `racing-kit/Models/GLTF format/${n}.glb`;
@@ -23,6 +25,7 @@ export function load(path) {
   if (!cache.has(path)) {
     cache.set(path, getLoader().then((loader) => loader.loadAsync(BASE + path)).then((g) => {
       g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      toyify(g.scene); // (one plastic look for every pack)
       return g;
     }).catch((err) => { console.warn('Model not loaded:', path, err.message); return null; }));
   }
