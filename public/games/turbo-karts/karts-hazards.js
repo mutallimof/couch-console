@@ -81,8 +81,8 @@ export function createHazards(THREE, T, hazards) {
   const geos = new Map(), geoOf = (key, build) => { if (!geos.has(key)) geos.set(key, build()); return geos.get(key); };
   const side = T.roadHalf + 2.6;
   const post = (s, lateral) => { const m = toyMesh(geoOf('marker', () => markerGeometry(THREE))); const p = T.surfaceAt(s, lateral); m.position.set(p.x, p.y, p.z); group.add(m); };
-  const ice = new THREE.MeshPhysicalMaterial({ color: '#D6F0FF', roughness: 0.08, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, transparent: true, opacity: 0.88, envMapIntensity: 1.4 });
-  const streakMat = roleMaterial(THREE, 'glow', P.cream, { transparent: true, opacity: 0.55, depthWrite: false });
+  const ice = new THREE.MeshPhysicalMaterial({ color: '#D6F0FF', roughness: 0.08, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, transparent: true, opacity: 0.9, envMapIntensity: 1.4, side: THREE.DoubleSide });
+  const streakMat = roleMaterial(THREE, 'glow', P.cream, { transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
 
   for (const h of hazards) {
     if (h.type === 'mover') {
@@ -106,18 +106,19 @@ export function createHazards(THREE, T, hazards) {
       for (const s of [-1, 1]) post(h.s - h.length / 2 - 6, s * side);
     } else if (h.type === 'gust') {
       // windsocks at both ends and pale streaks that drift across the road with the wind
-      const socks = [-1, 1].map((e) => {
-        const p = T.surfaceAt(h.s + (e * h.length) / 2, e * side), f = T.trackAt(h.s + (e * h.length) / 2);
+      // (a windsock on each side at the start, the middle and the end of the stretch)
+      const socks = [[-1, -1], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 1]].map(([e, sd]) => {
+        const p = T.surfaceAt(h.s + (e * h.length) / 2, sd * side), f = T.trackAt(h.s + (e * h.length) / 2);
         const holder = new THREE.Group(); holder.position.set(p.x, p.y, p.z); holder.rotation.y = Math.atan2(f.rx, f.rz);
         const pole = toyMesh(geoOf('pole', () => new Parts().add(new THREE.CylinderGeometry(0.14, 0.18, 6.4, 8), P.cream, [0, 3.2, 0]).add(new THREE.SphereGeometry(0.26, 8, 6), P.pop, [0, 6.5, 0]).merge()));
         const sock = new THREE.Group(); sock.position.y = 6;
         sock.add(toyMesh(geoOf('sock', () => { const q = new Parts(); for (let i = 0; i < 4; i++) q.add(new THREE.CylinderGeometry(0.55 - i * 0.1, 0.45 - i * 0.1, 0.75, 10, 1, true), i % 2 ? P.cream : P.pop, [0, 0, 0.4 + i * 0.75], [Math.PI / 2, 0, 0]); return q.merge(); })));
-        holder.add(pole, sock); group.add(holder);
+        holder.add(pole, sock); holder.scale.setScalar(1.35); group.add(holder);
         return sock;
       });
-      const streaks = Array.from({ length: 12 }, (_, i) => {
-        const m = new THREE.Mesh(geoOf('streak', () => new THREE.PlaneGeometry(4.5, 0.16)), streakMat);
-        m.userData = { s: h.s - h.length / 2 + ((i + 0.5) / 12) * h.length, off: (i * 7.3) % 1, y: 0.9 + (i % 4) * 0.7 };
+      const streaks = Array.from({ length: 18 }, (_, i) => {
+        const m = new THREE.Mesh(geoOf('streak', () => new THREE.PlaneGeometry(5.5, 0.28)), streakMat);
+        m.userData = { s: h.s - h.length / 2 + ((i + 0.5) / 18) * h.length, off: (i * 7.3) % 1, y: 0.9 + (i % 4) * 0.7 };
         group.add(m); return m;
       });
       winds.push({ h, socks, streaks });
@@ -142,7 +143,7 @@ export function createHazards(THREE, T, hazards) {
       for (const w of winds) {
         const push = race.gustPush(w.h), k = push / w.h.force;
         for (const s of w.socks) { s.rotation.y = k >= 0 ? 0 : Math.PI; s.rotation.x = 0.5 - Math.abs(k) * 0.5 + Math.sin(t * 9) * 0.04 * Math.abs(k); }
-        streakMat.opacity = 0.12 + Math.abs(k) * 0.5;
+        streakMat.opacity = 0.15 + Math.abs(k) * 0.7;
         for (const m of w.streaks) {
           const u = m.userData; u.off = (u.off + k * 0.012 + 1) % 1;
           const p = T.surfaceAt(u.s, (u.off - 0.5) * (T.roadHalf * 2 + 6));

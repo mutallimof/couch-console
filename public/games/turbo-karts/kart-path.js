@@ -43,6 +43,9 @@ const RAW_TRACKS = [
     points: [[0, 0, 0], [55, 2, -8], [100, 9, 10], [118, 16, 50], [95, 22, 85], [50, 24, 95], [10, 18, 80], [-25, 10, 100],
       [-70, 4, 95], [-100, 0, 55], [-90, 0, 15], [-45, 0, -5]],
     pads: [0.12, 0.7], boxes: [0.06, 0.4, 0.78], coins: [0.25, 0.5, 0.9], glides: [0.497], tunnel: [0.58, 0.68],
+    landmark: { look: 'snowman', at: 0.9, side: 1, off: 44, scale: 1.25 },
+    // ice sheets: the first covers the road, the second only the left half (keep right to stay on asphalt)
+    hazards: [{ type: 'patch', look: 'ice', at: 0.2, length: 46, turn: 0.42 }, { type: 'patch', look: 'ice', at: 0.83, length: 40, lateral: -4.5, width: 10, turn: 0.42 }],
   },
   {
     id: 'city', name: 'Block City', theme: 'city', blurb: 'A sunny race between toy-block towers, over a bridge and under it.',
@@ -78,6 +81,9 @@ const RAW_TRACKS = [
     points: [[0, 0, 0], [50, 0, 0], [85, 2, 25], [95, 5, 60], [130, 5, 70], [150, 2, 40], [150, 0, 5], [175, 4, -30], [150, 14, -80],
       [100, 16, -95], [50, 4, -90], [20, 0, -120], [12, 0, -195], [-25, 2, -228], [-62, 2, -195], [-55, 0, -110], [-45, 0, -50], [-25, 0, -10]],
     pads: [0.35, 0.9], boxes: [0.05, 0.38, 0.86], coins: [0.16, 0.52, 0.7], tunnel: null,
+    landmark: { look: 'beanstalk', at: 0.97, side: 1, off: 48 },
+    // wind across two open stretches: it swings from side to side, so steer against it
+    hazards: [{ type: 'gust', look: 'wind', at: 0.25, length: 90, force: 6.5, period: 5 }, { type: 'gust', look: 'wind', at: 0.78, length: 80, force: 6.5, period: 6, phase: 0.3 }],
     glides: [0.43, 0.09, 0.61],
   },
 ];
