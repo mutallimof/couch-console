@@ -9,41 +9,34 @@ Every track is a toy set someone built: moulded plastic, rubber, felt and a few 
 | | Rule |
 |---|---|
 | Palette | Style-guide colours only: Cushion `#FF8A3D`, Sky `#3FA9FF`, Pop `#FF5C8A`, Mint `#2FD6A4`, Butter `#FFC93C`; road Slate `#4A5370` with Cream `#FFF6E8` lines; shadows and outlines Ink `#25304A` (no black). Each track takes 2 of the 5 as its own pair. |
-| Materials | Three roles, one file: **plastic** (roughness 0.5: karts, pilots, props), **rubber/felt** (0.9: tyres, road, ground), **glow** (emissive, not tone-mapped: boost, sparks, gems, lamps). Every imported model is re-skinned through the same function, so Kenney, KayKit and Quaternius parts match. |
+| Materials | Three roles, one file: **plastic** (roughness 0.5: karts, pilots, props), **rubber/felt** (0.9: tyres, road, ground), **glow** (emissive, not tone-mapped: boost, sparks, gems, lamps). Every imported scenery model is re-skinned through the same function, so Kenney, KayKit and Quaternius parts match. |
 | Lighting | One warm key light with shadows plus a cool sky fill. Three presets: Day, Dusk, Night. Painted gradient skies; fog fades the ground into the horizon colour. |
 | Glow | Bloom only on the glow role. Drift tiers stay blue, orange, purple. No lens flares, no depth blur. |
 
-## 2. Pilots and karts (CC0) — helmeted pilots (your choice)
-Comparison picture: `.claude/docs/v2-compare.png` (now vs new, Dash + Speedster and Mimi + Roadster, Day light).
+## 2. Pilots and karts: today's code-built ones stay (decided)
+Decision after the comparison picture (`.claude/docs/v2-compare.png`): no KayKit bodies, no Kenney karts. The eight helmeted pilots
+with a visible face and the four toy karts stay as they are (`karts-pilot.js`, `karts-toykart.js`): original, no outside assets,
+names and ids unchanged. They only move to the shared material roles of section 1.
 
-| Pack | Used for | Status |
+**Animations, made in code.** The pilot rig already has `drive`, `idle`, `wave`, `cheer`, `defeat` and `hit`. v2 reworks each one
+and makes sure it plays at the right moment:
+
+| Clip | Motion | Plays |
 |---|---|---|
-| KayKit Adventurers 1.0 (Knight body, 41-bone rig, clips) | the body under every pilot's suit | already in the repo: `public/assets/cast/knight.glb` |
-| Kenney Toy Car Kit | the 4 karts, item box, coin | licence in the repo; kart files return from git history |
-| KayKit City Builder, Space Base, Halloween Bits; Kenney Racing Kit; Quaternius Pirate Kit | scenery (section 3) | on GitHub or already in |
-| Nature props (rocks, cacti, pines, snow trees) | park, canyon, peaks | no manual downloads: KayKit Medieval Hexagon Pack (GitHub) where it fits, the rest built in code with the plastic material |
+| Idle bob | body rises and sinks, head tilts, blink | select screen, start grid, podium |
+| Wave | one arm up, hand swings, head turns to the camera | when a player picks the pilot |
+| Cheer | fist pump with a small bounce, ears and fins bounce | finishing 1st to 3rd, podium |
+| Hit wobble | head and torso shake and settle (spring) | hit by an item or a hazard |
+| Slump | shoulders drop, head down, arms hang | finishing 4th or lower, cup lost |
 
-**Pilot = one body, eight helmets.** Nothing medieval is visible: the head, helmet, cape, weapons and shields of the pack are hidden.
-- **Suit:** the body is repainted by bone: suit in the identity colour, lighter forearms and shins, white gloves, dark boots, darker belt. Same plastic material and outline as the karts.
-- **Helmet:** the eight toy helmets we already have, one per pilot, sit on the head bone. The visor is closed, dark and glossy: no face.
-- In multiplayer the suit and kart take the player colour, as now.
+Springs only, nothing allocated per frame, same clips for all eight pilots.
 
-| Pilot (id kept) | Helmet shape and decals | Suit | | Kart | Model |
-|---|---|---|---|---|---|
-| Dash | round, star, antenna ball | `#2F80ED` | | Speedster | `vehicle-speedster` |
-| Bruno | bear ears, paw | `#E8590C` | | Roadster | `vehicle-vintage-racer` |
-| Finn | shark fin, stripes | `#12B8A6` | | Dragster | `vehicle-drag-racer` |
-| Mimi | cat ears, heart, whiskers | `#E64980` | | Racer | `vehicle-racer` |
-| Hopper | bunny ears | `#7C5CFF` | | | |
-| Blaze | rocket nose cone, flames | `#F03E3E` | | | |
-| Rex | dino plates | `#2FBF71` | | | |
-| Zap | mohawk, bolt | `#5B3FD9` | | | |
+**Your own models later:** `public/assets/custom/manifest.json` lists `{ id, file, scale, seat, clips }`. Load order: custom model,
+then the code-built pilot or kart.
 
-- Clips (already trimmed in `knight.glb`): `sit` (driving, plus our lean and arms to the wheel), `idle` (select), `cheer` (pick, win), `wave`, `hit`, `defeat`.
-- Karts are repainted in the identity colour (only the paint; greys, glass and lights stay).
-- **Your own models:** `public/assets/custom/manifest.json` lists `{ id, file, scale, seat, clips }`. Load order: custom, then pack, then today's code-built pilots and karts (kept as the fallback).
-- **Open point (see the picture):** the Kenney cars have no cockpit, so the pilot sits on top, and they are boxy beside our rounded karts. Option: new pilots in today's code-built karts.
-- Credits: one entry per pack in `THIRD_PARTY_NOTICES.md`, licence file kept beside the models.
+**CC0 packs are for scenery only** (section 3): KayKit City Builder, Space Base and Halloween Bits and Medieval Hexagon Pack
+(all on GitHub), Kenney Racing Kit and Quaternius Pirate Kit (already in). No manual downloads: nature props that no pack covers
+are built in code with the plastic material. Each pack gets an entry in `THIRD_PARTY_NOTICES.md`, licence file beside the models.
 
 ## 3. Tracks
 Three hazard types, added to `rules.js` with tests: **patch** (grip or speed zone), **mover** (crosses the road on a timer, spins you), **gust** (side push).
@@ -85,10 +78,10 @@ Cups become two of five: Sun Cup (day tracks), Star Cup (dusk and night tracks).
 ## 8. Build order (one step per run; S under half a day, M about a day, L several days)
 | # | Step | Effort |
 |---|---|---|
-| 1 | Side-by-side picture `.claude/docs/v2-compare.png` (done). **Your choice** | S |
+| 1 | Side-by-side picture `.claude/docs/v2-compare.png`: done, code-built pilots and karts stay | S |
 | 2 | Art tokens: palette, three material roles, light presets in one file; apply to karts and items | S |
-| 3 | Pilots in the race, select screen and podium | M |
-| 4 | Karts in, plus the custom-model manifest | S |
+| 3 | Pilot animations: idle bob, wave, cheer, hit wobble, slump, and when each plays | S |
+| 4 | Custom-model manifest (drop-in slot for your own pilots and karts) | S |
 | 5 | Feel A: steering and grip curves, front wheels, camera roll (phone test) | S |
 | 6 | Feel B: brake and off-road skids, speed lines, landing dip | S |
 | 7 | Engine, drift and boost loops | M |
