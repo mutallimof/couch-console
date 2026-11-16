@@ -55,6 +55,9 @@ const RAW_TRACKS = [
     points: [[0, 0, 0], [45, 0, 35], [90, 0, 60], [120, 0, 30], [100, 0, -15], [50, 4, -25], [0, 12, 0], [-45, 4, 30],
       [-95, 0, 55], [-120, 0, 20], [-95, 0, -20], [-50, 0, -30]],
     pads: [0.15, 0.55], boxes: [0.08, 0.36, 0.72], coins: [0.24, 0.46, 0.86], glides: [0.512], tunnel: null,
+    landmark: { look: 'watertower', at: 0.3, side: 1, off: 34, scale: 1.5 },
+    // one crossing with toy taxis: two of them, one after the other, from opposite sides
+    hazards: [{ type: 'mover', look: 'taxi', at: 0.27, span: 11.5, period: 7, radius: 1.9 }, { type: 'mover', look: 'taxi', at: 0.285, span: 11.5, period: 7, phase: 0.5, radius: 1.9 }],
   },
   {
     id: 'avenue', name: 'Sunset Avenue', theme: 'avenue', light: 'dusk', blurb: 'A golden-hour race down a candy-colored street, under the big start arch. Mind the cones!',
@@ -64,6 +67,9 @@ const RAW_TRACKS = [
     points: [[0, 0, 0], [60, 0, 0], [120, 0, 5], [165, 0, 35], [175, 0, 80], [150, 0, 115], [105, 0, 125], [65, 0, 105], [25, 0, 115], [-15, 0, 145],
       [-60, 0, 150], [-100, 0, 120], [-105, 0, 70], [-85, 0, 25], [-45, 0, 0]],
     pads: [0.2, 0.58], boxes: [0.12, 0.4, 0.74], coins: [0.27, 0.5, 0.88], glides: [0.34], tunnel: null,
+    landmark: { look: 'ferris', at: 0.2, side: -1, off: 48, scale: 1.7 },
+    // cones on the road: three little slaloms (a cone only knocks your speed off)
+    hazards: [[0.09, -5], [0.1, 1], [0.11, 6], [0.46, 5], [0.47, -1], [0.48, -6], [0.8, -4], [0.81, 3]].map(([at, lateral]) => ({ type: 'mover', look: 'cone', effect: 'bump', at, lateral, radius: 0.7 })),
   },
   {
     id: 'pirate', name: 'Pirate Cove', theme: 'pirate', blurb: 'A wooden boardwalk around a palm island. Watch out for the sea monster!',

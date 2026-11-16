@@ -45,11 +45,15 @@ export function buildAvenue(THREE, def, path, group) {
   const variants = TINTS.map((t) => ({ tex: windowTexture(t), geos: [] }));
   const near = (x, z, d) => { for (let i = 0; i < SAMPLES; i += 3) if ((pts[i].x - x) ** 2 + (pts[i].z - z) ** 2 < d * d) return true; return false; };
   const lots = [];
+  // (a square is kept free of buildings around the track's landmark, the Ferris wheel, so you can see it from the street)
+  const LM = def.landmark, li = LM ? path.at(LM.at * SAMPLES) : 0;
+  const plaza = LM ? { x: pts[li].x + nor[li].x * LM.side * LM.off, z: pts[li].z + nor[li].z * LM.side * LM.off, r: 42 } : null;
   for (let i = 0; i < SAMPLES; i += 11) {
     for (const side of [-1, 1]) {
       const w = rnd(16, 26), d = rnd(16, 26), h = rnd(22, 70), off = WALL + 8 + d / 2 + rnd(0, 5);
       const x = pts[i].x + nor[i].x * side * off, z = pts[i].z + nor[i].z * side * off;
       if (near(x, z, WALL + 6 + Math.min(w, d) * 0.6)) continue;
+      if (plaza && (plaza.x - x) ** 2 + (plaza.z - z) ** 2 < plaza.r ** 2) continue;
       if (lots.some((l) => (l.x - x) ** 2 + (l.z - z) ** 2 < ((l.r + Math.max(w, d) * 0.62)) ** 2)) continue;
       lots.push({ x, z, r: Math.max(w, d) * 0.62, w, d, h, side, i });
     }
