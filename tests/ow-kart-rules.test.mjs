@@ -113,7 +113,7 @@ test("coins monotonically improve top speed and cap at ten", () => {
   step(race, 0.02);
   assert.equal(r.coins, 10);
 });
-test("off-road loses speed, mushroom crosses grass at racing speed", () => {
+test("off-road loses speed, a turbo crosses grass at racing speed", () => {
   const road = solo(70),
     grass = solo(70),
     boosted = solo(70);
@@ -252,7 +252,7 @@ test("every usable item is consumed and produces its own mechanical effect", () 
     assert.equal(race.useItem(), false);
   }
 });
-test("banana placement is behind its owner and collides with an approaching racer", () => {
+test("goo placement is behind its owner and collides with an approaching racer", () => {
   const race = solo(100),
     r = race.player;
   r.item = "slick";
@@ -267,7 +267,7 @@ test("banana placement is behind its owner and collides with an approaching race
   step(race, 0.12);
   assert.ok(victim.spin > 0);
 });
-test("green shell ricochets and swept collision catches a crossing", () => {
+test("the orb ricochets and swept collision catches a crossing", () => {
   const race = solo(100),
     r = race.player;
   r.item = "orb";
@@ -287,7 +287,7 @@ test("green shell ricochets and swept collision catches a crossing", () => {
   step(race, 0.01);
   assert.ok(r.spin > 0);
 });
-test("red shell homes toward the nearest opponent ahead; blue targets leader", () => {
+test("the dart homes toward the nearest opponent ahead; the meteor targets the leader", () => {
   const race = solo(100);
   for (let i = 1; i < 8; i++) {
     race.racers[i].finishTime = null;
@@ -383,7 +383,7 @@ test("CPU rubber band is bounded and does not teleport or finish without driving
   assert.ok(ra.progress < 301 && rb.progress < 301);
   assert.ok(ra.speed / rb.speed < 1.3);
 });
-test("red and blue shells actually reach and spin their intended targets", () => {
+test("darts and meteors actually reach and spin their intended targets", () => {
   for (const type of ["seeker", "comet"]) {
     const race = solo(100),
       target = race.racers[1];
@@ -420,7 +420,7 @@ test("a slow launch still deploys the glider; a novice cannot fall through the g
   assert.ok(r.speed > 20);
 });
 test("player starts eighth and malformed character choice retains all eight unique racers", () => {
-  for (const character of ["mario", "peach", "not-a-racer"]) {
+  for (const character of ["nobody", "unknown", "not-a-racer"]) {
     const race = new Race({ character });
     assert.equal(race.position(race.player), 8);
     assert.equal(new Set(race.racers.map((r) => r.character.id)).size, 8);
@@ -445,7 +445,7 @@ test("same mystery box becomes collectible again after one second", () => {
   place(r,80);step(race,.9);assert.ok(race.boxes[0].respawn>0);
   step(race,.1+1/120);assert.equal(race.boxes[0].respawn,0);
 });
-test("shell launch events identify the exact projectile, including consecutive throws", () => {
+test("item launch events identify the exact projectile, including consecutive throws", () => {
   const events=[],race=solo(50);race.onEvent=e=>events.push(e);
   for(const item of ['orb','seeker','comet']){race.player.item=item;race.useItem();}
   assert.deepEqual(events.filter(e=>e.type==='useItem').map(e=>e.projectile),race.objects.map(o=>o.id));

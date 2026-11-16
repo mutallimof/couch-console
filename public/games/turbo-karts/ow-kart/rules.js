@@ -19,7 +19,7 @@ export const FIXED_DT = 1 / 120;
 export const SKILLS = [0.96, 0.94, 0.93, 0.99, 0.92, 1.01, 0.97, 0.91];
 export const EVENT_TYPES = [
   'countdown', 'go', 'rocket', 'burnout', 'hop', 'drift', 'turbo', 'boost', 'coin', 'box', 'itemReady',
-  'useItem', 'hit', 'wall', 'glider', 'land', 'lap', 'finalLap', 'finish', 'results', 'bump', 'contact',
+  'useItem', 'hit', 'wall', 'glider', 'land', 'lap', 'finalLap', 'finish', 'results', 'bump', 'contact', 'hazard',
 ];
 
 export function seeded(seed = 381) {
@@ -61,7 +61,7 @@ function makeRacer(T, character, i, humans, kart) {
     nextCheckpoint: T.length / 8, checkpoints: 0, finishTime: null,
     drift: 0, charge: 0, tier: 0, hop: 0, boost: 0, star: 0, spin: 0, invulnerable: 0,
     gliding: false, flight: 0, flightY: 0, flightV: 0, item: null, roulette: 0, gasDownAt: null,
-    lastInput: {}, itemDelay: 3 + i * 0.37, wallCooldown: 0, bumpCooldown: 0,
+    lastInput: {}, itemDelay: 3 + i * 0.37, wallCooldown: 0, bumpCooldown: 0, hazardCooldown: 0,
   };
 }
 
@@ -90,6 +90,8 @@ export class Race {
     this.finishOrder = [];
     this.boxes = track.itemRows.map((p, id) => ({ ...p, id, respawn: 0 }));
     this.coins = track.coinSpots.map((p, id) => ({ ...p, id, respawn: 0 }));
+    // Track hazards (ours): fixed places from the track model; movers are a pure function of the race time, so a race replays the same
+    this.hazards = (track.hazards || []).map((h) => ({ ...h, hitAt: null }));
     this.count = 3;
     this.pendingItem = this.humans.map(() => false);
   }
@@ -108,6 +110,12 @@ export class Race {
       : (b.finishTime !== null ? 1 : b.progress - a.progress)));
   }
   position(r) { return this.standings.indexOf(r) + 1; }
+  /** Where a mover is across the road (metres from the center line) at race time t */
+  hazardLateral(h, t = this.raceTime) {
+    return h.lateral + (h.span ? h.span * Math.sin((t / h.period + h.phase) * Math.PI * 2) : 0);
+  }
+  /** The wind's side push (m/s, + = to the right) in a gust zone at race time t */
+  gustPush(h, t = this.raceTime) { return h.force * Math.sin((t / h.period + h.phase) * Math.PI * 2); }
 
   /** inputs: one { gas, brake, drift, item, steer } per human player (an array), or a single object for one player */
   update(dt, inputs = []) {
@@ -178,10 +186,26 @@ export class Race {
     // Pure pursuit: aim at a point ahead on the road, in a lane that wanders a little
     const T = this.track;
     const lead = clamp(9 + Math.abs(r.speed) * 0.32, 9, 23), lane = Math.sin(this.raceTime * 0.19 + r.id * 2.1) * 3.5;
-    const p = T.surfaceAt(r.s + lead, lane), desired = Math.atan2(p.x - r.x, -(p.z - r.z));
+    const aim = this.avoidLane(r, lane);
+    const p = T.surfaceAt(r.s + lead, aim), desired = Math.atan2(p.x - r.x, -(p.z - r.z));
     const steer = clamp(angle(desired - r.heading) * 2.8, -1, 1);
     r.itemDelay -= FIXED_DT;
     return { gas: true, steer, drift: Math.abs(steer) > 0.22 && r.speed > 22 && !r.gliding, item: !!r.item && r.itemDelay < 0 };
+  }
+
+  // Computer drivers look a little ahead and pick a lane beside a mover instead of driving into it
+  avoidLane(r, lane) {
+    const L = this.track.length, half = this.track.roadHalf - 2;
+    for (const h of this.hazards) {
+      if (h.type !== 'mover') continue;
+      const ahead = wrap(h.s - r.s, L);
+      if (ahead > 34) continue;
+      const there = this.hazardLateral(h, this.raceTime + ahead / Math.max(12, r.speed)), gap = h.radius + 3;
+      if (Math.abs(there - lane) > gap) continue;
+      const side = lane >= there ? 1 : -1;
+      lane = Math.abs(there + side * gap) <= half ? there + side * gap : there - side * gap;
+    }
+    return clamp(lane, -half, half);
   }
 
   move(r, raw, dt, auto = false) {
@@ -190,7 +214,7 @@ export class Race {
       gas: !!raw.gas, brake: !!raw.brake, drift: !!raw.drift, item: !!raw.item,
       steer: Number.isFinite(raw.steer) ? clamp(raw.steer, -1, 1) : 0,
     };
-    for (const k of ['hop', 'boost', 'star', 'spin', 'invulnerable', 'wallCooldown', 'bumpCooldown', 'contactCooldown', 'contactAnimation']) {
+    for (const k of ['hop', 'boost', 'star', 'spin', 'invulnerable', 'wallCooldown', 'bumpCooldown', 'contactCooldown', 'contactAnimation', 'hazardCooldown']) {
       r[k] = Math.max(0, (r[k] || 0) - dt);
     }
     r.sideVelocity = (r.sideVelocity || 0) * Math.exp(-dt * 2.5);
@@ -228,7 +252,18 @@ export class Race {
       if (tier > r.tier) { r.tier = tier; this.emit('drift', r, { tier }); }
     }
     const offroad = !r.gliding && Math.abs(r.lateral) > T.roadHalf + 0.2;
-    let max = topSpeed(r.coins) * r.kit.top;
+    // Zones on the road: a patch (ice) dulls the steering or caps the speed, a gust pushes sideways. Not in the air, not with a star.
+    let grip = 1, cap = 1, push = 0;
+    r.patch = null;
+    if (!r.gliding) {
+      for (const h of this.hazards) {
+        if (h.type === 'mover' || Math.abs(wrap(r.s - h.s + L / 2, L) - L / 2) > h.length / 2) continue;
+        if (h.type === 'gust') push += this.gustPush(h);
+        else if (r.star <= 0 && Math.abs(r.lateral - h.lateral) < h.width / 2) { grip = Math.min(grip, h.turn); cap = Math.min(cap, h.top); r.patch = h.look; }
+      }
+    }
+    r.gust = push;
+    let max = topSpeed(r.coins) * r.kit.top * cap;
     if (auto) {
       // computer drivers: a skill factor and a gentle rubber band toward the leading human
       const lead = Math.max(...this.humans.map((h) => h.progress));
@@ -245,12 +280,13 @@ export class Race {
     } else r.speed = Math.sign(r.speed) * Math.max(0, Math.abs(r.speed) - 5.5 * dt);
     if (r.speed > max) r.speed = Math.max(max, r.speed - 36 * dt);
     // No yaw momentum or centrifugal term: zero wheel means exactly straight. Turn rate is bounded at every speed.
-    const turn = (r.drift ? r.drift * 0.12 + r.steer * 0.92 : r.steer) * 1.48 * r.kit.turn;
+    const turn = (r.drift ? r.drift * 0.12 + r.steer * 0.92 : r.steer) * 1.48 * r.kit.turn * grip;
     const turnAngle = turn * clamp(r.speed / 20, -0.5, 1) * dt * (r.gliding ? 0.52 : 1);
     const previousS = r.s, previousProgress = r.progress;
     r.heading = angle(r.heading + turnAngle);
     r.x += (Math.sin(r.heading) * r.speed + (!r.gliding ? Math.cos(r.heading) * r.sideVelocity : 0)) * dt;
     r.z += (-Math.cos(r.heading) * r.speed + (!r.gliding ? Math.sin(r.heading) * r.sideVelocity : 0)) * dt;
+    if (push) { const f = T.trackAt(r.s); r.x += f.rx * push * dt; r.z += f.rz * push * dt; }
     const near = T.project(r.x, r.z, r.s);
     r.s = near.s;
     r.lateral = near.lateral;
@@ -319,6 +355,20 @@ export class Race {
         r.boost = Math.max(r.boost, 0.65);
       }
     }
+    // Movers: touching one spins the kart (a lighter hit than an item) or just knocks its speed off ('bump': cones, tyres)
+    if (r.finishTime === null && !r.gliding && r.hazardCooldown <= 0) {
+      for (const h of this.hazards) {
+        if (h.type !== 'mover') continue;
+        if (Math.abs(wrap(r.s - h.s + L / 2, L) - L / 2) > h.radius + 1.2 || Math.abs(r.lateral - this.hazardLateral(h)) > h.radius + 0.9) continue;
+        r.hazardCooldown = 1.2;
+        h.hitAt = this.raceTime;
+        if (h.effect === 'bump') {
+          if (r.star <= 0) { r.speed *= 0.55; r.boost = 0; r.drift = 0; r.charge = 0; r.tier = 0; }
+        } else this.hit(r, 'hazard');
+        this.emit('hazard', r, { hazard: h.id, look: h.look, effect: h.effect });
+        break;
+      }
+    }
     if (r.finishTime === null && !spinning) {
       for (const c of this.coins) {
         if (!c.respawn && this.touches(r, c, 2.1)) {
@@ -367,10 +417,10 @@ export class Race {
   }
   hit(r, cause = 'orb', attacker = null) {
     if (r.star > 0 || r.invulnerable > 0 || r.finishTime !== null) return false;
-    r.spin = cause === 'comet' ? 1.65 : 1.1;
+    r.spin = cause === 'comet' ? 1.65 : cause === 'hazard' ? 0.85 : 1.1;
     r.invulnerable = 2.3;
     r.speed *= 0.35;
-    r.coins = Math.max(0, r.coins - 3);
+    r.coins = Math.max(0, r.coins - (cause === 'hazard' ? 1 : 3));
     r.drift = 0; r.charge = 0; r.tier = 0; r.boost = 0;
     this.emit('hit', r, { cause, attacker });
     return true;

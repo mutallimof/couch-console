@@ -60,7 +60,7 @@ export function stadiumBrand(name, canvasTexture) {
       fill("#f5df57");
       checker(216, "#252519", 18);
       text("BOLD", 303, 124, 130, "#202319", null, undefined, 510);
-      // Spiked turtle-shell badge: an original silhouette, not a traced logo.
+      // A spiked cog badge: an original silhouette, not a traced logo.
       circle(690, 124, 91, "#202319");
       circle(690, 124, 68, "#f5df57");
       c.fillStyle = "#202319";

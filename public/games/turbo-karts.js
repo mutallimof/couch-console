@@ -43,6 +43,7 @@ import { TUNE, toggleTuningPanel } from './turbo-karts/karts-tuning.js';
 import { createSkids } from './turbo-karts/karts-skids.js';
 import { makeGem } from './turbo-karts/karts-items.js';
 import { lightOf } from './turbo-karts/karts-tokens.js';
+import { createHazards } from './turbo-karts/karts-hazards.js';
 import { pixelRatioFor, LABELS as QUALITY_LABELS } from './turbo-karts/karts-quality.js';
 
 const RACERS = 8;
@@ -64,6 +65,7 @@ let humans = [];       // the views of the human players
 let objectMeshes = new Map(); // item projectiles/slicks on the road: race object id -> mesh
 const itemPool = new Map();   // item kind -> unused meshes (made once, reused: no geometry or material is built mid-race)
 let boxMeshes = [], coinMeshes = [];
+let hazardFx = null;          // the track's hazards as meshes (karts-hazards.js), rebuilt for every race
 let stopGraphics = null;
 let state, shown, overAt, paused = false, alive = 0, lastCount = 0;
 let menu = null, cup = null; // the first menu; the running cup: { def, index, table: Map, roster }
@@ -133,6 +135,7 @@ function clearRace() {
   objectMeshes.clear();
   for (const m of [...boxMeshes, ...coinMeshes]) scene.remove(m);
   boxMeshes = []; coinMeshes = [];
+  hazardFx?.dispose(); hazardFx = null;
   fx?.clear();
   skids?.clear();
   humans.forEach((h) => h.engine?.stop());
@@ -240,6 +243,8 @@ async function startRace() {
   const boxModel = () => makeGem(THREE), coinModel = () => makeCoinMesh();
   race.boxes.forEach((b) => { const m = boxModel(); placeOnRoad(m, T, b.s, b.lateral, 1.4); m.userData.y0 = m.position.y; scene.add(m); boxMeshes.push(m); });
   race.coins.forEach((c) => { const m = coinModel(); placeOnRoad(m, T, c.s, c.lateral, 1.1); scene.add(m); coinMeshes.push(m); });
+  hazardFx = createHazards(THREE, T, race.hazards);
+  scene.add(hazardFx.group);
   input.clear();
   api.setController('wheel');
   buildHud();
@@ -342,6 +347,7 @@ function onRaceEvent(e) {
     case 'wall': sfx('wall'); rumble(120, 'wall'); if (mine) shakeAt(v, TUNE.camera.shakeWall); if (v.mesh.q) qfx.puffDust(v.mesh.q, performance.now() / 1000, 0.2); break;
     case 'land': v.bounce = 0; sfx('wall'); rumble(60, 'land'); if (mine) shakeAt(v, TUNE.camera.shakeLand); if (v.mesh.q) qfx.puffDust(v.mesh.q, performance.now() / 1000, 0.4); break;
     case 'glider': sfx('clear'); rumble(60); break;
+    case 'hazard': if (e.effect === 'bump') { sfx('wall'); rumble(140, 'wall'); if (mine) shakeAt(v, TUNE.camera.shakeWall + 0.15); if (v.mesh.q) qfx.puffDust(v.mesh.q, performance.now() / 1000, 0.3); } break; // (a spin comes with its own 'hit')
     case 'contact': rumble(40); break;
     case 'useItem': sfx(e.item === 'turbo' || e.item === 'star' ? 'select' : 'shot'); rumble(30, 'item'); break;
     case 'itemReady': break;
@@ -450,6 +456,7 @@ function syncMeshes(t, dt) {
     m.shadow.rotation.z = -yawOf(r.heading);
     m.shadow.material.opacity = 0.28 * clamp(1 - (r.gliding ? (r.flightY - T.surfaceAt(r.s, r.lateral).y) / 8 : 0), 0.2, 1);
   }
+  hazardFx?.update(race, t / 1000);
   // item boxes and coins: spin, and vanish while they're waiting to come back
   race.boxes.forEach((b, i) => { const m = boxMeshes[i]; m.visible = b.respawn <= 0; m.userData.spin?.(t / 1000); m.position.y = m.userData.y0 + Math.sin(t * 0.003 + i) * 0.18; });
   race.coins.forEach((c, i) => { const m = coinMeshes[i]; m.visible = c.respawn <= 0; m.rotation.y = t * 0.003; });
@@ -672,7 +679,7 @@ function updateHud() {
     q('.kart-itembox').classList.toggle('ready', !!r.item && r.roulette <= 0);
     q('.kart-itembox').classList.toggle('rolling', r.roulette > 0);
     h.hud.classList.toggle('boosting', r.boost > 0);
-    set('.kart-drift', race.state === 'countdown' ? (race.count === 2 ? 'Press GAS now: rocket start!' : 'Get ready…') : r.spin > 0 ? 'Spin out!' : r.gliding ? 'Gliding!' : r.drift ? TIER_TEXT[r.tier] : r.star > 0 ? 'Star power!' : '');
+    set('.kart-drift', race.state === 'countdown' ? (race.count === 2 ? 'Press GAS now: rocket start!' : 'Get ready…') : r.spin > 0 ? 'Spin out!' : r.gliding ? 'Gliding!' : r.patch === 'ice' ? 'Ice! Steer early' : Math.abs(r.gust || 0) > 2.5 ? (r.gust > 0 ? 'Wind ›››' : '‹‹‹ Wind') : r.drift ? TIER_TEXT[r.tier] : r.star > 0 ? 'Star power!' : '');
     let msg = '';
     if (race.state === 'countdown') msg = race.count > 0 ? String(race.count) : '';
     else if (race.state === 'racing' && race.raceTime < 1) msg = 'GO!';

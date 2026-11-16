@@ -121,8 +121,19 @@ export function createTrackModel(def, { roadHalf = 10, wallHalf = 14.5, SUB = 32
     ? ST.coins.flatMap((c, i) => [-3, 0, 3].map((d) => ({ s: sAtControl(c) + d, lateral: i % 2 ? 6 : -3 })))
     : (def.coins || []).flatMap((f, i) => [-3, 0, 3].map((d) => ({ s: at(f) + d, lateral: i % 2 ? 6 : -3 })));
 
+  // Hazards (ours, not from OpenWii): def.hazards with `at` as a fraction of the lap. Three kinds, see rules.js:
+  //   patch: a zone on the road that changes grip or top speed (ice) · mover: something that crosses the road on a
+  //   timer (or stands still) · gust: a stretch where the wind pushes karts sideways
+  const hazards = (def.hazards || []).map((h, id) => ({
+    id, look: h.type, lateral: 0, phase: 0,
+    ...(h.type === 'patch' ? { length: 30, width: roadHalf * 2, turn: 1, top: 1 } : {}),
+    ...(h.type === 'mover' ? { span: 0, period: 6, radius: 1.5, effect: 'spin' } : {}),
+    ...(h.type === 'gust' ? { length: 60, force: 6, period: 5 } : {}),
+    ...h, s: at(h.at),
+  }));
+
   return {
     def, length, roadHalf, wallHalf, samples: raw, controlDistances, glides,
-    trackAt, surfaceAt, project, boostPads, itemRows, coinSpots,
+    trackAt, surfaceAt, project, boostPads, itemRows, coinSpots, hazards,
   };
 }
