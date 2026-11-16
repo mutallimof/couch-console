@@ -13,29 +13,36 @@ Every track is a toy set someone built: moulded plastic, rubber, felt and a few 
 | Lighting | One warm key light with shadows plus a cool sky fill. Three presets: Day, Dusk, Night. Painted gradient skies; fog fades the ground into the horizon colour. |
 | Glow | Bloom only on the glow role. Drift tiers stay blue, orange, purple. No lens flares, no depth blur. |
 
-## 2. Pilots and karts (CC0)
+## 2. Pilots and karts (CC0) — helmeted pilots (your choice)
+Comparison picture: `.claude/docs/v2-compare.png` (now vs new, Dash + Speedster and Mimi + Roadster, Day light).
+
 | Pack | Used for | Status |
 |---|---|---|
-| KayKit Adventurers 1.0 + Skeletons 1.0 (same 41-bone rig) | the 8 pilots | on GitHub, checked in the audit |
-| Kenney Toy Car Kit | the 4 karts, item box, coin | licence already in the repo; kart files return from git history |
-| KayKit City Builder, Space Base, Halloween Bits; Kenney Racing Kit; Quaternius Pirate Kit | scenery (section 3) | first three checked on GitHub, last two already in |
-| Kenney Nature Kit | rocks, cacti, snowy trees | not checked: kenney.nl may be blocked here, you may need to download it |
+| KayKit Adventurers 1.0 (Knight body, 41-bone rig, clips) | the body under every pilot's suit | already in the repo: `public/assets/cast/knight.glb` |
+| Kenney Toy Car Kit | the 4 karts, item box, coin | licence in the repo; kart files return from git history |
+| KayKit City Builder, Space Base, Halloween Bits; Kenney Racing Kit; Quaternius Pirate Kit | scenery (section 3) | on GitHub or already in |
+| Nature props (rocks, cacti, pines, snow trees) | park, canyon, peaks | no manual downloads: KayKit Medieval Hexagon Pack (GitHub) where it fits, the rest built in code with the plastic material |
 
-| Pilot (id kept) | Model | Kart colour | | Kart | Model |
+**Pilot = one body, eight helmets.** Nothing medieval is visible: the head, helmet, cape, weapons and shields of the pack are hidden.
+- **Suit:** the body is repainted by bone: suit in the identity colour, lighter forearms and shins, white gloves, dark boots, darker belt. Same plastic material and outline as the karts.
+- **Helmet:** the eight toy helmets we already have, one per pilot, sit on the head bone. The visor is closed, dark and glossy: no face.
+- In multiplayer the suit and kart take the player colour, as now.
+
+| Pilot (id kept) | Helmet shape and decals | Suit | | Kart | Model |
 |---|---|---|---|---|---|
-| Dash | Knight | Sky | | Speedster | `vehicle-speedster` |
-| Bruno | Barbarian | Cushion | | Roadster | `vehicle-vintage-racer` |
-| Mimi | Mage | Pop | | Dragster | `vehicle-drag-racer` |
-| Finn | Rogue | teal `#12B8A6` | | Racer | `vehicle-racer` |
-| Hopper | Rogue_Hooded | Mint | | | |
-| Blaze | Skeleton_Warrior | red `#F03E3E` | | | |
-| Rex | Skeleton_Rogue | green `#69D24A` | | | |
-| Zap | Skeleton_Mage | Butter | | | |
+| Dash | round, star, antenna ball | `#2F80ED` | | Speedster | `vehicle-speedster` |
+| Bruno | bear ears, paw | `#E8590C` | | Roadster | `vehicle-vintage-racer` |
+| Finn | shark fin, stripes | `#12B8A6` | | Dragster | `vehicle-drag-racer` |
+| Mimi | cat ears, heart, whiskers | `#E64980` | | Racer | `vehicle-racer` |
+| Hopper | bunny ears | `#7C5CFF` | | | |
+| Blaze | rocket nose cone, flames | `#F03E3E` | | | |
+| Rex | dino plates | `#2FBF71` | | | |
+| Zap | mohawk, bolt | `#5B3FD9` | | | |
 
-- Weapons and shields are hidden. The pilot keeps the pack texture; the identity colour is on the kart, plate and pennant. In multiplayer the kart takes the player colour, as now.
-- Clips kept (the rest trimmed with gltf-transform, already a dev tool, about 0.5 MB per pilot): `Sit_Chair_Idle` (driving, plus our lean), `Idle` (select), `Cheer` (pick, win), `Hit_A` (hit), `Jump_Idle` (hop). Losing is a code-made slump.
+- Clips (already trimmed in `knight.glb`): `sit` (driving, plus our lean and arms to the wheel), `idle` (select), `cheer` (pick, win), `wave`, `hit`, `defeat`.
+- Karts are repainted in the identity colour (only the paint; greys, glass and lights stay).
 - **Your own models:** `public/assets/custom/manifest.json` lists `{ id, file, scale, seat, clips }`. Load order: custom, then pack, then today's code-built pilots and karts (kept as the fallback).
-- **Risk:** Kenney cars with a seated driver were tried before and replaced by the code-built karts. Step 1 is a side-by-side picture so you choose before anything else changes.
+- **Open point (see the picture):** the Kenney cars have no cockpit, so the pilot sits on top, and they are boxy beside our rounded karts. Option: new pilots in today's code-built karts.
 - Credits: one entry per pack in `THIRD_PARTY_NOTICES.md`, licence file kept beside the models.
 
 ## 3. Tracks
@@ -45,7 +52,7 @@ Three hazard types, added to `rules.js` with tests: **patch** (grip or speed zon
 |---|---|---|---|
 | Sunny Park | picnic lawn, hedges, kites | windmill | beach balls rolling across (mover) |
 | Dune Canyon | red rock, cacti, rope bridge | stone arch over the road | tumbleweeds (mover) |
-| Frosty Peaks | pines, cabins, ice lake | giant snowman | ice sheets (patch) |
+| Frosty Peaks | pines, cabins, ice lake (code-built) | giant snowman | ice sheets (patch) |
 | Block City | KayKit city blocks, traffic lights | water tower | toy taxis at one crossing (mover) |
 | Sunset Avenue | dusk street, lamps, bunting | Ferris wheel | cones (exists) |
 | Pirate Cove | boardwalk, palms, ships | shipwreck | sea monster tail sweep (mover) |
@@ -78,7 +85,7 @@ Cups become two of five: Sun Cup (day tracks), Star Cup (dusk and night tracks).
 ## 8. Build order (one step per run; S under half a day, M about a day, L several days)
 | # | Step | Effort |
 |---|---|---|
-| 1 | Fetch packs, trim clips, picture: 8 pilots in 4 karts beside today's; credits. **Your choice** | S |
+| 1 | Side-by-side picture `.claude/docs/v2-compare.png` (done). **Your choice** | S |
 | 2 | Art tokens: palette, three material roles, light presets in one file; apply to karts and items | S |
 | 3 | Pilots in the race, select screen and podium | M |
 | 4 | Karts in, plus the custom-model manifest | S |
