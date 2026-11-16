@@ -249,3 +249,4 @@ Full list in `PLAN-PARTY.md` section 12. Headlines: the tunnel contradicts "ever
 - Tests: `tests/theme.test.mjs` (resolve/cycle), `tests/theme.e2e.test.mjs` (real browsers: Auto = dark on a dark laptop, Settings cycles, the phone follows live, reload remembers, a late phone gets it from the join answer).
 
 - Phase 1: three is pinned exactly (0.186.1); the TV debug readout is toggled only on the TV (F3 / Settings), never by a link; Grand Stadium uses our own Couch Console emblem and "TURBO KARTS"; racer Daisy renamed Clover (Mario-character name).
+- Karts v2 (Stage A): pilots and karts stay code-built (no KayKit bodies, no Kenney karts); CC0 packs are for scenery only; the build runs in four stages (A Look, B Feel and sound, C Content, D optional), one owner test per stage; road is Slate on every track except Pirate Cove's wooden boardwalk; picture quality drops effects, never resolution.

@@ -91,12 +91,16 @@ test('the kart pad appears on every phone during a race, and steers', { skip: !p
     await lap.waitForSelector('.picker', { timeout: 30000 });
     await press(p1, 'A');
     await lap.waitForFunction(() => window.__tk?.state() === 'menu', null, { timeout: 120000 });
-    await press(p1, 'A'); // the first menu: Single Race
+    // the first menu: Single Race. (A phone's pointer may be resting on a cup card and have moved the focus there: step back to the first card.)
+    for (let i = 0; i < 4 && await lap.evaluate(() => document.querySelector('.km-card.focused')?.dataset.i !== '0'); i++) await press(p1, 'LEFT');
+    await press(p1, 'A');
     await lap.waitForFunction(() => window.__tk?.state() === 'select', null, { timeout: 20000 });
     for (const ph of phones) assert.deepEqual({ ...(await shows(ph)), inside: undefined }, { controller: true, kart: false, inside: undefined }, 'menus use the normal remote');
     for (const ph of phones) { await press(ph, 'A'); await press(ph, 'A'); }
-    await lap.waitForSelector('.ks-tracks', { timeout: 20000 });
-    await press(p1, 'A');
+    // P1 picks the track. (If a drifting cursor chose a cup after all, the cup brings its own track and the race is already loading:
+    // either way a race starts, which is what this test is about.)
+    await lap.waitForFunction(() => document.querySelector('.ks-tracks') || ['loading', 'countdown', 'race'].includes(window.__tk?.state()), null, { timeout: 20000 });
+    if (await lap.$('.ks-tracks')) await press(p1, 'A');
     await lap.waitForFunction(() => ['countdown', 'race'].includes(window.__tk?.state()), null, { timeout: 240000 });
 
     // Both phones must show the kart pad (the one that missed the message within a few seconds)

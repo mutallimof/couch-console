@@ -19,10 +19,13 @@ Debug readout on the TV: F3 or Settings → Debug readout (a `?debug` link does 
 
 ## Current state (fix-and-finish run done; waiting for the owner's real phone/TV test)
 - Home screen, profiles, party hub (photos, music, present), 11 arcade/camera games, theme switch (Light/Dark/Auto).
-- Turbo Karts: 8 tracks (Sunny Park, Dune Canyon, Frosty Peaks, Neon City, Neon Avenue, Pirate Cove,
-  Cloud Gardens, Grand Stadium), 8 racers, 6 items, 3-tier drift turbo, CPU drivers, 1-2 human players.
-  Rules are in `public/games/turbo-karts/ow-kart/rules.js` (from OpenWii, MIT, credited in
-  `THIRD_PARTY_NOTICES.md`). No controller rewrite (audit decision).
+- Turbo Karts: 8 tracks (Sunny Park, Dune Canyon, Frosty Peaks, Block City, Sunset Avenue, Pirate Cove, Cloud Gardens,
+  Grand Stadium), 8 code-built pilots, 6 items, 3-tier drift turbo, CPU drivers, 1-4 players. Rules: `ow-kart/rules.js`.
+- **Karts v2** (design: `.claude/docs/KARTS-V2.md`, four stages). **Stage A (Look) is done, waiting for the owner's test:**
+  art tokens (`karts-tokens.js`: palette, plastic / rubber / glow, Day / Dusk / Night), quality levels Auto/High/Medium/Low
+  (`karts-quality.js`, Settings → Picture quality; real pixels, effects dropped before resolution; F3 shows the render budget),
+  hazards in the rules (`hazards` on a track: patch / mover / gust; visuals `karts-hazards.js`), one landmark per track
+  (`karts-landmarks.js`), pilot clips on springs. Next: Stage B (kart feel 5-6, sound loops 7, music 16).
 - three 0.186.1 (exact pin) + postprocessing 6.39.5 + three.quarks 0.17.1; `/vendor/three.core.js` and `quarks.core` routes in `server/index.js`. Don't bump three without checking postprocessing's peer range (< 0.187).
 - Select screen draws its 3D previews in small canvases (no full-window multisampled canvas).
 - Grand Stadium rebranded (Couch Console sofa emblem, TURBO KARTS, COUCH lettering); racer Daisy is now Clover.

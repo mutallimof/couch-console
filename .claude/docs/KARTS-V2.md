@@ -75,22 +75,17 @@ Cups become two of five: Sun Cup (day tracks), Star Cup (dusk and night tracks).
 ## 7. Reference: pmndrs/racing-game
 `LICENSE.md` opened: MIT, "Copyright 2021 pmdrs, contributors". Ideas taken and rewritten, no code copied: camera roll and sway that grow with speed, chassis vibration, checkpoint split times with medals, a second engine sound layer under acceleration. Not taken: its physics vehicle (the audit keeps `rules.js`) and its models or sounds. If a later step ports real code, its MIT notice goes into `THIRD_PARTY_NOTICES.md` in the same commit.
 
-## 8. Build order (one step per run; S under half a day, M about a day, L several days)
-| # | Step | Effort |
+## 8. Build order: four stages (each runs unattended, one commit per step, then you test once)
+S under half a day, M about a day, L several days. A stage is pushed and merged to `main` when the full test suite passes.
+
+| Stage | Steps | Status |
 |---|---|---|
-| 1 | Side-by-side picture `.claude/docs/v2-compare.png`: done, code-built pilots and karts stay | S |
-| 2 | Art tokens: palette, three material roles, light presets in one file; apply to karts and items | S |
-| 3 | Pilot animations: idle bob, wave, cheer, hit wobble, slump, and when each plays | S |
-| 4 | Custom-model manifest (drop-in slot for your own pilots and karts) | S |
-| 5 | Feel A: steering and grip curves, front wheels, camera roll (phone test) | S |
-| 6 | Feel B: brake and off-road skids, speed lines, landing dip | S |
-| 7 | Engine, drift and boost loops | M |
-| 8 | Quality levels, real-pixel rendering, F3 budget line | S |
-| 9 | Hazard system in the rules, with tests | M |
-| 10-13 | Track passes in pairs: Park + Canyon, Peaks + Clouds, City + Avenue, Cove + Stadium | M each |
-| 14 | Four new items | M |
-| 15 | Time Trial and ghost | M |
-| 16 | Music sequencer and ten songs | M |
-| 17, 18 | Moon Base, Spooky Hollow | L each |
-| 19 | Battle: backwards-driving test (S), then Coin Clash and two arenas | L |
-| 20 | Cups of five, README and notices check | S |
+| A · Look | 2 art tokens (S) → 8 quality levels and real-pixel rendering (S) → 9 hazard system (M) → 10-13 track passes, all 8 tracks (M each) → 3 pilot animations (S) | done, waiting for your test |
+| B · Feel and sound | 5, 6 kart feel (S each) → 7 engine, drift and boost loops (M) → 16 music (M) | todo |
+| C · Content | 14 new items (M) → 15 Time Trial and ghost (M) → 20 cups for the 8 tracks, README and notices (S) | todo |
+| D · Optional (only on your "go") | 17 Moon Base (L), 18 Spooky Hollow (L), 19 Battle (L), 4 custom-model slot (S) | parked |
+
+Hard rule for every stage: nothing Nintendo-like in names, item looks or music.
+
+Stage A notes: the eight tracks keep their code-built scenery (no new packs were needed); landmarks are code-built too.
+Block City keeps its own toy towers instead of KayKit city blocks, so every track has one style.
