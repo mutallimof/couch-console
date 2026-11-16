@@ -15,10 +15,11 @@ const ICON = `<svg viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"
 </svg>`;
 
 // prefs: { getSensitivity(), setSensitivity(n), getPhoneSounds(), setPhoneSounds(on), showQR() } from main.js
-const MAIN_ACTIONS = ['theme', 'sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'debug', 'news', 'party', 'qr'];
+const MAIN_ACTIONS = ['theme', 'sens-up', 'mute', 'phone-sounds', 'steady', 'cartoon', 'ao', 'quality', 'debug', 'news', 'party', 'qr'];
 const NEWS_ACTIONS = ['news-lang', ...NEWS_SOURCES.map(([id]) => `news-src:${id}`), 'back'];
 const PARTY_ACTIONS = ['rename', 'new-party', 'approve', 'limit-up', 'music-pause', 'download', 'end-party', 'back'];
 const THEME_LABELS = { light: 'Light', dark: 'Dark', auto: 'Auto' };
+const QUALITY_LABELS = { auto: 'Auto', high: 'High', medium: 'Medium', low: 'Low' };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export function createSettings(prefs) {
@@ -51,15 +52,17 @@ export function createSettings(prefs) {
           <button class="set-btn ui-btn wide" data-action="cartoon">${on(graphics.cartoon)}</button></div>
         <div class="set-row ui-row ui-focus" data-ui data-row="6"><span class="set-label label">Soft shadows (karts)</span>
           <button class="set-btn ui-btn wide" data-action="ao">${on(graphics.ao)}</button></div>
-        <div class="set-row ui-row ui-focus" data-ui data-row="7"><span class="set-label label">Debug readout (fps, ping)</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="7"><span class="set-label label">Picture quality (karts)</span>
+          <button class="set-btn ui-btn wide" data-action="quality">${QUALITY_LABELS[graphics.quality]}</button></div>
+        <div class="set-row ui-row ui-focus" data-ui data-row="8"><span class="set-label label">Debug readout (fps, ping)</span>
           <button class="set-btn ui-btn wide" data-action="debug">${on(prefs.getDebug())}</button></div>
-        <div class="set-row ui-row ui-focus" data-ui data-row="8"><span class="set-label label">News (sources, language)</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="9"><span class="set-label label">News (sources, language)</span>
           <button class="set-btn ui-btn wide" data-action="news">Open ›</button></div>
-        <div class="set-row ui-row ui-focus" data-ui data-row="9"><span class="set-label label">Party</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="10"><span class="set-label label">Party</span>
           <button class="set-btn ui-btn wide" data-action="party">Open ›</button></div>
-        <div class="set-row ui-row ui-focus" data-ui data-row="10"><span class="set-label label">Add a phone</span>
+        <div class="set-row ui-row ui-focus" data-ui data-row="11"><span class="set-label label">Add a phone</span>
           <button class="set-btn ui-btn wide" data-action="qr">Show QR code</button></div>
-        <p class="set-hint">Theme: Light, Dark or Auto (follows this laptop); the phones follow it too. Steady cursor: turn it On if the cursor wanders or shakes. Cartoon look and soft shadows make Turbo Karts prettier; turn them Off if it runs slowly. D-pad to choose · A to press · B to go back</p>`;
+        <p class="set-hint">Theme: Light, Dark or Auto (follows this laptop); the phones follow it too. Steady cursor: turn it On if the cursor wanders or shakes. Picture quality: Auto lowers the effects by itself if Turbo Karts runs slowly; High, Medium or Low keep one level. D-pad to choose · A to press · B to go back</p>`;
   }
 
   function renderNews() {
@@ -139,7 +142,7 @@ export function createSettings(prefs) {
           message = 'Everything was deleted. A new, empty party has started.';
         }
       } else if (action === 'back') {
-        page = 'main'; row = 9; endStep = 0; message = '';
+        page = 'main'; row = 10; endStep = 0; message = '';
       }
     } catch (err) {
       message = 'That did not work. Is the laptop server still running?';
@@ -155,7 +158,7 @@ export function createSettings(prefs) {
       const p = getNewsPrefs();
       if (action === 'news-lang') { p.lang = p.lang === 'en' ? 'de' : 'en'; setNewsPrefs(p); }
       else if (action.startsWith('news-src:')) { const id = action.slice(9); p.sources = p.sources.includes(id) ? p.sources.filter((s) => s !== id) : [...p.sources, id]; setNewsPrefs(p); }
-      else if (action === 'back') { page = 'main'; row = 8; }
+      else if (action === 'back') { page = 'main'; row = 9; }
       return render();
     }
     if (action === 'theme') {
@@ -178,6 +181,10 @@ export function createSettings(prefs) {
     } else if (action === 'cartoon' || action === 'ao') {
       graphics.set(action, !graphics[action]);
       api.sound.play('select');
+    } else if (action === 'quality') {
+      const order = ['auto', 'high', 'medium', 'low'];
+      graphics.set('quality', order[(order.indexOf(graphics.quality) + 1) % order.length]);
+      api.sound.play('select');
     } else if (action === 'debug') {
       prefs.setDebug(!prefs.getDebug());
       api.sound.play('select');
@@ -198,8 +205,8 @@ export function createSettings(prefs) {
   function onButton({ playerId, button, state }) {
     if (state !== 'down') return;
     if (button === 'B') {
-      if (page === 'news') { page = 'main'; row = 8; return render(); }
-      if (page === 'party') { page = 'main'; row = 9; endStep = 0; message = ''; return render(); }
+      if (page === 'news') { page = 'main'; row = 9; return render(); }
+      if (page === 'party') { page = 'main'; row = 10; endStep = 0; message = ''; return render(); }
       return api.exit();
     }
     const rows = actions().length;

@@ -645,6 +645,7 @@ function setDebug(on) {
     const rates = players.list().map((p) => `P${p.playerId} ${msgCount.get(p.playerId) || 0} msgs/s`);
     msgCount.clear();
     debugBox.textContent = `latency (ping) ${pingMs} ms   screen ${fps} fps${current ? `   in ${current.app.title}` : ''}\n`
+      + `${window.__couchDebugExtra?.() || ''}`
       + `${rates.join('\n') || 'no players'}\n`
       + `${gyro.describe().join('\n')}\nL = cursor prediction on/off · G = steady cursor · F3 = hide this`;
   }, 1000));

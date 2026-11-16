@@ -24,3 +24,15 @@ test('changes are saved and announced, and listening can be stopped', () => {
   assert.equal(seen.length, 1, 'no notice after stopping');
   assert.equal(graphics.ao, false);
 });
+
+test('picture quality: Auto by default, a level can be chosen, nonsense falls back to Auto', () => {
+  assert.equal(graphics.quality, 'auto');
+  const seen = [];
+  const stop = graphics.onChange((name, v) => seen.push([name, v]));
+  graphics.set('quality', 'medium');
+  assert.equal(graphics.quality, 'medium');
+  assert.deepEqual(seen, [['quality', 'medium']]);
+  graphics.set('quality', 'ultra');
+  assert.equal(graphics.quality, 'auto');
+  stop();
+});

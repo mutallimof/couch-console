@@ -43,6 +43,7 @@ import { TUNE, toggleTuningPanel } from './turbo-karts/karts-tuning.js';
 import { createSkids } from './turbo-karts/karts-skids.js';
 import { makeGem } from './turbo-karts/karts-items.js';
 import { lightOf } from './turbo-karts/karts-tokens.js';
+import { pixelRatioFor, LABELS as QUALITY_LABELS } from './turbo-karts/karts-quality.js';
 
 const RACERS = 8;
 const MAX_HUMANS = 4; // up to four phones, split screen
@@ -253,10 +254,10 @@ async function startRace() {
   race.start();
 }
 
-// How heavy a split screen is allowed to be: fewer pixels and a smaller shadow map as the views multiply
+// The picture is drawn at the screen's real pixels however many views there are (together they fill the same screen);
+// a split screen saves on effects and on the shadow map instead.
 function applyViewQuality(n) {
-  const dpr = window.devicePixelRatio || 1, ratio = n <= 1 ? Math.min(dpr, 1.5) : n === 2 ? Math.min(dpr, 1.25) : 1;
-  look.configure({ views: n, pixelRatio: ratio });
+  look.configure({ views: n, pixelRatio: pixelRatioFor(window.devicePixelRatio, root.clientWidth, root.clientHeight) });
   const size = n <= 1 ? 2048 : n === 2 ? 1536 : 1024, half = n <= 2 ? 32 : 26;
   if (sun.shadow.mapSize.x !== size) { sun.shadow.mapSize.set(size, size); sun.shadow.map?.dispose(); sun.shadow.map = null; }
   Object.assign(sun.shadow.camera, { left: -half, right: half, top: half, bottom: -half }); sun.shadow.camera.updateProjectionMatrix();
@@ -532,6 +533,7 @@ function render() {
   closePreviews();
   renderer.setClearColor(0x000000, 1);
   const rects = viewRects(humans.length, W, H);
+  renderer.info.reset(); // (counted over the whole frame, for the F3 readout)
   humans.forEach((h, i) => {
     const r = h.racer, v = rects[i];
     const off = track.def.lighting?.keyOffset || SUN_DIR.map((d) => d * 80);
@@ -543,9 +545,12 @@ function render() {
     fx.setViewport(v.h * renderer.getPixelRatio());
     look.render(i, h.camera, v.x, H - v.y - v.h, v.w, v.h);
   });
+  perView.calls = renderer.info.render.calls; perView.tris = renderer.info.render.triangles;
 }
 
-// One small canvas + renderer per player preview, pixel ratio 1 (the cost follows the pixels drawn, so a
+const perView = { calls: 0, tris: 0 }; // (for the F3 readout: what the last frame drew)
+
+// One small canvas + renderer per player preview (the cost follows the pixels drawn, so a
 // preview box is far cheaper than the full-window canvas). Antialiased: it is small.
 const previewGL = new Map(); // playerId -> { gl, canvas }
 function previewFor(playerId, stage) {
@@ -553,7 +558,7 @@ function previewFor(playerId, stage) {
   if (p && p.canvas.parentNode !== stage) { p.gl.dispose(); p.canvas.remove(); p = null; }
   if (!p) {
     const gl = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    gl.setPixelRatio(1);
+    gl.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // (real pixels: the previews are small)
     gl.toneMapping = THREE.NeutralToneMapping;
     gl.toneMappingExposure = 1.05;
     gl.domElement.className = 'ks-canvas';
@@ -578,7 +583,7 @@ function renderShowrooms() {
     const w = s.stage.clientWidth, h = s.stage.clientHeight;
     if (w < 10 || h < 10) continue;
     const { gl, canvas } = previewFor(s.playerId, s.stage);
-    const resized = canvas.width !== w || canvas.height !== h;
+    const pr = gl.getPixelRatio(), resized = canvas.width !== Math.floor(w * pr) || canvas.height !== Math.floor(h * pr);
     if (resized) gl.setSize(w, h, false);
     // The previews turn slowly, so every second frame is enough (half the work); the canvas keeps the last picture
     if (!resized && previewFrame % 2) continue;
@@ -816,8 +821,9 @@ async function init(token) {
     CAR('item-box'), CAR('item-coin-gold')].filter(Boolean));
   if (!ok) return;
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  renderer.setPixelRatio(pixelRatioFor(window.devicePixelRatio, root.clientWidth, root.clientHeight));
   renderer.setScissorTest(true);
+  renderer.info.autoReset = false;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.domElement.className = 'game-canvas';
@@ -843,6 +849,7 @@ async function init(token) {
   const applyGraphics = () => {
     look.setAO(q.get('ao') ? q.get('ao') !== 'off' : graphics.ao);
     look.setCartoon(q.get('cartoon') ? q.get('cartoon') !== 'off' : graphics.cartoon);
+    if (look.mode !== (q.get('quality') || graphics.quality)) look.setLevel(q.get('quality') || graphics.quality); // (?quality=medium in the link wins, for testing)
   };
   applyGraphics();
   stopGraphics = graphics.onChange(applyGraphics);
@@ -856,6 +863,12 @@ async function init(token) {
   resize();
   api.onButton(onButton);
   api.onWheel(({ playerId, steer }) => { inputFor(playerId).steer = steer; });
+  // F3 readout: what the race costs to draw (the budget: about 150 draw calls and 300k triangles per view at 60 fps)
+  window.__couchDebugExtra = () => {
+    if (!renderer || !race || !humans.length) return '';
+    const i = renderer.info.render, n = humans.length;
+    return `karts: quality ${QUALITY_LABELS[look.level]}${look.mode === 'auto' ? ' (auto)' : ''} · ${renderer.domElement.width}×${renderer.domElement.height} px (×${renderer.getPixelRatio().toFixed(2)}) · ${Math.round(perView.calls / n)} draw calls · ${Math.round(perView.tris / n / 1000)}k triangles per view\n`;
+  };
   showMenu();
   // Test hooks for screenshots and checks: ?track=<id> skips the select screen; ?kartdebug=1 adds window.__kart
   const qs = new URLSearchParams(location.search);
@@ -918,6 +931,7 @@ export default {
     showrooms.forEach((room) => room.dispose());
     showrooms.clear();
     stopGraphics?.(); stopGraphics = null;
+    window.__couchDebugExtra = null;
     look?.dispose();
     fx?.dispose();
     skids?.dispose(); skids = null;

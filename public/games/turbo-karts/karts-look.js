@@ -3,14 +3,13 @@
 // Colors go through "PBR Neutral" tone mapping (Khronos), which keeps bright cartoon colors
 // saturated instead of washing them out like the ACES curve did; the effect chain renders
 // with 4x multisampling so edges stay smooth. (Techniques as in OpenWii's kart game, MIT.)
-// If the laptop can't keep up (under ~40 frames per second for a few seconds), the effects
-// switch off by themselves and the game renders plainly, like before.
-// Console link options: ?fx=on (always on) · ?fx=off (always off).
+// Three quality levels (karts-quality.js): High (everything), Medium (outlines and glow, no soft shadows, no
+// multisampling), Low (the plain picture). On Auto the level steps down by itself when the laptop can't hold 50
+// frames per second; the picture is never made smaller (effects go before resolution).
+// Console link options: ?fx=on (always High) · ?fx=off (always Low).
 
 import { STYLE } from './karts-style.js';
-
-const LOW_FPS = 40;
-const LOW_FOR_S = 3;
+import { featuresFor, createAutoLevel } from './karts-quality.js';
 
 // Khronos PBR Neutral tone mapping, for the effect chain's last pass (plain rendering uses three's built-in one)
 const neutral = (name) => `vec3 ${name}(vec3 color) {
@@ -119,14 +118,25 @@ export async function createLook(THREE, renderer, scene, force = null) {
   }
 
   const chains = [];          // one effect chain per split-screen view
-  let enabled = !!addons && force !== 'off';
-  let low = 0, frames = 0, last = performance.now(), fps = 60;
+  // mode: what Settings asks for ('auto' or a level) · level: what is drawn now
+  let mode = force === 'on' ? 'high' : force === 'off' ? 'low' : 'auto', level = mode === 'auto' ? 'high' : mode;
+  const auto = createAutoLevel();
+  let views = 1;
+  const feat = () => featuresFor(level, views);
+  let enabled = !!addons && feat().post;
+  let frames = 0, last = performance.now(), fps = 60;
   let bloomStrength = 0.4, exposure = 1.05, aoOn = true, cartoonOn = false, libBloom = 0.35;
   // Split screen: every extra view costs a full effect chain, so the heavy parts shrink with the number of views.
   //   1-2 views: 2x multisampling + ambient occlusion (if the setting is on) · 3-4 views: no multisampling (SMAA does the edges), no AO
-  let views = 1, quality = 0, basePixelRatio = renderer.getPixelRatio(); // quality: 0 full · 1 no AO · 2 smaller picture · 3 effects off
-  const aoActive = () => aoOn && views <= 2 && quality < 1;
-  const samplesFor = () => (views >= 3 && lib ? 0 : 2);
+  const aoActive = () => aoOn && feat().ao;
+  const samplesFor = () => (lib ? feat().msaa : 2); // (without the library there is no SMAA, so multisampling smooths the edges)
+  function dropChains() { for (const c of chains) { c?.composer.dispose(); c?.lib?.lc.dispose(); } chains.length = 0; }
+  function applyLevel(next) {
+    if (next === level) return;
+    level = next; enabled = !!addons && feat().post;
+    dropChains(); // (they are rebuilt for the new level on the next frame)
+    console.info(`Turbo Karts: picture quality ${level}`);
+  }
 
   function chain(i, w, h, camera) {
     let c = chains[i];
@@ -142,7 +152,7 @@ export async function createLook(THREE, renderer, scene, force = null) {
       composer.addPass(pass);
       const edge = new addons.ShaderPass(EdgeShader);
       edge.uniforms.uTexel.value = new THREE.Vector2(1 / w, 1 / h);
-      edge.enabled = cartoonOn;
+      edge.enabled = cartoonOn && feat().outline;
       composer.addPass(edge);
       let ao = null;
       if (addons.GTAOPass) {
@@ -194,14 +204,23 @@ export async function createLook(THREE, renderer, scene, force = null) {
   return {
     get enabled() { return enabled; },
     get fps() { return fps; },
-    get quality() { return quality; },
+    get level() { return level; },
+    get mode() { return mode; },
+    // Settings: 'auto', 'high', 'medium' or 'low' (a ?fx= link option wins)
+    setLevel(choice) {
+      if (force === 'on' || force === 'off') return;
+      mode = ['high', 'medium', 'low'].includes(choice) ? choice : 'auto';
+      auto.reset();
+      applyLevel(mode === 'auto' ? 'high' : mode);
+    },
     // How many split-screen views the race has (1-4): call before the first frame of a race. Rebuilds the effect chains.
     configure({ views: n = 1, pixelRatio = renderer.getPixelRatio() } = {}) {
-      views = Math.max(1, Math.min(4, n)); quality = 0; low = 0; basePixelRatio = pixelRatio;
+      views = Math.max(1, Math.min(4, n));
       renderer.setPixelRatio(pixelRatio);
-      for (const c of chains) { c?.composer.dispose(); c?.lib?.lc.dispose(); }
-      chains.length = 0;
-      enabled = !!addons && force !== 'off';
+      auto.reset();
+      if (mode === 'auto') level = 'high'; // (every race starts at the top again)
+      dropChains();
+      enabled = !!addons && feat().post;
     },
     // Neon city wants more glow than a sunny park
     setTrack(def) {
@@ -238,30 +257,23 @@ export async function createLook(THREE, renderer, scene, force = null) {
       frames++;
       const now = performance.now();
       if (now - last >= 1000) { fps = Math.round((frames * 1000) / (now - last)); frames = 0; last = now; }
-      if (!enabled || force === 'on') return;
-      // Too slow for a few seconds: first the soft shadows (AO) go, then the picture gets a little smaller, and only then the effects
-      low = fps < LOW_FPS ? low + dt : 0;
-      if (low > LOW_FOR_S) {
-        low = 0; quality += 1;
-        if (quality === 1) { for (const c of chains) if (c?.ao) c.ao.enabled = false; }
-        else if (quality === 2) renderer.setPixelRatio(Math.max(0.75, basePixelRatio * 0.75));
-        else { enabled = false; console.info('Turbo Karts: screen effects off (low frame rate)'); }
-        console.info(`Turbo Karts: quality step ${quality} (low frame rate)`);
-      }
+      // Auto: a few slow seconds step one level down (soft shadows and multisampling first, then all effects). Never the resolution.
+      if (mode !== 'auto') return;
+      const next = auto.tick(fps, dt);
+      if (next) applyLevel(next);
     },
-    setEnabled(on) { enabled = on && !!addons; low = 0; },
+    setEnabled(on) { enabled = on && !!addons && feat().post; },
     // Ambient occlusion on/off (a bit heavier on slow laptops)
     // The cartoon look on/off: outlines, banded light, color grade (and the rim light on karts: see karts-style.js)
     setCartoon(on) {
       cartoonOn = on; STYLE.rim.value = on ? 1 : 0;
-      for (const c of chains) if (c) { c.edge.enabled = on; c.final.uniforms.uToon.value = on ? 1 : 0; }
+      for (const c of chains) if (c) { c.edge.enabled = on && feat().outline; c.final.uniforms.uToon.value = on ? 1 : 0; }
     },
     // Reflections from a real sky picture (an equirectangular HDRI) instead of the generated gradient
     setSkyTexture(tex) { scene.environment?.dispose(); scene.environment = pmrem.fromEquirectangular(tex).texture; },
     setAO(on) { aoOn = on; for (const c of chains) if (c?.ao) c.ao.enabled = aoActive(); },
     dispose() {
-      for (const c of chains) { c?.composer.dispose(); c?.lib?.lc.dispose(); }
-      chains.length = 0;
+      dropChains();
       scene.environment?.dispose();
       pmrem.dispose();
     },
